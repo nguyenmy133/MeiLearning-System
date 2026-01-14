@@ -20,6 +20,11 @@ import { CheckInPage } from "./features/user/pages/CheckInPage";
 import { SchedulePage } from "./features/user/pages/SchedulePage";
 import { AttendancePage } from "./features/user/pages/AttendancePage";
 import { DocumentsPage } from "./features/user/pages/DocumentsPage";
+import { VideoLibrary } from "./features/user/pages/VideoLibrary";
+import { VideoPlayer } from "./features/user/pages/VideoPlayer";
+import { ExamList } from "./features/user/pages/ExamList";
+import { ExamTaking } from "./features/user/pages/ExamTaking";
+import { ExamResult } from "./features/user/pages/ExamResult";
 import { TuitionPage } from "./features/user/pages/TuitionPage";
 import { LeavePage } from "./features/user/pages/LeavePage";
 import { TicketsPage } from "./features/user/pages/TicketsPage";
@@ -37,6 +42,9 @@ import { TeacherReschedulePage } from "./features/teacher/pages/TeacherReschedul
 import { TeacherNotificationsPage } from "./features/teacher/pages/TeacherNotificationsPage";
 import { TeacherProfilePage } from "./features/teacher/pages/TeacherProfilePage";
 import { TeacherDocumentsPage } from "./features/teacher/pages/TeacherDocumentsPage";
+import { TeacherExamManagement } from "./features/teacher/pages/TeacherExamManagement";
+import { CreateExamPage } from "./features/teacher/pages/CreateExamPage";
+import { TeacherExamResults } from "./features/teacher/pages/TeacherExamResults";
 
 // Admin portal
 import { AdminLayout } from "./features/admin/AdminLayout";
@@ -80,6 +88,11 @@ const App = () => (
             <Route path="schedule" element={<SchedulePage />} />
             <Route path="attendance" element={<AttendancePage />} />
             <Route path="documents" element={<DocumentsPage />} />
+            <Route path="videos" element={<VideoLibrary />} />
+            <Route path="video-player" element={<VideoPlayer />} />
+            <Route path="exams" element={<ExamList />} />
+            <Route path="exam-taking" element={<ExamTaking />} />
+            <Route path="exam-result" element={<ExamResult />} />
             <Route path="tuition" element={<TuitionPage />} />
             <Route path="leave" element={<LeavePage />} />
             <Route path="tickets" element={<TicketsPage />} />
@@ -94,6 +107,10 @@ const App = () => (
             <Route path="schedule" element={<TeacherSchedulePage />} />
             <Route path="classes" element={<TeacherClassesPage />} />
             <Route path="documents" element={<TeacherDocumentsPage />} />
+            <Route path="exams" element={<TeacherExamManagement />} />
+            <Route path="exams/create" element={<CreateExamPage />} />
+            <Route path="exams/edit/:id" element={<CreateExamPage />} />
+            <Route path="exams/results/:id" element={<TeacherExamResults />} />
             <Route path="grades" element={<TeacherGradesPage />} />
             <Route path="reschedule" element={<TeacherReschedulePage />} />
             <Route path="notifications" element={<TeacherNotificationsPage />} />

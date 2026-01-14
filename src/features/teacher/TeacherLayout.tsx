@@ -13,7 +13,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ const menuItems = [
   { icon: Users, label: "Lớp của tôi", href: "/teacher/classes" },
   { icon: QrCode, label: "Điểm danh buổi học", href: "/teacher/attendance" },
   { icon: FileText, label: "Tài liệu", href: "/teacher/documents" },
+  { icon: FileCheck, label: "Quản lý bài thi", href: "/teacher/exams" },
   { icon: BarChart3, label: "Điểm & nhận xét", href: "/teacher/grades" },
   { icon: RefreshCw, label: "Yêu cầu đổi lịch", href: "/teacher/reschedule" },
   { icon: Bell, label: "Thông báo", href: "/teacher/notifications" },

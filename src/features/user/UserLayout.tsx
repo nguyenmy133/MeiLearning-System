@@ -14,7 +14,9 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  Video,
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +35,8 @@ const menuItems = [
   { icon: QrCode, label: "Điểm danh", href: "/user/check-in" },
   { icon: History, label: "Lịch sử điểm danh", href: "/user/attendance" },
   { icon: FileText, label: "Tài liệu", href: "/user/documents" },
+  { icon: Video, label: "Video bài giảng", href: "/user/videos" },
+  { icon: FileCheck, label: "Bài thi", href: "/user/exams" },
   { icon: CreditCard, label: "Học phí", href: "/user/tuition" },
   { icon: ClipboardList, label: "Xin nghỉ/đi muộn", href: "/user/leave" },
   { icon: MessageSquare, label: "Ticket", href: "/user/tickets" },

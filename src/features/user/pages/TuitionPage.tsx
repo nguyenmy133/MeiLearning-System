@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { CreditCard, Receipt, Clock, CheckCircle, AlertCircle, ChevronRight, Download, Copy } from "lucide-react";
+import { CreditCard, Receipt, Clock, CheckCircle, AlertCircle, ChevronRight, Download, Copy, QrCode } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { QRPaymentModal } from "@/components/QRPaymentModal";
 
 const tuitionInfo = {
   totalAmount: 15000000,
@@ -25,15 +25,9 @@ const paymentHistory = [
   { id: 3, date: "15/10/2024", amount: 2500000, method: "Chuyển khoản", status: "completed", receipt: "INV-2024-003" },
 ];
 
-const bankInfo = {
-  bankName: "Vietcombank",
-  accountNumber: "1234567890123",
-  accountName: "TRUNG TAM ANH NGU EDUCENTER",
-  content: "HV001 - NGUYEN VAN A - HP12/2024"
-};
-
 export function TuitionPage() {
   const { toast } = useToast();
+  const [qrPaymentOpen, setQrPaymentOpen] = useState(false);
   const paymentProgress = (tuitionInfo.paidAmount / tuitionInfo.totalAmount) * 100;
 
   const formatCurrency = (amount: number) => {
@@ -74,13 +68,30 @@ export function TuitionPage() {
                 <p className="text-sm text-muted-foreground">Hạn thanh toán: {tuitionInfo.dueDate}</p>
               </div>
             </div>
-            <Button className="bg-warning text-warning-foreground hover:bg-warning/90">
-              Thanh toán ngay
-              <ChevronRight className="h-4 w-4 ml-2" />
+            <Button 
+              className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
+              onClick={() => setQrPaymentOpen(true)}
+            >
+              <QrCode className="h-4 w-4" />
+              Thanh toán QR
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* QR Payment Modal */}
+      <QRPaymentModal
+        open={qrPaymentOpen}
+        onOpenChange={setQrPaymentOpen}
+        paymentInfo={{
+          invoiceId: "HP202401",
+          studentId: "HV001",
+          studentName: "Nguyễn Văn A",
+          amount: tuitionInfo.remainingAmount,
+          description: "Học phí tháng 12/2024",
+          dueDate: tuitionInfo.dueDate,
+        }}
+      />
 
       {/* Payment Progress */}
       <Card>
@@ -121,95 +132,38 @@ export function TuitionPage() {
         </CardContent>
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Bank Transfer Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Thông tin chuyển khoản</CardTitle>
-            <CardDescription>
-              Sao chép thông tin để chuyển khoản
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-secondary/50 rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Ngân hàng</span>
-                <span className="font-medium text-foreground">{bankInfo.bankName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Số tài khoản</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{bankInfo.accountNumber}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(bankInfo.accountNumber, "Số tài khoản")}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
+      {/* Payment History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-primary" />
+            Lịch sử thanh toán
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {paymentHistory.map((payment) => (
+              <div
+                key={payment.id}
+                className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-success/10 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">{formatCurrency(payment.amount)}</p>
+                    <p className="text-xs text-muted-foreground">{payment.date} • {payment.method}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Chủ tài khoản</span>
-                <span className="font-medium text-foreground text-right text-sm">{bankInfo.accountName}</span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-1">Nội dung chuyển khoản</p>
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-primary">{bankInfo.content}</p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => copyToClipboard(bankInfo.content, "Nội dung")}
-                >
-                  <Copy className="h-3 w-3" />
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                  <Download className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              * Vui lòng ghi đúng nội dung chuyển khoản để được xác nhận nhanh chóng
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Payment History */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" />
-              Lịch sử thanh toán
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {paymentHistory.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-success/10 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-success" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{formatCurrency(payment.amount)}</p>
-                      <p className="text-xs text-muted-foreground">{payment.date} • {payment.method}</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
