@@ -184,6 +184,90 @@ export function AdminSchedulePage() {
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Auto Schedule Button */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Tạo lịch tự động
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Tạo lịch học tự động</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Lớp học</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn lớp" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="toan10a">Toán 10A</SelectItem>
+                        <SelectItem value="anhvanb1">Anh Văn B1</SelectItem>
+                        <SelectItem value="hoa11">Hóa 11</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Giáo viên</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn giáo viên" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="teacher1">Nguyễn Thị Mai</SelectItem>
+                        <SelectItem value="teacher2">Trần Văn Hùng</SelectItem>
+                        <SelectItem value="teacher3">Lê Thị Hương</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Số buổi/tuần</Label>
+                      <Input type="number" defaultValue="2" min="1" max="7" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Thời lượng (phút)</Label>
+                      <Input type="number" defaultValue="90" step="30" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ngày ưu tiên</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"].map((day) => (
+                        <label key={day} className="flex items-center gap-2 text-sm">
+                          <input type="checkbox" className="rounded" />
+                          <span>{day}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Khung giờ ưu tiên</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn khung giờ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="morning">Sáng (8:00 - 12:00)</SelectItem>
+                        <SelectItem value="afternoon">Chiều (14:00 - 17:00)</SelectItem>
+                        <SelectItem value="evening">Tối (18:00 - 21:00)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button className="w-full">
+                    Tìm lịch trống
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Hệ thống sẽ tự động tìm khung giờ trống phù hợp với giáo viên và học viên
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">

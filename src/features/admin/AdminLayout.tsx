@@ -37,18 +37,17 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
-  { icon: Building2, label: "Cơ sở & phòng", href: "/admin/facilities" },
   { icon: GraduationCap, label: "Giáo viên", href: "/admin/teachers" },
   { icon: Users, label: "Học viên", href: "/admin/students" },
   { icon: BookOpen, label: "Lớp học", href: "/admin/classes" },
   { icon: Calendar, label: "Lịch học", href: "/admin/schedule" },
   { icon: QrCode, label: "Điểm danh", href: "/admin/attendance" },
   { icon: CreditCard, label: "Học phí", href: "/admin/tuition" },
-  { icon: UserPlus, label: "CRM Lead", href: "/admin/leads" },
+  { icon: UserPlus, label: "Liên hệ", href: "/admin/leads" },
   { icon: MessageSquare, label: "Ticket", href: "/admin/tickets" },
   { icon: BarChart3, label: "Báo cáo", href: "/admin/reports" },
-  { icon: Shield, label: "RBAC", href: "/admin/roles" },
-  { icon: FileText, label: "Audit log", href: "/admin/audit" },
+  { icon: Shield, label: "Phân quyền", href: "/admin/roles" },
+  { icon: FileText, label: "Nhật ký", href: "/admin/audit" },
   { icon: Settings, label: "Cấu hình QR", href: "/admin/qr-settings" },
 ];
 

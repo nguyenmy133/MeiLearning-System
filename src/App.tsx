@@ -121,7 +121,6 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="qr-settings" element={<QRSettingsPage />} />
-            <Route path="facilities" element={<AdminFacilitiesPage />} />
             <Route path="teachers" element={<AdminTeachersPage />} />
             <Route path="students" element={<AdminStudentsPage />} />
             <Route path="classes" element={<AdminClassesPage />} />

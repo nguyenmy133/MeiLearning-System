@@ -102,14 +102,13 @@ const leads = [
 ];
 
 const statusConfig = {
-  new: { label: "Mới", color: "bg-primary/10 text-primary", icon: UserPlus },
+  new: { label: "Chưa xử lý", color: "bg-primary/10 text-primary", icon: UserPlus },
   contacted: { label: "Đã liên hệ", color: "bg-secondary/30 text-secondary-foreground", icon: Phone },
-  consulting: { label: "Đang tư vấn", color: "bg-accent text-accent-foreground", icon: MessageSquare },
-  converted: { label: "Đã chuyển đổi", color: "bg-primary/10 text-primary", icon: UserCheck },
-  lost: { label: "Mất lead", color: "bg-muted text-muted-foreground", icon: XCircle },
+  enrolled: { label: "Đã đăng ký", color: "bg-success/10 text-success", icon: UserCheck },
+  not_interested: { label: "Không quan tâm", color: "bg-muted text-muted-foreground", icon: XCircle },
 };
 
-const sources = ["Tất cả nguồn", "Facebook", "Website", "Zalo", "Giới thiệu", "Google Ads"];
+const sources = ["Tất cả nguồn", "Website", "Facebook", "Zalo", "Giới thiệu", "Khác"];
 
 export function AdminLeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -133,14 +132,21 @@ export function AdminLeadsPage() {
   };
 
   const pipelineStages = [
-    { key: "new", label: "Mới", count: leads.filter((l) => l.status === "new").length },
+    { key: "new", label: "Chưa xử lý", count: leads.filter((l) => l.status === "new").length },
     { key: "contacted", label: "Đã liên hệ", count: leads.filter((l) => l.status === "contacted").length },
-    { key: "consulting", label: "Đang tư vấn", count: leads.filter((l) => l.status === "consulting").length },
-    { key: "converted", label: "Chuyển đổi", count: leads.filter((l) => l.status === "converted").length },
+    { key: "enrolled", label: "Đã đăng ký", count: leads.filter((l) => l.status === "enrolled").length },
+    { key: "not_interested", label: "Không quan tâm", count: leads.filter((l) => l.status === "not_interested").length },
   ];
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-display font-bold mb-2">Quản lý Liên hệ</h1>
+        <p className="text-muted-foreground">
+          Quản lý thông tin liên hệ từ phụ huynh/học viên quan tâm
+        </p>
+      </div>
+
       {/* Pipeline Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {pipelineStages.map((stage) => (
@@ -161,17 +167,17 @@ export function AdminLeadsPage() {
       {/* Leads List */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
-          <CardTitle className="text-lg font-display">Danh sách Lead</CardTitle>
+          <CardTitle className="text-lg font-display">Danh sách liên hệ</CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" />
-                Thêm Lead
+                Thêm liên hệ
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Thêm Lead mới</DialogTitle>
+                <DialogTitle>Thêm liên hệ mới</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -238,11 +244,10 @@ export function AdminLeadsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="new">Mới</SelectItem>
+                  <SelectItem value="new">Chưa xử lý</SelectItem>
                   <SelectItem value="contacted">Đã liên hệ</SelectItem>
-                  <SelectItem value="consulting">Đang tư vấn</SelectItem>
-                  <SelectItem value="converted">Đã chuyển đổi</SelectItem>
-                  <SelectItem value="lost">Mất lead</SelectItem>
+                  <SelectItem value="enrolled">Đã đăng ký</SelectItem>
+                  <SelectItem value="not_interested">Không quan tâm</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterSource} onValueChange={setFilterSource}>
@@ -292,16 +297,12 @@ export function AdminLeadsPage() {
                           Gọi điện
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Mail className="w-4 h-4 mr-2" />
-                          Gửi email
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Thêm ghi chú
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <UserCheck className="w-4 h-4 mr-2" />
-                          Chuyển đổi
+                          Đánh dấu đã đăng ký
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
