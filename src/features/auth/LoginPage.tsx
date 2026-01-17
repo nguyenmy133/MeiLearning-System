@@ -73,10 +73,10 @@ export function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 text-primary-foreground">
           <div>
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
-                <span className="font-display font-bold text-lg">E</span>
+              <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-primary-foreground/10 backdrop-blur-sm">
+                <img src="/Logo.png" alt="EduTrack Logo" className="w-10 h-10 object-contain" />
               </div>
-              <span className="font-display font-semibold text-xl">EduCenter</span>
+              <span className="font-display font-semibold text-2xl">EduTrack</span>
             </Link>
           </div>
           
@@ -91,7 +91,7 @@ export function LoginPage() {
           </div>
 
           <div className="text-sm text-primary-foreground/60">
-            © {new Date().getFullYear()} EduCenter. Tất cả quyền được bảo lưu.
+            © {new Date().getFullYear()} EduTrack. Tất cả quyền được bảo lưu.
           </div>
         </div>
 
@@ -115,10 +115,10 @@ export function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden mb-8">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-display font-bold text-lg">E</span>
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-primary/5">
+                <img src="/Logo.png" alt="EduTrack Logo" className="w-12 h-12 object-contain" />
               </div>
-              <span className="font-display font-semibold text-xl text-foreground">EduCenter</span>
+              <span className="font-display font-semibold text-2xl text-foreground">EduTrack</span>
             </Link>
           </div>
 

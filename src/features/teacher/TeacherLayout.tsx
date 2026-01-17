@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/teacher/dashboard" },
@@ -60,11 +61,11 @@ export function TeacherLayout() {
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-display font-bold">E</span>
+            <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
             </div>
             {sidebarOpen && (
-              <span className="font-display font-semibold text-foreground">EduCenter</span>
+              <span className="font-display font-semibold text-foreground">EduTrack</span>
             )}
           </Link>
           <button
@@ -129,10 +130,10 @@ export function TeacherLayout() {
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold">E</span>
+            <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center">
+              <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-display font-semibold text-foreground">EduCenter</span>
+            <span className="font-display font-semibold text-foreground">EduTrack</span>
           </Link>
           <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-accent">
             <X className="w-5 h-5" />
@@ -176,6 +177,8 @@ export function TeacherLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
+            
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
               <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">

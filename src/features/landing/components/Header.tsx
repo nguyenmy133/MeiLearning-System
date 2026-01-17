@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { label: "Giới thiệu", href: "/about" },
@@ -30,18 +31,18 @@ export function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-card/95 backdrop-blur-md shadow-lg py-3"
+          ? "glass-card shadow-xl py-3"
           : "bg-transparent py-5"
       }`}
     >
       <div className="container-custom flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
-            <span className="text-primary-foreground font-display font-bold text-lg">E</span>
+          <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
+            <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
           </div>
           <span className="font-display font-semibold text-xl text-foreground">
-            EduCenter
+            EduTrack
           </span>
         </Link>
 
@@ -64,6 +65,7 @@ export function Header() {
 
         {/* CTA Buttons */}
         <div className="hidden lg:flex items-center gap-3">
+          <ThemeToggle />
           <Button variant="outline" asChild className="btn-secondary">
             <Link to="/login">Đăng nhập</Link>
           </Button>
@@ -96,6 +98,10 @@ export function Header() {
               </Link>
             ))}
             <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-muted-foreground">Chế độ hiển thị</span>
+                <ThemeToggle />
+              </div>
               <Button variant="outline" asChild className="btn-secondary w-full">
                 <Link to="/login">Đăng nhập</Link>
               </Button>
