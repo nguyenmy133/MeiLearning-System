@@ -38,12 +38,11 @@ import {
   Plus,
   Search,
   MoreHorizontal,
-  Calendar,
   User,
-  Flag,
   CheckCircle2,
   Clock,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react";
 
 // Mock data
@@ -52,109 +51,124 @@ const tickets = [
     id: "TK-1001",
     title: "Không đăng nhập được sau khi đổi mật khẩu",
     requester: "Nguyễn Minh Anh",
-    channel: "Email",
-    priority: "high",
+    type: "technical",
     status: "open",
-    createdAt: "20/12/2024 09:12",
-    assignee: "Trần Quang",
+    createdAt: "20/12/2024",
+    note: "",
   },
   {
     id: "TK-1002",
     title: "Yêu cầu xuất hóa đơn học phí tháng 12",
     requester: "Phạm Đức Duy",
-    channel: "Hotline",
-    priority: "medium",
+    type: "billing",
     status: "in_progress",
-    createdAt: "19/12/2024 15:30",
-    assignee: "Lê Thảo",
+    createdAt: "19/12/2024",
+    note: "Đã liên hệ qua điện thoại",
   },
   {
     id: "TK-1003",
     title: "Sai thông tin lớp trong lịch học",
     requester: "Hoàng Thị Em",
-    channel: "Zalo",
-    priority: "low",
+    type: "info",
     status: "resolved",
-    createdAt: "18/12/2024 10:05",
-    assignee: "Nguyễn Khoa",
+    createdAt: "18/12/2024",
+    note: "Đã cập nhật lịch học",
   },
   {
     id: "TK-1004",
     title: "Không nhận được thông báo điểm danh",
     requester: "Vũ Văn Phong",
-    channel: "Email",
-    priority: "high",
+    type: "technical",
     status: "overdue",
-    createdAt: "17/12/2024 08:40",
-    assignee: "Trần Quang",
+    createdAt: "17/12/2024",
+    note: "",
   },
   {
     id: "TK-1005",
     title: "Cập nhật số điện thoại phụ huynh",
     requester: "Đặng Thị Giang",
-    channel: "Web",
-    priority: "medium",
+    type: "info",
     status: "open",
-    createdAt: "16/12/2024 13:20",
-    assignee: "Lê Thảo",
+    createdAt: "16/12/2024",
+    note: "",
   },
 ];
 
 const statusConfig = {
-  open: { label: "Mở", color: "bg-primary/10 text-primary", icon: Ticket },
-  in_progress: { label: "Đang xử lý", color: "bg-secondary/30 text-secondary-foreground", icon: Clock },
-  resolved: { label: "Đã xử lý", color: "bg-success/10 text-success", icon: CheckCircle2 },
-  overdue: { label: "Quá hạn", color: "bg-destructive/10 text-destructive", icon: AlertTriangle },
+  open: {
+    label: "Mới",
+    color: "bg-primary/10 text-primary",
+    icon: Ticket,
+  },
+  in_progress: {
+    label: "Đang xử lý",
+    color: "bg-secondary/30 text-secondary-foreground",
+    icon: Clock,
+  },
+  resolved: {
+    label: "Đã xử lý",
+    color: "bg-green-500/10 text-green-600 dark:text-green-400",
+    icon: CheckCircle2,
+  },
+  overdue: {
+    label: "Quá hạn",
+    color: "bg-destructive/10 text-destructive",
+    icon: AlertTriangle,
+  },
 };
 
-const priorityConfig = {
-  low: { label: "Thấp", color: "bg-muted text-muted-foreground" },
-  medium: { label: "Trung bình", color: "bg-accent text-accent-foreground" },
-  high: { label: "Cao", color: "bg-destructive/10 text-destructive" },
+const typeConfig: Record<string, { label: string }> = {
+  technical: { label: "Kỹ thuật" },
+  billing: { label: "Học phí" },
+  info: { label: "Thông tin" },
+  other: { label: "Khác" },
 };
 
 export function AdminTicketsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterPriority, setFilterPriority] = useState("all");
+  const [filterType, setFilterType] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<
+    (typeof tickets)[0] | null
+  >(null);
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchSearch =
       ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.requester.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === "all" || ticket.status === filterStatus;
-    const matchPriority = filterPriority === "all" || ticket.priority === filterPriority;
-    return matchSearch && matchStatus && matchPriority;
+    const matchStatus =
+      filterStatus === "all" || ticket.status === filterStatus;
+    const matchType = filterType === "all" || ticket.type === filterType;
+    return matchSearch && matchStatus && matchType;
   });
 
   const getStatusBadge = (status: keyof typeof statusConfig) => {
-    const config = statusConfig[status];
-    return <Badge className={`${config.color} border-0`}>{config.label}</Badge>;
-  };
-
-  const getPriorityBadge = (priority: keyof typeof priorityConfig) => {
-    const config = priorityConfig[priority];
-    return <Badge className={`${config.color} border-0`}>{config.label}</Badge>;
+    const cfg = statusConfig[status];
+    return (
+      <Badge className={`${cfg.color} border-0`}>
+        {cfg.label}
+      </Badge>
+    );
   };
 
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(statusConfig).map(([key, config]) => (
+        {(Object.entries(statusConfig) as [keyof typeof statusConfig, (typeof statusConfig)[keyof typeof statusConfig]][]).map(([key, cfg]) => (
           <Card key={key}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <config.icon className="w-5 h-5 text-primary" />
+                  <cfg.icon className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">
                     {tickets.filter((t) => t.status === key).length}
                   </p>
-                  <p className="text-sm text-muted-foreground">{config.label}</p>
+                  <p className="text-sm text-muted-foreground">{cfg.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -164,51 +178,67 @@ export function AdminTicketsPage() {
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
-          <CardTitle className="text-lg font-display">Danh sách Ticket</CardTitle>
+          <CardTitle className="text-lg font-display">
+            Yêu cầu hỗ trợ
+          </CardTitle>
+
+          {/* Tạo ticket mới */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" />
-                Tạo ticket
+                Tạo yêu cầu
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Tạo ticket mới</DialogTitle>
+                <DialogTitle>Tạo yêu cầu hỗ trợ mới</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label>Tiêu đề</Label>
-                  <Input placeholder="Nhập tiêu đề" />
+                  <Label>
+                    Tiêu đề <span className="text-destructive">*</span>
+                  </Label>
+                  <Input placeholder="Mô tả ngắn vấn đề cần hỗ trợ" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Người yêu cầu</Label>
-                  <Input placeholder="Nhập họ và tên" />
+                  <Label>
+                    Người yêu cầu <span className="text-destructive">*</span>
+                  </Label>
+                  <Input placeholder="Họ và tên học viên / phụ huynh" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Độ ưu tiên</Label>
-                  <Select>
+                  <Label>Loại yêu cầu</Label>
+                  <Select defaultValue="technical">
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn mức" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Thấp</SelectItem>
-                      <SelectItem value="medium">Trung bình</SelectItem>
-                      <SelectItem value="high">Cao</SelectItem>
+                      <SelectItem value="technical">Kỹ thuật</SelectItem>
+                      <SelectItem value="billing">Học phí</SelectItem>
+                      <SelectItem value="info">Thông tin</SelectItem>
+                      <SelectItem value="other">Khác</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Mô tả</Label>
-                  <Textarea placeholder="Mô tả chi tiết vấn đề..." />
+                  <Label>Mô tả chi tiết</Label>
+                  <Textarea
+                    placeholder="Mô tả chi tiết vấn đề..."
+                    rows={3}
+                  />
                 </div>
-                <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
-                  Tạo ticket
+                <Button
+                  className="w-full"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Tạo yêu cầu
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </CardHeader>
+
         <CardContent className="space-y-4">
           {/* Filters */}
           <div className="flex flex-col lg:flex-row gap-3">
@@ -221,29 +251,29 @@ export function AdminTicketsPage() {
                 className="pl-9"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2">
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-36">
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="open">Mở</SelectItem>
+                  <SelectItem value="open">Mới</SelectItem>
                   <SelectItem value="in_progress">Đang xử lý</SelectItem>
                   <SelectItem value="resolved">Đã xử lý</SelectItem>
                   <SelectItem value="overdue">Quá hạn</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterPriority} onValueChange={setFilterPriority}>
+              <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-36">
-                  <Flag className="w-4 h-4 mr-1" />
-                  <SelectValue placeholder="Ưu tiên" />
+                  <SelectValue placeholder="Loại" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="low">Thấp</SelectItem>
-                  <SelectItem value="medium">Trung bình</SelectItem>
-                  <SelectItem value="high">Cao</SelectItem>
+                  <SelectItem value="all">Tất cả loại</SelectItem>
+                  <SelectItem value="technical">Kỹ thuật</SelectItem>
+                  <SelectItem value="billing">Học phí</SelectItem>
+                  <SelectItem value="info">Thông tin</SelectItem>
+                  <SelectItem value="other">Khác</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -253,12 +283,13 @@ export function AdminTicketsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ticket</TableHead>
-                <TableHead className="hidden md:table-cell">Người yêu cầu</TableHead>
-                <TableHead>Ưu tiên</TableHead>
+                <TableHead>Yêu cầu</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Người yêu cầu
+                </TableHead>
+                <TableHead className="hidden sm:table-cell">Loại</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead className="hidden lg:table-cell">Tạo lúc</TableHead>
-                <TableHead className="hidden sm:table-cell">Phụ trách</TableHead>
+                <TableHead className="hidden lg:table-cell">Ngày tạo</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
@@ -266,9 +297,16 @@ export function AdminTicketsPage() {
               {filteredTickets.map((ticket) => (
                 <TableRow key={ticket.id}>
                   <TableCell>
-                    <div className="space-y-1">
-                      <p className="font-medium">{ticket.title}</p>
-                      <p className="text-xs text-muted-foreground">{ticket.id}</p>
+                    <div className="space-y-0.5">
+                      <p className="font-medium leading-snug">{ticket.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ticket.id}
+                      </p>
+                      {ticket.note && (
+                        <p className="text-xs text-muted-foreground italic">
+                          💬 {ticket.note}
+                        </p>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
@@ -277,30 +315,92 @@ export function AdminTicketsPage() {
                       <span className="text-sm">{ticket.requester}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{getPriorityBadge(ticket.priority as keyof typeof priorityConfig)}</TableCell>
-                  <TableCell>{getStatusBadge(ticket.status as keyof typeof statusConfig)}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className="text-sm">{ticket.createdAt}</span>
-                    </div>
-                  </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <span className="text-sm text-muted-foreground">{ticket.assignee}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {typeConfig[ticket.type]?.label ?? ticket.type}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Gán người xử lý</DropdownMenuItem>
-                        <DropdownMenuItem>Thay đổi trạng thái</DropdownMenuItem>
-                        <DropdownMenuItem>Ghi chú nội bộ</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {getStatusBadge(
+                      ticket.status as keyof typeof statusConfig
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                    {ticket.createdAt}
+                  </TableCell>
+                  <TableCell>
+                    <Dialog
+                      open={selectedTicket?.id === ticket.id}
+                      onOpenChange={(open) => !open && setSelectedTicket(null)}
+                    >
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setSelectedTicket(ticket)}
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Ghi chú / Xử lý
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Đánh dấu đã xử lý
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Ghi chú dialog */}
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Ghi chú xử lý</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-2">
+                          <div className="rounded-lg bg-muted p-3 space-y-1">
+                            <p className="text-sm font-medium">
+                              {ticket.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {ticket.requester} · {ticket.id}
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Cập nhật trạng thái</Label>
+                            <Select defaultValue={ticket.status}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Mới</SelectItem>
+                                <SelectItem value="in_progress">
+                                  Đang xử lý
+                                </SelectItem>
+                                <SelectItem value="resolved">
+                                  Đã xử lý
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Ghi chú nội bộ</Label>
+                            <Textarea
+                              placeholder="Nhập ghi chú về cách xử lý..."
+                              defaultValue={ticket.note}
+                              rows={3}
+                            />
+                          </div>
+                          <Button
+                            className="w-full"
+                            onClick={() => setSelectedTicket(null)}
+                          >
+                            Lưu
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}

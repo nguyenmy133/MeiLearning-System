@@ -54,6 +54,7 @@ import { QRSettingsPage } from "./features/admin/pages/QRSettingsPage";
 import { AdminFacilitiesPage } from "./features/admin/pages/AdminFacilitiesPage";
 import { AdminTeachersPage } from "./features/admin/pages/AdminTeachersPage";
 import { AdminStudentsPage } from "./features/admin/pages/AdminStudentsPage";
+import { AdminSubjectsPage } from "./features/admin/pages/AdminSubjectsPage";
 import { AdminClassesPage } from "./features/admin/pages/AdminClassesPage";
 import { AdminSchedulePage } from "./features/admin/pages/AdminSchedulePage";
 import { AdminAttendancePage } from "./features/admin/pages/AdminAttendancePage";
@@ -61,7 +62,7 @@ import { AdminTuitionPage } from "./features/admin/pages/AdminTuitionPage";
 import { AdminLeadsPage } from "./features/admin/pages/AdminLeadsPage";
 import { AdminTicketsPage } from "./features/admin/pages/AdminTicketsPage";
 import { AdminReportsPage } from "./features/admin/pages/AdminReportsPage";
-import { AdminRolesPage } from "./features/admin/pages/AdminRolesPage";
+
 import { AdminAuditPage } from "./features/admin/pages/AdminAuditPage";
 
 import NotFound from "./pages/NotFound";
@@ -125,6 +126,7 @@ const App = () => (
             <Route path="qr-settings" element={<QRSettingsPage />} />
             <Route path="teachers" element={<AdminTeachersPage />} />
             <Route path="students" element={<AdminStudentsPage />} />
+            <Route path="subjects" element={<AdminSubjectsPage />} />
             <Route path="classes" element={<AdminClassesPage />} />
             <Route path="schedule" element={<AdminSchedulePage />} />
             <Route path="attendance" element={<AdminAttendancePage />} />
@@ -132,7 +134,7 @@ const App = () => (
             <Route path="leads" element={<AdminLeadsPage />} />
             <Route path="tickets" element={<AdminTicketsPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
-            <Route path="roles" element={<AdminRolesPage />} />
+
             <Route path="audit" element={<AdminAuditPage />} />
           </Route>
 

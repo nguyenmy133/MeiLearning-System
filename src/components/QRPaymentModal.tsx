@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -36,10 +37,12 @@ interface QRPaymentModalProps {
     description: string;
     dueDate?: string;
   };
+  onPaid?: () => void;
 }
 
-export function QRPaymentModal({ open, onOpenChange, paymentInfo }: QRPaymentModalProps) {
+export function QRPaymentModal({ open, onOpenChange, paymentInfo, onPaid }: QRPaymentModalProps) {
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   // Generate payment description
   const paymentDescription = `HP${paymentInfo.invoiceId} ${paymentInfo.studentId}`;
@@ -83,7 +86,7 @@ export function QRPaymentModal({ open, onOpenChange, paymentInfo }: QRPaymentMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <QrCode className="w-5 h-5" />
@@ -248,14 +251,17 @@ export function QRPaymentModal({ open, onOpenChange, paymentInfo }: QRPaymentMod
               Đóng
             </Button>
             <Button 
-              className="flex-1"
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
               onClick={() => {
-                // In real app, mark as "waiting for confirmation"
-                alert("Đã gửi yêu cầu xác nhận thanh toán. Vui lòng chờ hệ thống xử lý.");
+                toast({
+                  title: "Đã gửi yêu cầu xác nhận",
+                  description: "Kế toán sẽ kiểm tra sao kê ngân hàng của bạn trong ít phút.",
+                });
+                onPaid?.();
                 onOpenChange(false);
               }}
             >
-              Đã thanh toán
+              Đã chuyển khoản
             </Button>
           </div>
         </div>

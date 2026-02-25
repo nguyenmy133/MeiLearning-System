@@ -15,6 +15,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -23,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -33,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Users,
   Plus,
@@ -48,6 +51,10 @@ import {
   CreditCard,
   UserCheck,
   UserX,
+  KeyRound,
+  RefreshCw,
+  Copy,
+  Check,
 } from "lucide-react";
 
 // Mock data
@@ -116,12 +123,41 @@ const students = [
 
 const classList = ["Toán 10A", "Lý 10A", "Anh Văn B1", "Anh Văn Speaking", "Hóa 11", "Văn 12", "Toán 12", "Tin Học Cơ Bản"];
 
+function generatePassword() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#";
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
 export function AdminStudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClass, setFilterClass] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTuition, setFilterTuition] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{ id: number; name: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [autoPassword, setAutoPassword] = useState(() => generatePassword());
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenReset = (student: { id: number; name: string }) => {
+    setSelectedStudent(student);
+    setNewPassword(generatePassword());
+    setIsResetDialogOpen(true);
+  };
+
+  const toggleClass = (cls: string) => {
+    setSelectedClasses(prev =>
+      prev.includes(cls) ? prev.filter(c => c !== cls) : [...prev, cls]
+    );
+  };
 
   const filteredStudents = students.filter((student) => {
     const matchSearch =
@@ -215,20 +251,22 @@ export function AdminStudentsPage() {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
           <CardTitle className="text-lg font-display">Danh sách học viên</CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setSelectedClasses([]); setAutoPassword(generatePassword()); } }}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" />
                 Thêm học viên
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Thêm học viên mới</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-2">
+                {/* Thông tin cá nhân */}
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thông tin cá nhân</p>
                 <div className="space-y-2">
-                  <Label>Họ và tên</Label>
+                  <Label>Họ và tên <span className="text-destructive">*</span></Label>
                   <Input placeholder="Nhập họ và tên" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -245,21 +283,52 @@ export function AdminStudentsPage() {
                   <Label>SĐT Phụ huynh</Label>
                   <Input placeholder="0911234567" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Lớp đăng ký</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn lớp" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classList.map((cls) => (
-                        <SelectItem key={cls} value={cls}>
-                          {cls}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                {/* Lớp học */}
+                <Separator />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lớp đăng ký</p>
+                <div className="flex flex-wrap gap-2">
+                  {classList.map((cls) => (
+                    <button
+                      key={cls}
+                      type="button"
+                      onClick={() => toggleClass(cls)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                        selectedClasses.includes(cls)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
+                      }`}
+                    >
+                      {cls}
+                    </button>
+                  ))}
                 </div>
+                {selectedClasses.length > 0 && (
+                  <p className="text-xs text-muted-foreground">Đã chọn: {selectedClasses.join(", ")}</p>
+                )}
+
+                {/* Tài khoản hệ thống */}
+                <Separator />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tài khoản hệ thống</p>
+                <div className="space-y-2">
+                  <Label>Tên đăng nhập <span className="text-destructive">*</span></Label>
+                  <Input placeholder="VD: nguyenvana hoặc dùng email" />
+                  <p className="text-xs text-muted-foreground">Học viên sẽ dùng tên này để đăng nhập.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Mật khẩu tạm thời <span className="text-destructive">*</span></Label>
+                  <div className="flex gap-2">
+                    <Input value={autoPassword} onChange={(e) => setAutoPassword(e.target.value)} className="font-mono text-sm" />
+                    <Button type="button" variant="outline" size="icon" title="Tạo lại mật khẩu" onClick={() => setAutoPassword(generatePassword())}>
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                    <Button type="button" variant="outline" size="icon" title="Sao chép" onClick={() => handleCopy(autoPassword)}>
+                      {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Học viên nên đổi mật khẩu sau khi đăng nhập lần đầu.</p>
+                </div>
+
                 <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
                   Thêm học viên
                 </Button>
@@ -402,6 +471,11 @@ export function AdminStudentsPage() {
                           <Edit className="w-4 h-4 mr-2" />
                           Chỉnh sửa
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenReset({ id: student.id, name: student.name })}>
+                          <KeyRound className="w-4 h-4 mr-2" />
+                          Đặt lại mật khẩu
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
                           <Trash2 className="w-4 h-4 mr-2" />
                           Xóa
@@ -415,6 +489,56 @@ export function AdminStudentsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Đặt lại mật khẩu
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Đặt lại mật khẩu cho học viên <span className="font-semibold text-foreground">{selectedStudent?.name}</span>
+            </p>
+            <div className="space-y-2">
+              <Label>Mật khẩu mới</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="font-mono text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setNewPassword(generatePassword())}
+                  title="Tạo lại"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleCopy(newPassword)}
+                  title="Sao chép"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Nhớ gửi mật khẩu này cho học viên.</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsResetDialogOpen(false)}>Hủy</Button>
+            <Button onClick={() => setIsResetDialogOpen(false)}>Xác nhận đặt lại</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,15 +7,15 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 
-const tuitionInfo = {
-  totalAmount: 15000000,
-  paidAmount: 12500000,
-  remainingAmount: 2500000,
-  dueDate: "20/12/2024",
-  courses: [
-    { name: "Tiếng Anh Giao tiếp", amount: 5000000, status: "paid" },
-    { name: "IELTS Speaking", amount: 5000000, status: "paid" },
-    { name: "Business English", amount: 5000000, status: "partial", paid: 2500000 },
+const currentInvoice = {
+  id: "INV_092024_001",
+  month: "09/2024",
+  totalAmount: 2500000,
+  dueDate: "05/10/2024",
+  status: "pending",
+  details: [
+    { className: "Toán 10A", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 },
+    { className: "Lý 10 Cơ bản", billableSessions: 10, pricePerSession: 100000, subTotal: 1000000 }
   ]
 };
 
@@ -28,7 +28,7 @@ const paymentHistory = [
 export function TuitionPage() {
   const { toast } = useToast();
   const [qrPaymentOpen, setQrPaymentOpen] = useState(false);
-  const paymentProgress = (tuitionInfo.paidAmount / tuitionInfo.totalAmount) * 100;
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "reviewing" | "paid">("pending");
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -47,10 +47,10 @@ export function TuitionPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
-          Học phí
+          Thanh toán Học phí
         </h1>
         <p className="text-muted-foreground mt-1">
-          Quản lý thông tin học phí và thanh toán
+          Kỳ cước Tháng {currentInvoice.month}
         </p>
       </div>
 
@@ -59,22 +59,37 @@ export function TuitionPage() {
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-warning/20 rounded-xl">
-                <AlertCircle className="h-6 w-6 text-warning" />
+              <div className={`p-3 rounded-xl ${paymentStatus === 'reviewing' ? 'bg-blue-500/20' : 'bg-warning/20'}`}>
+                {paymentStatus === 'reviewing' ? (
+                  <CheckCircle className="h-6 w-6 text-blue-500" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-warning" />
+                )}
               </div>
               <div>
-                <p className="font-semibold text-foreground">Còn học phí chưa thanh toán</p>
-                <p className="text-2xl font-bold text-warning mt-1">{formatCurrency(tuitionInfo.remainingAmount)}</p>
-                <p className="text-sm text-muted-foreground">Hạn thanh toán: {tuitionInfo.dueDate}</p>
+                <p className="font-semibold text-foreground">
+                  {paymentStatus === 'reviewing' ? 'Đang chờ Admin xác nhận' : 'Phí học tháng trước (Dự kiến)'}
+                </p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <p className="text-2xl font-bold text-warning">{formatCurrency(currentInvoice.totalAmount)}</p>
+                </div>
+                <p className="text-sm text-muted-foreground">Hạn thanh toán: {currentInvoice.dueDate}</p>
               </div>
             </div>
-            <Button 
-              className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
-              onClick={() => setQrPaymentOpen(true)}
-            >
-              <QrCode className="h-4 w-4" />
-              Thanh toán QR
-            </Button>
+            {paymentStatus === 'pending' ? (
+              <Button 
+                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
+                onClick={() => setQrPaymentOpen(true)}
+              >
+                <QrCode className="h-4 w-4" />
+                Thanh toán QR
+              </Button>
+            ) : paymentStatus === 'reviewing' ? (
+              <Button disabled className="bg-blue-600 text-white gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Chờ đối soát
+              </Button>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -84,50 +99,46 @@ export function TuitionPage() {
         open={qrPaymentOpen}
         onOpenChange={setQrPaymentOpen}
         paymentInfo={{
-          invoiceId: "HP202401",
-          studentId: "HV001",
-          studentName: "Nguyễn Văn A",
-          amount: tuitionInfo.remainingAmount,
-          description: "Học phí tháng 12/2024",
-          dueDate: tuitionInfo.dueDate,
+          invoiceId: currentInvoice.id,
+          studentId: "001", // Ví dụ mã HS
+          studentName: "Nguyễn Văn An", // Có thể truyền từ Store/Session
+          amount: currentInvoice.totalAmount,
+          description: `Học phí tháng ${currentInvoice.month}`,
+          dueDate: currentInvoice.dueDate,
         }}
+        onPaid={() => setPaymentStatus("reviewing")}
       />
 
-      {/* Payment Progress */}
+      {/* Bill Breakdown */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            Tiến độ thanh toán
+            <Receipt className="h-5 w-5 text-primary" />
+            Chi tiết Bảng tính Học phí (Dựa trên số buổi học điểm danh)
           </CardTitle>
+          <CardDescription>Mã hóa đơn: {currentInvoice.id}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Đã thanh toán: {formatCurrency(tuitionInfo.paidAmount)} / {formatCurrency(tuitionInfo.totalAmount)}
-              </span>
-              <span className="text-lg font-bold text-primary">{Math.round(paymentProgress)}%</span>
-            </div>
-            <Progress value={paymentProgress} className="h-3" />
-          </div>
-
           {/* Course breakdown */}
-          <div className="mt-6 space-y-3">
-            {tuitionInfo.courses.map((course, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+          <div className="space-y-3">
+            {currentInvoice.details.map((course, index) => (
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-secondary/20 rounded-lg gap-2 border border-border/50">
                 <div>
-                  <p className="font-medium text-foreground">{course.name}</p>
-                  <p className="text-sm text-muted-foreground">{formatCurrency(course.amount)}</p>
+                  <p className="font-semibold text-foreground text-base">{course.className}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Số buổi tính phí: <span className="font-medium text-foreground">{course.billableSessions}</span> x {formatCurrency(course.pricePerSession)}/buổi
+                  </p>
                 </div>
-                <Badge
-                  variant={course.status === "paid" ? "default" : "secondary"}
-                  className={course.status === "paid" ? "bg-success text-success-foreground" : ""}
-                >
-                  {course.status === "paid" ? "Đã thanh toán" : `Còn ${formatCurrency(course.amount - (course.paid || 0))}`}
-                </Badge>
+                <div className="text-right">
+                  <p className="font-bold text-lg text-primary">{formatCurrency(course.subTotal)}</p>
+                </div>
               </div>
             ))}
+          </div>
+          
+          <div className="mt-6 pt-4 border-t flex justify-between items-center px-2">
+            <p className="font-medium text-muted-foreground">Tổng cộng (Tháng {currentInvoice.month})</p>
+            <p className="text-xl font-bold text-warning">{formatCurrency(currentInvoice.totalAmount)}</p>
           </div>
         </CardContent>
       </Card>

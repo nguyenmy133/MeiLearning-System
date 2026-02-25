@@ -48,59 +48,63 @@ import {
   CheckCircle2,
   Clock,
   Send,
+  QrCode,
 } from "lucide-react";
+import { QRPaymentModal } from "@/components/QRPaymentModal";
 
-// Mock data
 const payments = [
   {
-    id: 1,
+    id: "INV_092024_001",
     student: { name: "Nguyễn Văn An", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=100" },
-    class: "Toán 10A",
-    amount: 2500000,
-    dueDate: "20/12/2024",
+    month: "09/2024",
+    totalAmount: 2500000,
+    dueDate: "05/10/2024",
     status: "paid",
-    paidDate: "15/12/2024",
+    paidDate: "02/10/2024",
     method: "Chuyển khoản",
+    details: [
+      { className: "Toán 10A", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 },
+      { className: "Lý 10 Cơ bản", billableSessions: 10, pricePerSession: 100000, subTotal: 1000000 }
+    ]
   },
   {
-    id: 2,
+    id: "INV_092024_002",
     student: { name: "Trần Thị Bích", avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100" },
-    class: "Anh Văn B1",
-    amount: 3000000,
-    dueDate: "25/12/2024",
+    month: "09/2024",
+    totalAmount: 1600000,
+    dueDate: "05/10/2024",
     status: "pending",
     paidDate: null,
     method: null,
+    details: [
+      { className: "Anh Văn B1", billableSessions: 8, pricePerSession: 200000, subTotal: 1600000 }
+    ]
   },
   {
-    id: 3,
+    id: "INV_092024_003",
     student: { name: "Lê Minh Cường", avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100" },
-    class: "Hóa 11",
-    amount: 2000000,
-    dueDate: "15/12/2024",
-    status: "overdue",
+    month: "09/2024",
+    totalAmount: 1800000,
+    dueDate: "05/10/2024",
+    status: "reviewing",
     paidDate: null,
-    method: null,
+    method: "Chuyển khoản",
+    details: [
+      { className: "Hóa 11", billableSessions: 9, pricePerSession: 200000, subTotal: 1800000 }
+    ]
   },
   {
-    id: 4,
+    id: "INV_092024_004",
     student: { name: "Phạm Thị Dung", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" },
-    class: "Văn 12",
-    amount: 2500000,
-    dueDate: "10/12/2024",
+    month: "09/2024",
+    totalAmount: 1400000,
+    dueDate: "05/10/2024",
     status: "overdue",
     paidDate: null,
     method: null,
-  },
-  {
-    id: 5,
-    student: { name: "Hoàng Văn Em", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
-    class: "Tin Học Cơ Bản",
-    amount: 1500000,
-    dueDate: "28/12/2024",
-    status: "paid",
-    paidDate: "18/12/2024",
-    method: "Tiền mặt",
+    details: [
+      { className: "Văn 12", billableSessions: 7, pricePerSession: 200000, subTotal: 1400000 }
+    ]
   },
 ];
 
@@ -113,8 +117,9 @@ const stats = {
 
 export function AdminTuitionPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterMonth, setFilterMonth] = useState("09/2024");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPaymentForQR, setSelectedPaymentForQR] = useState<any>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
@@ -123,9 +128,11 @@ export function AdminTuitionPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
-        return <Badge className="bg-primary/10 text-primary border-0">Đã thanh toán</Badge>;
+        return <Badge className="bg-primary/10 text-primary border-0">Đã thu</Badge>;
+      case "reviewing":
+        return <Badge className="bg-blue-500/10 text-blue-600 border-0 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Chờ đối soát</Badge>;
       case "pending":
-        return <Badge className="bg-secondary/30 text-secondary-foreground border-0">Chờ thanh toán</Badge>;
+        return <Badge className="bg-secondary/30 text-secondary-foreground border-0">Chưa thu</Badge>;
       case "overdue":
         return <Badge className="bg-destructive/10 text-destructive border-0">Quá hạn</Badge>;
       default:
@@ -135,10 +142,10 @@ export function AdminTuitionPage() {
 
   const filteredPayments = payments.filter((p) => {
     const matchSearch =
-      p.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.class.toLowerCase().includes(searchTerm.toLowerCase());
+      p.student.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchMonth = filterMonth === "all" || p.month === filterMonth;
+    return matchSearch && matchStatus && matchMonth;
   });
 
   return (
@@ -202,81 +209,20 @@ export function AdminTuitionPage() {
       {/* Payments Table */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
-          <CardTitle className="text-lg font-display">Quản lý học phí</CardTitle>
+          <CardTitle className="text-lg font-display">Quản lý hóa đơn Học phí</CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-1" />
-              Xuất báo cáo
+              Xuất PDF / Zalo
             </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Tạo phiếu thu
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Tạo phiếu thu mới</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Học viên</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn học viên" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {payments.map((p) => (
-                          <SelectItem key={p.id} value={p.id.toString()}>
-                            {p.student.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lớp học</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn lớp" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="toan10a">Toán 10A</SelectItem>
-                        <SelectItem value="anhvanb1">Anh Văn B1</SelectItem>
-                        <SelectItem value="hoa11">Hóa 11</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Số tiền</Label>
-                      <Input type="number" placeholder="2500000" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Hạn thanh toán</Label>
-                      <Input type="date" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Phương thức</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn phương thức" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="transfer">Chuyển khoản</SelectItem>
-                        <SelectItem value="cash">Tiền mặt</SelectItem>
-                        <SelectItem value="card">Thẻ</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
-                    Tạo phiếu thu
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              size="sm" 
+              className="bg-primary text-white"
+              onClick={() => alert("Đang tự động đếm số buổi học hợp lệ trong tháng và tạo Hóa đơn...")}
+            >
+               <TrendingUp className="w-4 h-4 mr-1" />
+               Chốt công & Tạo Bill Hàng Loạt
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -285,12 +231,23 @@ export function AdminTuitionPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm theo tên, lớp..."
+                placeholder="Tìm tên học sinh, mã bill..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
             </div>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-40">
+                <Clock className="w-4 h-4 mr-1 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả tháng</SelectItem>
+                <SelectItem value="09/2024">Tháng 09/2024</SelectItem>
+                <SelectItem value="08/2024">Tháng 08/2024</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-40">
                 <Filter className="w-4 h-4 mr-1" />
@@ -298,8 +255,9 @@ export function AdminTuitionPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="paid">Đã thanh toán</SelectItem>
-                <SelectItem value="pending">Chờ thanh toán</SelectItem>
+                <SelectItem value="paid">Đã thu</SelectItem>
+                <SelectItem value="reviewing">Chờ đối soát (App báo)</SelectItem>
+                <SelectItem value="pending">Chưa thu</SelectItem>
                 <SelectItem value="overdue">Quá hạn</SelectItem>
               </SelectContent>
             </Select>
@@ -310,8 +268,9 @@ export function AdminTuitionPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Học viên</TableHead>
-                <TableHead className="hidden sm:table-cell">Lớp</TableHead>
-                <TableHead className="text-right">Số tiền</TableHead>
+                <TableHead className="hidden sm:table-cell">Mã Bill</TableHead>
+                <TableHead className="text-right">Chi tiết số buổi</TableHead>
+                <TableHead className="text-right">Tổng tiền</TableHead>
                 <TableHead className="hidden md:table-cell">Hạn thanh toán</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="w-10"></TableHead>
@@ -334,46 +293,73 @@ export function AdminTuitionPage() {
                       <span className="font-medium">{payment.student.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="outline">{payment.class}</Badge>
+                  <TableCell className="hidden sm:table-cell font-mono text-xs text-muted-foreground">
+                    {payment.id}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(payment.amount)}
+                  <TableCell className="text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      {payment.details.map((d: any, idx: number) => (
+                        <div key={idx} className="text-xs text-muted-foreground">
+                          {d.className}: <span className="font-medium text-foreground">{d.billableSessions} buổi</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-medium text-primary">
+                    {formatCurrency(payment.totalAmount)}
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">
                     {payment.dueDate}
                   </TableCell>
                   <TableCell>{getStatusBadge(payment.status)}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="w-4 h-4" />
+                    <div className="flex items-center gap-2 justify-end">
+                      {payment.status === "reviewing" && (
+                        <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => alert("Đã đối soát xong!")}>
+                          <CheckCircle2 className="w-4 h-4 mr-1.5" /> Duyệt nhanh
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Xem chi tiết
-                        </DropdownMenuItem>
-                        {payment.status !== "paid" && (
-                          <>
+                      )}
+                      
+                      {(payment.status === "pending" || payment.status === "overdue") && (
+                        <Button variant="outline" size="sm" className="h-8 text-primary border-primary/20 hover:bg-primary/10" onClick={() => setSelectedPaymentForQR(payment)}>
+                          <QrCode className="w-4 h-4 mr-1.5" /> Mã QR
+                        </Button>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem>
+                            <Eye className="w-4 h-4 mr-2 text-muted-foreground" />
+                            Xem phiếu thu
+                          </DropdownMenuItem>
+                          
+                          {(payment.status === "pending" || payment.status === "overdue") && (
+                            <>
+                              <DropdownMenuItem className="text-primary focus:text-primary">
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Xác nhận thu tiền mặt
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-secondary focus:text-secondary-foreground">
+                                <Send className="w-4 h-4 mr-2" />
+                                Gửi Zalo nhắc nợ
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {payment.status === "paid" && (
                             <DropdownMenuItem>
-                              <CheckCircle2 className="w-4 h-4 mr-2" />
-                              Xác nhận đã thanh toán
+                              <Download className="w-4 h-4 mr-2 text-muted-foreground" />
+                              Tải biên lai PDF
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Send className="w-4 h-4 mr-2" />
-                              Gửi nhắc nhở
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        <DropdownMenuItem>
-                          <Download className="w-4 h-4 mr-2" />
-                          Xuất biên lai
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -381,6 +367,22 @@ export function AdminTuitionPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* QR Payment Modal for Admin */}
+      {selectedPaymentForQR && (
+        <QRPaymentModal
+          open={!!selectedPaymentForQR}
+          onOpenChange={(open) => !open && setSelectedPaymentForQR(null)}
+          paymentInfo={{
+            invoiceId: selectedPaymentForQR.id,
+            studentId: selectedPaymentForQR.id.substring(11), // extract somewhat unique string
+            studentName: selectedPaymentForQR.student.name,
+            amount: selectedPaymentForQR.totalAmount,
+            description: `Học phí tháng ${selectedPaymentForQR.month}`,
+            dueDate: selectedPaymentForQR.dueDate,
+          }}
+        />
+      )}
     </div>
   );
 }
