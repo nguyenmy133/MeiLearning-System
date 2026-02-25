@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor User as Người dùng
+    participant FE as Giao diện (Frontend)
+    participant BE as Server (Backend)
+    participant DB as Cơ sở dữ liệu
+
+    User->>FE: 1. Nhập Email & Mật khẩu
+    FE->>BE: 2. Gửi request (POST /api/login)
+    BE->>DB: 3. Query thông tin user theo email
+    DB-->>BE: 4. Trả về thông tin user
+    
+    alt Không tìm thấy hoặc Sai mật khẩu
+        BE-->>FE: 5a. Trả về lỗi 401 Unauthorized
+        FE-->>User: 6a. Cảnh báo "Sai thông tin đăng nhập"
+    else Thông tin hợp lệ
+        BE->>BE: 5b. Tạo JWT Token
+        BE-->>FE: 6b. Trả về 200 OK + JWT Token
+        FE->>FE: 7. Lưu Token vào LocalStorage
+        FE-->>User: 8. Chuyển hướng vào trang Dashboard
+    end

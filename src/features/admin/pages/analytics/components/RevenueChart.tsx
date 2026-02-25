@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface RevenueChartProps {
   data: Array<{
     month: string;
     revenue: number;
     students: number;
+    expenses?: number;
+    profit?: number;
   }>;
 }
 
@@ -26,9 +28,9 @@ export function RevenueChart({ data }: RevenueChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Doanh thu theo tháng</CardTitle>
+        <CardTitle>Doanh thu & Lợi nhuận theo tháng</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Theo dõi xu hướng doanh thu 12 tháng gần nhất
+          Theo dõi xu hướng tài chính 12 tháng gần nhất
         </p>
       </CardHeader>
       <CardContent>
@@ -45,12 +47,32 @@ export function RevenueChart({ data }: RevenueChartProps) {
               tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
             />
             <Tooltip 
-              formatter={(value: number) => [formatCurrency(value), 'Doanh thu']}
+              formatter={(value: number, name: string) => {
+                const labels: Record<string, string> = {
+                  revenue: 'Doanh thu',
+                  expenses: 'Chi phí',
+                  profit: 'Lợi nhuận'
+                };
+                return [formatCurrency(value), labels[name] || name];
+              }}
               labelFormatter={(label) => `Tháng ${formatMonth(label)}`}
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px'
+              }}
+            />
+            <Legend 
+              verticalAlign="top" 
+              height={36}
+              wrapperStyle={{ paddingBottom: '20px' }}
+              formatter={(value) => {
+                const labels: Record<string, string> = {
+                  revenue: 'Doanh thu',
+                  expenses: 'Chi phí',
+                  profit: 'Lợi nhuận'
+                };
+                return labels[value] || value;
               }}
             />
             <Line 
@@ -61,9 +83,30 @@ export function RevenueChart({ data }: RevenueChartProps) {
               dot={{ fill: 'hsl(var(--primary))', r: 4 }}
               activeDot={{ r: 6 }}
             />
+            {data[0]?.expenses !== undefined && (
+              <Line 
+                type="monotone" 
+                dataKey="expenses" 
+                stroke="hsl(var(--destructive))" 
+                strokeWidth={2}
+                dot={{ fill: 'hsl(var(--destructive))', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            )}
+            {data[0]?.profit !== undefined && (
+              <Line 
+                type="monotone" 
+                dataKey="profit" 
+                stroke="hsl(var(--success))" 
+                strokeWidth={2}
+                dot={{ fill: 'hsl(var(--success))', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
   );
 }
+

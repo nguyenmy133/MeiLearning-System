@@ -42,73 +42,20 @@ import {
   Filter,
 } from "lucide-react";
 
-// Mock data
-const leads = [
-  {
-    id: 1,
-    name: "Nguyễn Thị E",
-    phone: "0901234567",
-    email: "e.nguyen@gmail.com",
-    need: "Luyện thi lớp 10",
-    source: "Facebook",
-    status: "new",
-    createdAt: "20/12/2024",
-    notes: "Quan tâm đến lớp Toán, Văn",
-  },
-  {
-    id: 2,
-    name: "Trần Văn F",
-    phone: "0912345678",
-    email: "f.tran@gmail.com",
-    need: "Tiếng Anh giao tiếp",
-    source: "Website",
-    status: "contacted",
-    createdAt: "19/12/2024",
-    notes: "Đã gọi điện, hẹn tư vấn 21/12",
-  },
-  {
-    id: 3,
-    name: "Lê Thị G",
-    phone: "0923456789",
-    email: "g.le@gmail.com",
-    need: "Bổ trợ Toán 12",
-    source: "Giới thiệu",
-    status: "consulting",
-    createdAt: "18/12/2024",
-    notes: "Đang tư vấn lớp Toán 12 Luyện thi",
-  },
-  {
-    id: 4,
-    name: "Phạm Văn H",
-    phone: "0934567890",
-    email: "h.pham@gmail.com",
-    need: "Hóa 11",
-    source: "Zalo",
-    status: "converted",
-    createdAt: "15/12/2024",
-    notes: "Đã đăng ký lớp Hóa 11",
-  },
-  {
-    id: 5,
-    name: "Hoàng Thị I",
-    phone: "0945678901",
-    email: "i.hoang@gmail.com",
-    need: "Tin học văn phòng",
-    source: "Facebook",
-    status: "lost",
-    createdAt: "10/12/2024",
-    notes: "Không liên lạc được",
-  },
-];
+// Import mock data from centralized source
+import { mockLeads } from "../mockData";
+
+const leads = mockLeads;
 
 const statusConfig = {
   new: { label: "Chưa xử lý", color: "bg-primary/10 text-primary", icon: UserPlus },
   contacted: { label: "Đã liên hệ", color: "bg-secondary/30 text-secondary-foreground", icon: Phone },
-  enrolled: { label: "Đã đăng ký", color: "bg-success/10 text-success", icon: UserCheck },
-  not_interested: { label: "Không quan tâm", color: "bg-muted text-muted-foreground", icon: XCircle },
+  consulting: { label: "Đang tư vấn", color: "bg-info/10 text-info", icon: MessageSquare },
+  converted: { label: "Đã chuyển đổi", color: "bg-success/10 text-success", icon: UserCheck },
+  lost: { label: "Không thành công", color: "bg-muted text-muted-foreground", icon: XCircle },
 };
 
-const sources = ["Tất cả nguồn", "Website", "Facebook", "Zalo", "Giới thiệu", "Khác"];
+const sources = ["Tất cả nguồn", "Website", "Facebook", "Zalo", "Giới thiệu", "Google Ads", "Khác"];
 
 export function AdminLeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -134,8 +81,9 @@ export function AdminLeadsPage() {
   const pipelineStages = [
     { key: "new", label: "Chưa xử lý", count: leads.filter((l) => l.status === "new").length },
     { key: "contacted", label: "Đã liên hệ", count: leads.filter((l) => l.status === "contacted").length },
-    { key: "enrolled", label: "Đã đăng ký", count: leads.filter((l) => l.status === "enrolled").length },
-    { key: "not_interested", label: "Không quan tâm", count: leads.filter((l) => l.status === "not_interested").length },
+    { key: "consulting", label: "Đang tư vấn", count: leads.filter((l) => l.status === "consulting").length },
+    { key: "converted", label: "Đã chuyển đổi", count: leads.filter((l) => l.status === "converted").length },
+    { key: "lost", label: "Không thành công", count: leads.filter((l) => l.status === "lost").length },
   ];
 
   return (
@@ -246,8 +194,9 @@ export function AdminLeadsPage() {
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value="new">Chưa xử lý</SelectItem>
                   <SelectItem value="contacted">Đã liên hệ</SelectItem>
-                  <SelectItem value="enrolled">Đã đăng ký</SelectItem>
-                  <SelectItem value="not_interested">Không quan tâm</SelectItem>
+                  <SelectItem value="consulting">Đang tư vấn</SelectItem>
+                  <SelectItem value="converted">Đã chuyển đổi</SelectItem>
+                  <SelectItem value="lost">Không thành công</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterSource} onValueChange={setFilterSource}>

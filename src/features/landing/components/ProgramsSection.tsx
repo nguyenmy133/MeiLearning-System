@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, ArrowRight, BookOpen } from "lucide-react";
+import { motion } from "framer-motion";
 
 const programs = [
   {
@@ -71,7 +72,13 @@ export function ProgramsSection() {
     <section id="programs" className="section-padding bg-accent/30">
       <div className="container-custom">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-2xl mx-auto mb-12"
+        >
           <span className="text-primary font-medium text-sm uppercase tracking-wider mb-4 block">
             Chương trình học
           </span>
@@ -81,15 +88,26 @@ export function ProgramsSection() {
           <p className="text-muted-foreground text-lg">
             Từ học sinh tiểu học đến THPT, từ bổ trợ kiến thức đến luyện thi chuyên sâu
           </p>
-        </div>
+        </motion.div>
 
         {/* Programs grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {programs.map((program, index) => (
-            <div
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ delay: index * 0.1, duration: 0.5, type: "spring", stiffness: 100 }}
+              whileHover={{ 
+                y: -10, 
+                rotateX: 2,
+                rotateY: -2,
+                scale: 1.02,
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)"
+              }}
               key={program.id}
-              className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:shadow-card-hover transition-all card-hover group"
-              style={{ animationDelay: `${index * 100}ms` }}
+              style={{ transformStyle: "preserve-3d", perspective: 1000 }}
+              className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 transition-all group relative z-10 bg-gradient-to-br hover:from-card hover:to-primary/5"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -140,7 +158,7 @@ export function ProgramsSection() {
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

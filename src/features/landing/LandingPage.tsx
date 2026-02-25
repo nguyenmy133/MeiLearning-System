@@ -8,18 +8,39 @@ import { MethodSection } from "./components/MethodSection";
 import { TestimonialsSection } from "./components/TestimonialsSection";
 import { ContactSection } from "./components/ContactSection";
 import { Footer } from "./components/Footer";
+import { SectionDivider } from "./components/SectionDivider";
 
 export function LandingPage() {
   return (
     <div className="min-h-screen">
       <Header />
       <main>
-        <HeroSection />
+        <div className="relative">
+          <HeroSection />
+          <SectionDivider type="curve" className="fill-background" />
+        </div>
+        
         <StatsSection />
-        <AboutSection />
-        <ProgramsSection />
+        
+        <div className="relative">
+          <AboutSection />
+          {/* Accent/30 matches ProgramsSection background */}
+          <SectionDivider type="tilt" className="fill-accent/30" />
+        </div>
+        
+        <div className="relative">
+          <ProgramsSection />
+          {/* Background matches TeachersSection background */}
+          <SectionDivider type="wave" className="fill-background" />
+        </div>
+        
         <TeachersSection />
-        <MethodSection />
+        
+        <div className="relative">
+          <MethodSection />
+          <SectionDivider type="steps" className="fill-background" position="top" flipped />
+        </div>
+        
         <TestimonialsSection />
         <ContactSection />
       </main>
