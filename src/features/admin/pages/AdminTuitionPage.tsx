@@ -49,6 +49,7 @@ import {
   Clock,
   Send,
   QrCode,
+  BookOpen,
 } from "lucide-react";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 
@@ -115,10 +116,13 @@ const stats = {
   overdue: 4500000,
 };
 
+const classList = ["Toán 10A", "Lý 10 Cơ bản", "Anh Văn B1", "Hóa 11", "Văn 12"];
+
 export function AdminTuitionPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMonth, setFilterMonth] = useState("09/2024");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterClass, setFilterClass] = useState("all");
   const [selectedPaymentForQR, setSelectedPaymentForQR] = useState<any>(null);
 
   const formatCurrency = (amount: number) => {
@@ -142,10 +146,12 @@ export function AdminTuitionPage() {
 
   const filteredPayments = payments.filter((p) => {
     const matchSearch =
-      p.student.name.toLowerCase().includes(searchTerm.toLowerCase());
+      p.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
     const matchMonth = filterMonth === "all" || p.month === filterMonth;
-    return matchSearch && matchStatus && matchMonth;
+    const matchClass = filterClass === "all" || p.details.some((d: any) => d.className === filterClass);
+    return matchSearch && matchStatus && matchMonth && matchClass;
   });
 
   return (
@@ -227,8 +233,8 @@ export function AdminTuitionPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Tìm tên học sinh, mã bill..."
@@ -237,8 +243,22 @@ export function AdminTuitionPage() {
                 className="pl-9"
               />
             </div>
+            <Select value={filterClass} onValueChange={setFilterClass}>
+              <SelectTrigger className="w-40 bg-background">
+                <BookOpen className="w-4 h-4 mr-1 text-muted-foreground" />
+                <SelectValue placeholder="Lớp học" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả lớp</SelectItem>
+                {classList.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={filterMonth} onValueChange={setFilterMonth}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 bg-background">
                 <Clock className="w-4 h-4 mr-1 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
@@ -249,14 +269,14 @@ export function AdminTuitionPage() {
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40">
-                <Filter className="w-4 h-4 mr-1" />
+              <SelectTrigger className="w-44 bg-background">
+                <Filter className="w-4 h-4 mr-1 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
                 <SelectItem value="paid">Đã thu</SelectItem>
-                <SelectItem value="reviewing">Chờ đối soát (App báo)</SelectItem>
+                <SelectItem value="reviewing">Chờ đối soát</SelectItem>
                 <SelectItem value="pending">Chưa thu</SelectItem>
                 <SelectItem value="overdue">Quá hạn</SelectItem>
               </SelectContent>

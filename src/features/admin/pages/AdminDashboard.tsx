@@ -16,8 +16,6 @@ import {
   GraduationCap,
   BookOpen,
   CreditCard,
-  TrendingUp,
-  TrendingDown,
   ChevronRight,
   AlertTriangle,
   Clock,
@@ -27,6 +25,8 @@ import {
   CalendarCheck,
   DollarSign,
 } from "lucide-react";
+import { StatCard } from "../components/StatCard";
+import { ChartTooltip } from "../components/ChartTooltip";
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -150,29 +150,7 @@ const overdueStudents = [
   { name: "Lê Minh Anh", class: "Hóa 11", amount: "1.800.000đ", days: 5 },
 ];
 
-// ─── Custom Tooltip ───────────────────────────────────────────────────────────
-
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: { value: number }[];
-  label?: string;
-}) => {
-  if (active && payload?.length) {
-    return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-md">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold text-foreground">
-          {payload[0].value}M ₫
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
+// ─── Custom Tooltip → shared ChartTooltip ────────────────────────────────────
 
 // ─── Schedule status config ───────────────────────────────────────────────────
 
@@ -206,34 +184,15 @@ export function AdminDashboard() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1 text-foreground">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <stat.icon className="w-5 h-5 text-primary" />
-                </div>
-              </div>
-              <div
-                className={`flex items-center gap-1 mt-2 text-sm ${
-                  stat.trend === "up" ? "text-primary" : "text-destructive"
-                }`}
-              >
-                {stat.trend === "up" ? (
-                  <TrendingUp className="w-4 h-4" />
-                ) : (
-                  <TrendingDown className="w-4 h-4" />
-                )}
-                <span>{stat.change}</span>
-                <span className="text-muted-foreground">so với tháng trước</span>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            change={stat.change}
+            trend={stat.trend as "up" | "down"}
+            icon={stat.icon}
+            sub="so với tháng trước"
+          />
         ))}
       </div>
 
@@ -284,7 +243,7 @@ export function AdminDashboard() {
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<ChartTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="revenue"
@@ -492,64 +451,8 @@ export function AdminDashboard() {
       </div>
 
       {/* ── Quick stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            label: "Buổi học hôm nay",
-            value: todaySchedule.length,
-            sub: `${todaySchedule.filter((s) => s.status === "completed").length} đã hoàn thành`,
-            icon: CalendarCheck,
-            color: "text-primary",
-            bg: "bg-primary/10",
-          },
-          {
-            label: "Lớp đang mở",
-            value: 48,
-            sub: "Đang hoạt động",
-            icon: CalendarCheck,
-            color: "text-secondary-foreground",
-            bg: "bg-secondary/20",
-          },
-          {
-            label: "Học phí quá hạn",
-            value: 3,
-            sub: "Học viên",
-            icon: AlertTriangle,
-            color: "text-destructive",
-            bg: "bg-destructive/10",
-          },
-          {
-            label: "Điểm danh hôm nay",
-            value: todayAttendance.present,
-            sub: `/${todayAttendance.total} học viên`,
-            icon: CheckCircle2,
-            color: "text-primary",
-            bg: "bg-primary/10",
-          },
-        ].map((item) => (
-          <Card key={item.label} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-9 h-9 rounded-lg ${item.bg} flex items-center justify-center flex-shrink-0`}
-                >
-                  <item.icon className={`w-4 h-4 ${item.color}`} />
-                </div>
-                <div>
-                  <p className={`text-xl font-bold ${item.color}`}>
-                    {item.value}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-tight">
-                    {item.label}
-                    <br />
-                    <span className="text-muted-foreground/70">{item.sub}</span>
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      
+      
     </div>
   );
 }

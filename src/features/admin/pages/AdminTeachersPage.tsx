@@ -52,6 +52,8 @@ import {
   RefreshCw,
   Copy,
   Check,
+  ShieldOff,
+  ShieldCheck,
 } from "lucide-react";
 
 // Mock data
@@ -126,6 +128,8 @@ export function AdminTeachersPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isLockDialogOpen, setIsLockDialogOpen] = useState(false);
+  const [lockTarget, setLockTarget] = useState<{ id: number; name: string; status: string } | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<{ id: number; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [autoPassword, setAutoPassword] = useState(() => generatePassword());
@@ -141,6 +145,11 @@ export function AdminTeachersPage() {
     setSelectedTeacher(teacher);
     setNewPassword(generatePassword());
     setIsResetDialogOpen(true);
+  };
+
+  const handleOpenLock = (teacher: { id: number; name: string; status: string }) => {
+    setLockTarget(teacher);
+    setIsLockDialogOpen(true);
   };
 
   const filteredTeachers = teachers.filter((teacher) => {
@@ -246,34 +255,20 @@ export function AdminTeachersPage() {
                     <Input placeholder="0901234567" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Môn giảng dạy</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn môn học" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subjects.map((subject) => (
-                          <SelectItem key={subject} value={subject}>
-                            {subject}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Trạng thái</Label>
-                    <Select defaultValue="active">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Hoạt động</SelectItem>
-                        <SelectItem value="inactive">Tạm nghỉ</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label>Môn giảng dạy</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn môn học" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Tài khoản hệ thống */}
@@ -428,6 +423,22 @@ export function AdminTeachersPage() {
                           <KeyRound className="w-4 h-4 mr-2" />
                           Đặt lại mật khẩu
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className={teacher.status === "active" ? "text-secondary-foreground" : "text-primary"}
+                          onClick={() => handleOpenLock({ id: teacher.id, name: teacher.name, status: teacher.status })}
+                        >
+                          {teacher.status === "active" ? (
+                            <>
+                              <ShieldOff className="w-4 h-4 mr-2" />
+                              Tạm khóa tài khoản
+                            </>
+                          ) : (
+                            <>
+                              <ShieldCheck className="w-4 h-4 mr-2" />
+                              Mở khóa tài khoản
+                            </>
+                          )}
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
                           <Trash2 className="w-4 h-4 mr-2" />
@@ -443,7 +454,66 @@ export function AdminTeachersPage() {
         </CardContent>
       </Card>
 
-      {/* Reset Password Dialog */}
+      {/* ── Dialog: Tạm khóa / Mở khóa tài khoản ── */}
+      <Dialog open={isLockDialogOpen} onOpenChange={setIsLockDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {lockTarget?.status === "active" ? (
+                <>
+                  <ShieldOff className="w-5 h-5 text-secondary-foreground" />
+                  Tạm khóa tài khoản
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  Mở khóa tài khoản
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            {lockTarget?.status === "active" ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Bạn sắp tạm khóa tài khoản của giáo viên{" "}
+                  <span className="font-semibold text-foreground">{lockTarget.name}</span>.
+                </p>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+                  <ShieldOff className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-foreground">
+                    Giáo viên sẽ{" "}
+                    <span className="font-semibold text-destructive">không thể đăng nhập</span>{" "}
+                    cho đến khi được mở khóa. Các lớp đang phụ trách vẫn được giữ nguyên.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Mở khóa tài khoản cho giáo viên{" "}
+                <span className="font-semibold text-foreground">{lockTarget?.name}</span>?{" "}
+                Giáo viên sẽ có thể đăng nhập và sử dụng hệ thống ngay sau đó.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsLockDialogOpen(false)}>Hủy</Button>
+            {lockTarget?.status === "active" ? (
+              <Button variant="secondary" onClick={() => setIsLockDialogOpen(false)}>
+                <ShieldOff className="w-4 h-4 mr-1" />
+                Xác nhận khóa
+              </Button>
+            ) : (
+              <Button onClick={() => setIsLockDialogOpen(false)}>
+                <ShieldCheck className="w-4 h-4 mr-1" />
+                Mở khóa
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Reset Password ── */}
       <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

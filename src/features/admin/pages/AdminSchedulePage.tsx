@@ -12,12 +12,15 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Calendar,
   ChevronLeft,
@@ -27,6 +30,10 @@ import {
   MapPin,
   Users,
   BookOpen,
+  RefreshCw,
+  Sparkles,
+  CreditCard,
+  Info,
 } from "lucide-react";
 
 // Mock schedule data
@@ -88,9 +95,51 @@ const weekSchedule = [
 
 const facilities = ["Tất cả cơ sở", "Cơ sở Quận 1", "Cơ sở Quận 3", "Cơ sở Thủ Đức"];
 
+// Mock classes — trong thực tế sẽ lấy từ API
+const activeClasses = [
+  { id: "toan10a", name: "Toán 10A", teacher: "Nguyễn Thị Mai", defaultStart: "18:00", defaultEnd: "20:00" },
+  { id: "anhvanb1", name: "Anh Văn B1", teacher: "Trần Văn Hùng", defaultStart: "19:00", defaultEnd: "21:00" },
+  { id: "hoa11", name: "Hóa 11", teacher: "Lê Thị Hương", defaultStart: "08:00", defaultEnd: "10:00" },
+  { id: "van12", name: "Văn 12 - Luyện thi", teacher: "Phạm Minh Tuấn", defaultStart: "08:00", defaultEnd: "10:00" },
+  { id: "ly10a", name: "Lý 10A", teacher: "Nguyễn Thị Mai", defaultStart: "18:00", defaultEnd: "20:00" },
+];
+
 export function AdminSchedulePage() {
   const [selectedFacility, setSelectedFacility] = useState("Tất cả cơ sở");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // State form Thêm buổi học
+  const [sessionType, setSessionType] = useState<"makeup" | "extra">("makeup");
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [sessionTeacher, setSessionTeacher] = useState("");
+  const [sessionDate, setSessionDate] = useState("");
+  const [sessionStart, setSessionStart] = useState("");
+  const [sessionEnd, setSessionEnd] = useState("");
+  const [sessionNote, setSessionNote] = useState("");
+
+  // Khi chọn lớp → tự điền GV và giờ mặc định từ lớp đó
+  const handleClassChange = (classId: string) => {
+    setSelectedClassId(classId);
+    const found = activeClasses.find((c) => c.id === classId);
+    if (found) {
+      setSessionTeacher(found.teacher);
+      setSessionStart(found.defaultStart);
+      setSessionEnd(found.defaultEnd);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setSessionType("makeup");
+      setSelectedClassId("");
+      setSessionTeacher("");
+      setSessionDate("");
+      setSessionStart("");
+      setSessionEnd("");
+      setSessionNote("");
+    }
+  };
 
   const totalSessions = weekSchedule.reduce((acc, day) => acc + day.sessions.length, 0);
   const completedSessions = weekSchedule.reduce(
@@ -185,125 +234,155 @@ export function AdminSchedulePage() {
               </SelectContent>
             </Select>
             
-            {/* Auto Schedule Button */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Tạo lịch tự động
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Tạo lịch học tự động</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Lớp học</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn lớp" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="toan10a">Toán 10A</SelectItem>
-                        <SelectItem value="anhvanb1">Anh Văn B1</SelectItem>
-                        <SelectItem value="hoa11">Hóa 11</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Giáo viên</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn giáo viên" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="teacher1">Nguyễn Thị Mai</SelectItem>
-                        <SelectItem value="teacher2">Trần Văn Hùng</SelectItem>
-                        <SelectItem value="teacher3">Lê Thị Hương</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Số buổi/tuần</Label>
-                      <Input type="number" defaultValue="2" min="1" max="7" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Thời lượng (phút)</Label>
-                      <Input type="number" defaultValue="90" step="30" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Ngày ưu tiên</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"].map((day) => (
-                        <label key={day} className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" className="rounded" />
-                          <span>{day}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Khung giờ ưu tiên</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn khung giờ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="morning">Sáng (8:00 - 12:00)</SelectItem>
-                        <SelectItem value="afternoon">Chiều (14:00 - 17:00)</SelectItem>
-                        <SelectItem value="evening">Tối (18:00 - 21:00)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button className="w-full">
-                    Tìm lịch trống
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Hệ thống sẽ tự động tìm khung giờ trống phù hợp với giáo viên và học viên
-                  </p>
-                </div>
-              </DialogContent>
-            </Dialog>
-            
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="w-4 h-4 mr-1" />
                   Thêm buổi học
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Thêm buổi học mới</DialogTitle>
+                  <DialogTitle>Thêm buổi học</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-2 max-h-[80vh] overflow-y-auto pr-1">
+
+                  {/* ─ Loại buổi học — ảnh hưởng trực tiếp đến học phí ─ */}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Loại buổi
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSessionType("makeup")}
+                      className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
+                        sessionType === "makeup"
+                          ? "bg-primary/5 border-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <RefreshCw className={`w-4 h-4 ${sessionType === "makeup" ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className={`text-sm font-semibold ${sessionType === "makeup" ? "text-primary" : "text-foreground"}`}>
+                          Buổi học bù
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Bù cho buổi đã nghỉ. Không tính thêm phí.</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSessionType("extra")}
+                      className={`flex flex-col items-start p-3 rounded-lg border text-left transition-colors ${
+                        sessionType === "extra"
+                          ? "bg-primary/5 border-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Sparkles className={`w-4 h-4 ${sessionType === "extra" ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className={`text-sm font-semibold ${sessionType === "extra" ? "text-primary" : "text-foreground"}`}>
+                          Buổi học thêm
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Ngoài lịch thường. Tính thêm vào hóa đơn.</p>
+                    </button>
+                  </div>
+
+                  {/* Billing notice */}
+                  <div className={`flex items-start gap-2 p-3 rounded-lg border text-sm ${
+                    sessionType === "makeup"
+                      ? "bg-muted border-border"
+                      : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
+                  }`}>
+                    <CreditCard className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                      sessionType === "makeup" ? "text-muted-foreground" : "text-amber-600"
+                    }`} />
+                    <p className={sessionType === "makeup" ? "text-muted-foreground" : "text-amber-700 dark:text-amber-400"}>
+                      {sessionType === "makeup"
+                        ? "Buổi bù không được tính thêm vào hóa đơn tháng."
+                        : "Buổi thêm sẽ được cộng vào hóa đơn cuối tháng của học viên."}
+                    </p>
+                  </div>
+
+                  {/* ─ Thông tin buổi học ─ */}
+                  <Separator />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Thông tin buổi học
+                  </p>
+
                   <div className="space-y-2">
-                    <Label>Lớp học</Label>
-                    <Select>
+                    <Label>Lớp học <span className="text-destructive">*</span></Label>
+                    <Select value={selectedClassId} onValueChange={handleClassChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn lớp" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="toan10a">Toán 10A</SelectItem>
-                        <SelectItem value="anhvanb1">Anh Văn B1</SelectItem>
-                        <SelectItem value="hoa11">Hóa 11</SelectItem>
+                        {activeClasses.map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Ngày</Label>
-                      <Input type="date" />
+
+                  {/* Giáo viên — tự điền từ lớp, nhưng có thể đổi (GV dạy thế) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Giáo viên <span className="text-destructive">*</span></Label>
+                      {sessionTeacher && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Tự điền từ lớp — có thể đổi nếu dạy thế
+                        </span>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label>Giờ bắt đầu</Label>
-                      <Input type="time" />
-                    </div>
+                    <Select value={sessionTeacher} onValueChange={setSessionTeacher}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn giáo viên" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Nguyễn Thị Mai">Nguyễn Thị Mai</SelectItem>
+                        <SelectItem value="Trần Văn Hùng">Trần Văn Hùng</SelectItem>
+                        <SelectItem value="Lê Thị Hương">Lê Thị Hương</SelectItem>
+                        <SelectItem value="Phạm Minh Tuấn">Phạm Minh Tuấn</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+
+                  {/* ─ Thời gian ─ */}
+                  <div className="space-y-2">
+                    <Label>Ngày học <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date"
+                      value={sessionDate}
+                      onChange={(e) => setSessionDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Khung giờ <span className="text-destructive">*</span></Label>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <Input
+                        type="time"
+                        value={sessionStart}
+                        onChange={(e) => setSessionStart(e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-muted-foreground text-sm">→</span>
+                      <Input
+                        type="time"
+                        value={sessionEnd}
+                        onChange={(e) => setSessionEnd(e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Giờ được tự điền từ lịch lớp, có thể điều chỉnh nếu cần.
+                    </p>
+                  </div>
+
+                  {/* ─ Địa điểm ─ */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Cơ sở</Label>
                       <Select>
@@ -327,14 +406,41 @@ export function AdminSchedulePage() {
                           <SelectItem value="101">Phòng 101</SelectItem>
                           <SelectItem value="102">Phòng 102</SelectItem>
                           <SelectItem value="201">Phòng 201</SelectItem>
+                          <SelectItem value="a1">Phòng A1</SelectItem>
+                          <SelectItem value="lab1">Phòng Lab 1</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
+
+                  {/* ─ Ghi chú ─ */}
+                  <div className="space-y-2">
+                    <Label>
+                      {sessionType === "makeup" ? "Lý do buổi bù" : "Ghi chú"}
+                    </Label>
+                    <Textarea
+                      placeholder={
+                        sessionType === "makeup"
+                          ? "VD: Bù buổi T4 ngày 20/12 do nghỉ lễ..."
+                          : "VD: Buổi ôn thi cuối kỳ..."
+                      }
+                      value={sessionNote}
+                      onChange={(e) => setSessionNote(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => handleDialogClose(false)}>Hủy</Button>
+                  <Button
+                    disabled={!selectedClassId || !sessionDate || !sessionStart || !sessionEnd}
+                    onClick={() => handleDialogClose(false)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
                     Thêm buổi học
                   </Button>
-                </div>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>

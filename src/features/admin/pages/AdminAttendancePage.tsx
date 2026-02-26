@@ -131,10 +131,7 @@ export function AdminAttendancePage() {
           <h2 className="text-2xl font-display font-bold text-foreground">Điểm danh</h2>
           <p className="text-sm text-muted-foreground">Quản lý và theo dõi chuyên cần của học viên</p>
         </div>
-        <Button className="btn-primary">
-          <QrCode className="w-4 h-4 mr-2" />
-          Quản lý mã QR
-        </Button>
+        
       </div>
 
       {/* ── Stats ── */}
@@ -335,7 +332,7 @@ export function AdminAttendancePage() {
                             </Badge>
                           )}
                           {item.late > 0 && (
-                            <Badge variant="outline" className="text-secondary-foreground border-secondary/30 bg-secondary/10">
+                            <Badge variant="outline" className="text-amber-600 dark:text-amber-500 border-amber-500/30 bg-amber-500/10">
                               {item.late} muộn
                             </Badge>
                           )}

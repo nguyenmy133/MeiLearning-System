@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Users,
   Plus,
@@ -55,6 +56,8 @@ import {
   RefreshCw,
   Copy,
   Check,
+  AlertTriangle,
+  UserMinus,
 } from "lucide-react";
 
 // Mock data
@@ -106,6 +109,8 @@ const students = [
     status: "inactive",
     tuitionStatus: "overdue",
     enrollDate: "2023-06-15",
+    dropDate: "2025-01-10",
+    dropReason: "Chuyển trường",
   },
   {
     id: 5,
@@ -123,6 +128,15 @@ const students = [
 
 const classList = ["Toán 10A", "Lý 10A", "Anh Văn B1", "Anh Văn Speaking", "Hóa 11", "Văn 12", "Toán 12", "Tin Học Cơ Bản"];
 
+const DROP_REASONS = [
+  "Chuyển trường / chuyển nơi ở",
+  "Bận việc cá nhân / gia đình",
+  "Không phù hợp chương trình",
+  "Lý do tài chính",
+  "Học xong / tốt nghiệp",
+  "Khác",
+];
+
 function generatePassword() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#";
   return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
@@ -135,11 +149,15 @@ export function AdminStudentsPage() {
   const [filterTuition, setFilterTuition] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<{ id: number; name: string } | null>(null);
+  const [isDropDialogOpen, setIsDropDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{ id: number; name: string; tuitionStatus: string } | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [autoPassword, setAutoPassword] = useState(() => generatePassword());
   const [copied, setCopied] = useState(false);
+  const [dropReason, setDropReason] = useState("");
+  const [dropReasonOther, setDropReasonOther] = useState("");
+  const [dropDate, setDropDate] = useState(new Date().toISOString().split("T")[0]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -147,10 +165,18 @@ export function AdminStudentsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleOpenReset = (student: { id: number; name: string }) => {
+  const handleOpenReset = (student: { id: number; name: string; tuitionStatus: string }) => {
     setSelectedStudent(student);
     setNewPassword(generatePassword());
     setIsResetDialogOpen(true);
+  };
+
+  const handleOpenDrop = (student: { id: number; name: string; tuitionStatus: string }) => {
+    setSelectedStudent(student);
+    setDropReason("");
+    setDropReasonOther("");
+    setDropDate(new Date().toISOString().split("T")[0]);
+    setIsDropDialogOpen(true);
   };
 
   const toggleClass = (cls: string) => {
@@ -182,6 +208,8 @@ export function AdminStudentsPage() {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  const hasDebt = selectedStudent?.tuitionStatus === "overdue" || selectedStudent?.tuitionStatus === "pending";
 
   return (
     <div className="space-y-6">
@@ -230,17 +258,18 @@ export function AdminStudentsPage() {
             </div>
           </CardContent>
         </Card>
+        {/* Stat 4: đổi sang "Đã nghỉ học" thay vì "Quá hạn phí" vì overdue đã hiện trong cột Học phí */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <UserX className="w-5 h-5 text-destructive" />
+              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                <UserMinus className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {students.filter((s) => s.tuitionStatus === "overdue").length}
+                  {students.filter((s) => s.status === "inactive").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Quá hạn phí</p>
+                <p className="text-sm text-muted-foreground">Đã nghỉ học</p>
               </div>
             </div>
           </CardContent>
@@ -357,9 +386,7 @@ export function AdminStudentsPage() {
                 <SelectContent>
                   <SelectItem value="all">Tất cả lớp</SelectItem>
                   {classList.map((cls) => (
-                    <SelectItem key={cls} value={cls}>
-                      {cls}
-                    </SelectItem>
+                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -402,19 +429,21 @@ export function AdminStudentsPage() {
             </TableHeader>
             <TableBody>
               {filteredStudents.map((student) => (
-                <TableRow key={student.id}>
+                <TableRow key={student.id} className={student.status === "inactive" ? "opacity-60" : ""}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
                         <AvatarImage src={student.avatar} />
                         <AvatarFallback>
-                          {student.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {student.name.split(" ").map((n) => n[0]).join("")}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{student.name}</span>
+                      <div>
+                        <span className="font-medium block">{student.name}</span>
+                        {"dropDate" in student && student.dropDate && (
+                          <span className="text-xs text-muted-foreground">Nghỉ từ {student.dropDate}</span>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
@@ -432,14 +461,10 @@ export function AdminStudentsPage() {
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-wrap gap-1">
                       {student.classes.slice(0, 2).map((cls) => (
-                        <Badge key={cls} variant="secondary" className="text-xs">
-                          {cls}
-                        </Badge>
+                        <Badge key={cls} variant="secondary" className="text-xs">{cls}</Badge>
                       ))}
                       {student.classes.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{student.classes.length - 2}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">+{student.classes.length - 2}</Badge>
                       )}
                     </div>
                   </TableCell>
@@ -471,14 +496,30 @@ export function AdminStudentsPage() {
                           <Edit className="w-4 h-4 mr-2" />
                           Chỉnh sửa
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenReset({ id: student.id, name: student.name })}>
+                        <DropdownMenuItem onClick={() => handleOpenReset({ id: student.id, name: student.name, tuitionStatus: student.tuitionStatus })}>
                           <KeyRound className="w-4 h-4 mr-2" />
                           Đặt lại mật khẩu
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
+                        {/* ── Nghiệp vụ nghỉ học / kích hoạt lại ── */}
+                        {student.status === "active" ? (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleOpenDrop({ id: student.id, name: student.name, tuitionStatus: student.tuitionStatus })}
+                          >
+                            <UserMinus className="w-4 h-4 mr-2" />
+                            Ghi nhận nghỉ học
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem className="text-primary focus:text-primary">
+                            <UserCheck className="w-4 h-4 mr-2" />
+                            Mở khóa & Kích hoạt lại
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive">
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Xóa
+                          Xóa vĩnh viễn
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -490,7 +531,99 @@ export function AdminStudentsPage() {
         </CardContent>
       </Card>
 
-      {/* Reset Password Dialog */}
+      {/* ── Dialog: Ghi nhận nghỉ học ── */}
+      <Dialog open={isDropDialogOpen} onOpenChange={setIsDropDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserMinus className="w-5 h-5 text-destructive" />
+              Ghi nhận nghỉ học & Khóa tài khoản
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            <p className="text-sm text-muted-foreground">
+              Học viên:{" "}
+              <span className="font-semibold text-foreground">{selectedStudent?.name}</span>
+            </p>
+
+            {/* Thông báo rõ hệ quả: khóa tài khoản */}
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+              <UserX className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-foreground">
+                Tài khoản của học viên sẽ bị{" "}
+                <span className="font-semibold text-destructive">khóa ngay lập tức</span>.
+                Học viên sẽ không thể đăng nhập cho đến khi được kích hoạt lại.
+              </p>
+            </div>
+
+            {/* Cảnh báo nếu còn nợ học phí */}
+            {hasDebt && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-destructive">Học viên còn nợ học phí</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">
+                    Vui lòng xử lý học phí còn tồn đọng trước hoặc ghi chú để theo dõi sau.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Ngày nghỉ */}
+            <div className="space-y-2">
+              <Label>Ngày nghỉ học hiệu lực <span className="text-destructive">*</span></Label>
+              <Input
+                type="date"
+                value={dropDate}
+                onChange={(e) => setDropDate(e.target.value)}
+              />
+            </div>
+
+            {/* Lý do nghỉ */}
+            <div className="space-y-2">
+              <Label>Lý do nghỉ học <span className="text-destructive">*</span></Label>
+              <Select value={dropReason} onValueChange={setDropReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn lý do..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {DROP_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Ghi chú thêm nếu chọn "Khác" hoặc muốn bổ sung */}
+            {(dropReason === "Khác" || dropReason !== "") && (
+              <div className="space-y-2">
+                <Label>Ghi chú thêm</Label>
+                <Textarea
+                  placeholder="Nhập ghi chú nếu cần..."
+                  value={dropReasonOther}
+                  onChange={(e) => setDropReasonOther(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsDropDialogOpen(false)}>Hủy</Button>
+            <Button
+              variant="destructive"
+              disabled={!dropReason || !dropDate}
+              onClick={() => setIsDropDialogOpen(false)}
+            >
+              <UserX className="w-4 h-4 mr-1" />
+              Nghỉ học & Khóa tài khoản
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Reset Password ── */}
       <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -501,7 +634,8 @@ export function AdminStudentsPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              Đặt lại mật khẩu cho học viên <span className="font-semibold text-foreground">{selectedStudent?.name}</span>
+              Đặt lại mật khẩu cho học viên{" "}
+              <span className="font-semibold text-foreground">{selectedStudent?.name}</span>
             </p>
             <div className="space-y-2">
               <Label>Mật khẩu mới</Label>
@@ -511,22 +645,10 @@ export function AdminStudentsPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="font-mono text-sm"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setNewPassword(generatePassword())}
-                  title="Tạo lại"
-                >
+                <Button type="button" variant="outline" size="icon" onClick={() => setNewPassword(generatePassword())} title="Tạo lại">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopy(newPassword)}
-                  title="Sao chép"
-                >
+                <Button type="button" variant="outline" size="icon" onClick={() => handleCopy(newPassword)} title="Sao chép">
                   {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>

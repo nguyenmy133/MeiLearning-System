@@ -15,6 +15,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -23,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -34,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import {
   BookOpen,
   Plus,
@@ -49,9 +51,12 @@ import {
   Filter,
   GraduationCap,
   MapPin,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
-// Mock data
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
 const classes = [
   {
     id: 1,
@@ -63,11 +68,11 @@ const classes = [
     },
     students: 18,
     maxStudents: 20,
-    schedule: "T2, T4, T6 - 18:00",
+    schedule: "T2, T4, T6 · 18:00–20:00",
     room: "Phòng 101",
     facility: "Cơ sở Quận 1",
     startDate: "2024-01-15",
-    endDate: "2024-06-15",
+    endDate: null,
     status: "active",
     progress: 65,
   },
@@ -81,11 +86,11 @@ const classes = [
     },
     students: 15,
     maxStudents: 15,
-    schedule: "T3, T5 - 19:00",
+    schedule: "T3, T5 · 19:00–21:00",
     room: "Phòng A1",
     facility: "Cơ sở Quận 3",
     startDate: "2024-02-01",
-    endDate: "2024-07-01",
+    endDate: null,
     status: "active",
     progress: 45,
   },
@@ -99,11 +104,11 @@ const classes = [
     },
     students: 12,
     maxStudents: 18,
-    schedule: "T7, CN - 08:00",
+    schedule: "T7, CN · 08:00–10:00",
     room: "Phòng Lab 1",
     facility: "Cơ sở Thủ Đức",
     startDate: "2024-03-01",
-    endDate: "2024-08-01",
+    endDate: null,
     status: "active",
     progress: 30,
   },
@@ -117,7 +122,7 @@ const classes = [
     },
     students: 22,
     maxStudents: 25,
-    schedule: "T2, T4, T6 - 08:00",
+    schedule: "T2, T4, T6 · 08:00–10:00",
     room: "Phòng 201",
     facility: "Cơ sở Quận 1",
     startDate: "2023-09-01",
@@ -135,11 +140,11 @@ const classes = [
     },
     students: 0,
     maxStudents: 20,
-    schedule: "T3, T5, T7 - 18:00",
+    schedule: "T3, T5, T7 · 18:00–20:00",
     room: "Phòng 102",
     facility: "Cơ sở Quận 1",
     startDate: "2024-04-01",
-    endDate: "2024-09-01",
+    endDate: null,
     status: "upcoming",
     progress: 0,
   },
@@ -148,12 +153,61 @@ const classes = [
 const subjects = ["Toán", "Vật Lý", "Hóa Học", "Sinh Học", "Tiếng Anh", "Văn", "Tin Học"];
 const facilities = ["Cơ sở Quận 1", "Cơ sở Quận 3", "Cơ sở Thủ Đức"];
 
+// Danh sách thứ trong tuần
+const WEEKDAYS = [
+  { label: "T2", value: "T2" },
+  { label: "T3", value: "T3" },
+  { label: "T4", value: "T4" },
+  { label: "T5", value: "T5" },
+  { label: "T6", value: "T6" },
+  { label: "T7", value: "T7" },
+  { label: "CN", value: "CN" },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AdminClassesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterFacility, setFilterFacility] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // State cho lịch học — mỗi buổi có khung giờ riêng
+  type Session = { day: string; start: string; end: string };
+  const [sessions, setSessions] = useState<Session[]>([]);
+
+  // State cho dialog "Kết thúc lớp"
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [closeTarget, setCloseTarget] = useState<{ id: number; name: string } | null>(null);
+
+  const toggleDay = (day: string) => {
+    setSessions((prev) => {
+      const exists = prev.find((s) => s.day === day);
+      if (exists) return prev.filter((s) => s.day !== day);
+      // Giữ đúng thứ tự WEEKDAYS khi thêm mới
+      const order = WEEKDAYS.map((w) => w.value);
+      return [...prev, { day, start: "18:00", end: "20:00" }].sort(
+        (a, b) => order.indexOf(a.day) - order.indexOf(b.day)
+      );
+    });
+  };
+
+  const updateSession = (day: string, field: "start" | "end", value: string) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.day === day ? { ...s, [field]: value } : s))
+    );
+  };
+
+  const handleOpenClose = (cls: { id: number; name: string }) => {
+    setCloseTarget(cls);
+    setIsCloseDialogOpen(true);
+  };
+
+  const handleCreateDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) setSessions([]);
+  };
 
   const filteredClasses = classes.filter((cls) => {
     const matchSearch =
@@ -177,6 +231,11 @@ export function AdminClassesPage() {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  // Preview: mỗi session hiển thị trên 1 dòng
+  const schedulePreview = sessions
+    .map((s) => `${s.day} · ${s.start}–${s.end}`)
+    .join("  |  ");
 
   return (
     <div className="space-y-6">
@@ -246,7 +305,9 @@ export function AdminClassesPage() {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
           <CardTitle className="text-lg font-display">Danh sách lớp học</CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
+          {/* ── Dialog: Tạo lớp mới ── */}
+          <Dialog open={isDialogOpen} onOpenChange={handleCreateDialogChange}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" />
@@ -257,9 +318,14 @@ export function AdminClassesPage() {
               <DialogHeader>
                 <DialogTitle>Tạo lớp học mới</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4 py-2 max-h-[75vh] overflow-y-auto pr-1">
+
+                {/* Thông tin cơ bản */}
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Thông tin lớp
+                </p>
                 <div className="space-y-2">
-                  <Label>Tên lớp</Label>
+                  <Label>Tên lớp <span className="text-destructive">*</span></Label>
                   <Input placeholder="VD: Toán 10A - K2024" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -301,9 +367,7 @@ export function AdminClassesPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {facilities.map((f) => (
-                          <SelectItem key={f} value={f}>
-                            {f}
-                          </SelectItem>
+                          <SelectItem key={f} value={f}>{f}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -318,41 +382,130 @@ export function AdminClassesPage() {
                         <SelectItem value="101">Phòng 101</SelectItem>
                         <SelectItem value="102">Phòng 102</SelectItem>
                         <SelectItem value="201">Phòng 201</SelectItem>
+                        <SelectItem value="a1">Phòng A1</SelectItem>
+                        <SelectItem value="lab1">Phòng Lab 1</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Sĩ số tối đa</Label>
-                    <Input type="number" placeholder="20" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lịch học</Label>
-                    <Input placeholder="T2, T4, T6 - 18:00" />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Sĩ số tối đa</Label>
+                  <Input type="number" placeholder="20" className="w-32" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Ngày bắt đầu</Label>
-                    <Input type="date" />
+
+                {/* Lịch học */}
+                <Separator />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Lịch học
+                </p>
+
+                {/* Chọn thứ */}
+                <div className="space-y-2">
+                  <Label>Học vào các thứ <span className="text-destructive">*</span></Label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {WEEKDAYS.map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleDay(day.value)}
+                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors border ${
+                          sessions.some((s) => s.day === day.value)
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Ngày kết thúc</Label>
-                    <Input type="date" />
-                  </div>
+                  <p className="text-xs text-muted-foreground">Chọn thứ → thiết lập khung giờ riêng cho từng buổi bên dưới.</p>
                 </div>
+
+                {/* Mỗi buổi có khung giờ riêng */}
+                {sessions.length > 0 && (
+                  <div className="space-y-2">
+                    {sessions.map((session) => (
+                      <div
+                        key={session.day}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-accent/50 border border-border"
+                      >
+                        {/* Label thứ */}
+                        <span className="w-8 text-sm font-semibold text-primary flex-shrink-0">
+                          {session.day}
+                        </span>
+                        {/* Giờ bắt đầu */}
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <Input
+                          type="time"
+                          value={session.start}
+                          onChange={(e) => updateSession(session.day, "start", e.target.value)}
+                          className="h-8 text-sm w-28 flex-shrink-0"
+                        />
+                        <span className="text-muted-foreground text-xs">→</span>
+                        {/* Giờ kết thúc */}
+                        <Input
+                          type="time"
+                          value={session.end}
+                          onChange={(e) => updateSession(session.day, "end", e.target.value)}
+                          className="h-8 text-sm w-28 flex-shrink-0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Preview lịch */}
+                {schedulePreview && (
+                  <div className="px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Calendar className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-primary">Lịch học</span>
+                    </div>
+                    {sessions.map((s) => (
+                      <p key={s.day} className="text-sm text-foreground">
+                        <span className="font-semibold text-primary w-8 inline-block">{s.day}</span>
+                        <span className="text-muted-foreground">{s.start} – {s.end}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Ngày bắt đầu */}
+                <Separator />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Thời gian
+                </p>
+                <div className="space-y-2">
+                  <Label>Ngày bắt đầu <span className="text-destructive">*</span></Label>
+                  <Input type="date" />
+                  <p className="text-xs text-muted-foreground">
+                    Ngày kết thúc sẽ được ghi nhận khi admin bấm <strong>"Kết thúc lớp"</strong> trong danh sách lớp.
+                  </p>
+                </div>
+
+                {/* Mô tả */}
                 <div className="space-y-2">
                   <Label>Mô tả</Label>
-                  <Textarea placeholder="Mô tả về lớp học..." />
+                  <Textarea placeholder="Mô tả về lớp học, yêu cầu đầu vào..." rows={3} />
                 </div>
-                <Button className="w-full" onClick={() => setIsDialogOpen(false)}>
+
+                <Button
+                  className="w-full"
+                  disabled={sessions.length === 0}
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Tạo lớp học
                 </Button>
+                {sessions.length === 0 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Vui lòng chọn ít nhất một thứ trong tuần
+                  </p>
+                )}
               </div>
             </DialogContent>
           </Dialog>
         </CardHeader>
+
         <CardContent className="space-y-4">
           {/* Search & Filter */}
           <div className="flex flex-col lg:flex-row gap-3">
@@ -374,9 +527,7 @@ export function AdminClassesPage() {
                 <SelectContent>
                   <SelectItem value="all">Tất cả môn</SelectItem>
                   {subjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
+                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -398,9 +549,7 @@ export function AdminClassesPage() {
                 <SelectContent>
                   <SelectItem value="all">Tất cả cơ sở</SelectItem>
                   {facilities.map((f) => (
-                    <SelectItem key={f} value={f}>
-                      {f}
-                    </SelectItem>
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -416,7 +565,6 @@ export function AdminClassesPage() {
                 <TableHead className="hidden md:table-cell">Lịch học</TableHead>
                 <TableHead className="hidden lg:table-cell">Địa điểm</TableHead>
                 <TableHead className="text-center">Sĩ số</TableHead>
-                <TableHead className="hidden sm:table-cell">Tiến độ</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
@@ -440,10 +588,7 @@ export function AdminClassesPage() {
                       <Avatar className="h-7 w-7">
                         <AvatarImage src={cls.teacher.avatar} />
                         <AvatarFallback>
-                          {cls.teacher.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {cls.teacher.name.split(" ").map((n) => n[0]).join("")}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-sm">{cls.teacher.name}</span>
@@ -465,19 +610,9 @@ export function AdminClassesPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span
-                      className={
-                        cls.students >= cls.maxStudents ? "text-destructive font-medium" : ""
-                      }
-                    >
+                    <span className={cls.students >= cls.maxStudents ? "text-destructive font-medium" : ""}>
                       {cls.students}/{cls.maxStudents}
                     </span>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <div className="flex items-center gap-2">
-                      <Progress value={cls.progress} className="w-16 h-2" />
-                      <span className="text-xs text-muted-foreground">{cls.progress}%</span>
-                    </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(cls.status)}</TableCell>
                   <TableCell>
@@ -500,7 +635,21 @@ export function AdminClassesPage() {
                           <Edit className="w-4 h-4 mr-2" />
                           Chỉnh sửa
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        {/* Chỉ lớp active hoặc upcoming mới có thể kết thúc */}
+                        {(cls.status === "active" || cls.status === "upcoming") && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-amber-600 focus:text-amber-600 focus:bg-amber-50 dark:focus:bg-amber-950/30"
+                              onClick={() => handleOpenClose({ id: cls.id, name: cls.name })}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Kết thúc lớp
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive">
                           <Trash2 className="w-4 h-4 mr-2" />
                           Xóa
                         </DropdownMenuItem>
@@ -513,6 +662,39 @@ export function AdminClassesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* ── Dialog: Kết thúc lớp ── */}
+      <Dialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
+              Kết thúc lớp học
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <p className="text-sm text-muted-foreground">
+              Bạn đang kết thúc lớp{" "}
+              <span className="font-semibold text-foreground">{closeTarget?.name}</span>.
+            </p>
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+              <XCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-foreground">
+                Lớp sẽ chuyển sang trạng thái{" "}
+                <span className="font-semibold">"Đã kết thúc"</span> và ngày hôm nay sẽ được ghi nhận là ngày kết thúc.
+                Học viên vẫn có thể xem lại lịch sử học.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsCloseDialogOpen(false)}>Hủy</Button>
+            <Button onClick={() => setIsCloseDialogOpen(false)}>
+              <CheckCircle2 className="w-4 h-4 mr-1" />
+              Xác nhận kết thúc
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
