@@ -8,6 +8,7 @@ import {
   FileText,
   BarChart3,
   RefreshCw,
+  ClipboardList,
   Bell,
   User,
   LogOut,
@@ -37,6 +38,7 @@ const menuItems = [
   { icon: FileCheck, label: "Quản lý bài thi", href: "/teacher/exams" },
   { icon: BarChart3, label: "Điểm & nhận xét", href: "/teacher/grades" },
   { icon: RefreshCw, label: "Yêu cầu đổi lịch", href: "/teacher/reschedule" },
+  { icon: ClipboardList, label: "Duyệt đơn xin nghỉ", href: "/teacher/leave-approval" },
   { icon: Bell, label: "Thông báo", href: "/teacher/notifications" },
   { icon: User, label: "Hồ sơ", href: "/teacher/profile" },
 ];

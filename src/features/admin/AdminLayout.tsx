@@ -9,11 +9,8 @@ import {
   Calendar,
   QrCode,
   CreditCard,
-  UserPlus,
-  MessageSquare,
+  RefreshCw,
   BarChart3,
-  Shield,
-  FileText,
   Settings,
   Bell,
   User,
@@ -41,13 +38,14 @@ const menuItems = [
   { icon: Users, label: "Học viên", href: "/admin/students" },
   { icon: BookOpen, label: "Lớp học", href: "/admin/classes" },
   { icon: Calendar, label: "Lịch học", href: "/admin/schedule" },
+  { icon: RefreshCw, label: "Duyệt đổi lịch", href: "/admin/reschedule-approval" },
   { icon: QrCode, label: "Điểm danh", href: "/admin/attendance" },
   { icon: CreditCard, label: "Học phí", href: "/admin/tuition" },
-  { icon: UserPlus, label: "Liên hệ", href: "/admin/leads" },
-  { icon: MessageSquare, label: "Ticket", href: "/admin/tickets" },
+
+
   { icon: BarChart3, label: "Báo cáo", href: "/admin/reports" },
-  { icon: Shield, label: "Phân quyền", href: "/admin/roles" },
-  { icon: FileText, label: "Nhật ký", href: "/admin/audit" },
+
+
   { icon: Settings, label: "Cấu hình QR", href: "/admin/qr-settings" },
 ];
 

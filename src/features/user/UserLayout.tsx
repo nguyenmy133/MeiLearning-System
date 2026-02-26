@@ -15,8 +15,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Video,
-  FileCheck
+  FileCheck,
+  Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,12 +35,12 @@ const menuItems = [
   { icon: Calendar, label: "Thời khóa biểu", href: "/user/schedule" },
   { icon: QrCode, label: "Điểm danh", href: "/user/check-in" },
   { icon: History, label: "Lịch sử điểm danh", href: "/user/attendance" },
-  { icon: FileText, label: "Tài liệu", href: "/user/documents" },
-  { icon: Video, label: "Video bài giảng", href: "/user/videos" },
+  { icon: FileText, label: "Tài liệu & Video", href: "/user/documents" },
   { icon: FileCheck, label: "Bài thi", href: "/user/exams" },
+  { icon: Award, label: "Kết quả học tập", href: "/user/grades" },
   { icon: CreditCard, label: "Học phí", href: "/user/tuition" },
   { icon: ClipboardList, label: "Xin nghỉ/đi muộn", href: "/user/leave" },
-  { icon: MessageSquare, label: "Ticket", href: "/user/tickets" },
+  { icon: MessageSquare, label: "Liên hệ Zalo", href: "https://zalo.me", external: true },
   { icon: Bell, label: "Thông báo", href: "/user/notifications" },
   { icon: User, label: "Hồ sơ", href: "/user/profile" },
 ];
@@ -86,19 +86,32 @@ export function UserLayout() {
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
+              const className = `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`;
               return (
                 <li key={item.href}>
-                  <Link
-                    to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-                  </Link>
+                  {(item as any).external ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={className}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+                    </a>
+                  ) : (
+                    <Link
+                      to={item.href}
+                      className={className}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+                    </Link>
+                  )}
                 </li>
               );
             })}
@@ -154,20 +167,34 @@ export function UserLayout() {
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
+              const cls = `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`;
               return (
                 <li key={item.href}>
-                  <Link
-                    to={item.href}
-                    onClick={() => setMobileSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Link>
+                  {(item as any).external ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileSidebarOpen(false)}
+                      className={cls}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      to={item.href}
+                      onClick={() => setMobileSidebarOpen(false)}
+                      className={cls}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </Link>
+                  )}
                 </li>
               );
             })}

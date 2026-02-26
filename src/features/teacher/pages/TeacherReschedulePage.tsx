@@ -35,42 +35,54 @@ import { toast } from "sonner";
 
 const requests = [
   {
-    id: 1,
+    id: "RS-202401-001",
     type: "reschedule",
     className: "Toán 10A",
-    originalDate: "2024-01-18",
+    originalDate: "18/01/2024",
     originalTime: "14:00 - 16:00",
-    requestedDate: "2024-01-19",
+    requestedDate: "19/01/2024",
     requestedTime: "14:00 - 16:00",
     reason: "Có cuộc họp với phụ huynh không thể dời được.",
     status: "pending",
-    createdAt: "2024-01-15"
+    createdAt: "15/01/2024"
   },
   {
-    id: 2,
-    type: "cancel",
+    id: "RS-202401-003",
+    type: "reschedule",
     className: "Toán 12B",
-    originalDate: "2024-01-20",
+    originalDate: "22/01/2024",
     originalTime: "16:30 - 18:30",
-    requestedDate: "",
-    requestedTime: "",
-    reason: "Bị ốm, cần nghỉ ngơi.",
-    status: "approved",
-    createdAt: "2024-01-14",
-    approvedBy: "Admin",
-    approvedAt: "2024-01-14"
+    requestedDate: "23/01/2024",
+    requestedTime: "16:30 - 18:30",
+    reason: "Xin đổi lịch do trùng lịch bồi dưỡng chuyên môn tại Sở GD.",
+    status: "pending",
+    createdAt: "19/01/2024"
   },
   {
-    id: 3,
+    id: "RS-202401-005",
     type: "reschedule",
     className: "Toán 11A",
-    originalDate: "2024-01-10",
+    originalDate: "12/01/2024",
     originalTime: "14:00 - 16:00",
-    requestedDate: "2024-01-11",
+    requestedDate: "14/01/2024",
+    requestedTime: "14:00 - 16:00",
+    reason: "Đổi sang Chủ nhật để cho học viên ôn bài.",
+    status: "approved",
+    createdAt: "10/01/2024",
+    approvedBy: "Admin",
+    approvedAt: "10/01/2024"
+  },
+  {
+    id: "RS-202401-006",
+    type: "reschedule",
+    className: "Toán 11A",
+    originalDate: "10/01/2024",
+    originalTime: "14:00 - 16:00",
+    requestedDate: "11/01/2024",
     requestedTime: "16:00 - 18:00",
     reason: "Xin đổi để phù hợp với lịch cá nhân.",
     status: "rejected",
-    createdAt: "2024-01-08",
+    createdAt: "08/01/2024",
     rejectedReason: "Phòng học không khả dụng vào thời gian yêu cầu."
   }
 ];

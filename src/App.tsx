@@ -21,14 +21,13 @@ import { CheckInPage } from "./features/user/pages/CheckInPage";
 import { SchedulePage } from "./features/user/pages/SchedulePage";
 import { AttendancePage } from "./features/user/pages/AttendancePage";
 import { DocumentsPage } from "./features/user/pages/DocumentsPage";
-import { VideoLibrary } from "./features/user/pages/VideoLibrary";
-import { VideoPlayer } from "./features/user/pages/VideoPlayer";
 import { ExamList } from "./features/user/pages/ExamList";
 import { ExamTaking } from "./features/user/pages/ExamTaking";
 import { ExamResult } from "./features/user/pages/ExamResult";
 import { TuitionPage } from "./features/user/pages/TuitionPage";
 import { LeavePage } from "./features/user/pages/LeavePage";
-import { TicketsPage } from "./features/user/pages/TicketsPage";
+import { UserGradesPage } from "./features/user/pages/UserGradesPage";
+
 import { NotificationsPage } from "./features/user/pages/NotificationsPage";
 import { ProfilePage } from "./features/user/pages/ProfilePage";
 
@@ -46,6 +45,7 @@ import { TeacherDocumentsPage } from "./features/teacher/pages/TeacherDocumentsP
 import { TeacherExamManagement } from "./features/teacher/pages/TeacherExamManagement";
 import { CreateExamPage } from "./features/teacher/pages/CreateExamPage";
 import { TeacherExamResults } from "./features/teacher/pages/TeacherExamResults";
+import { TeacherLeaveApprovalPage } from "./features/teacher/pages/TeacherLeaveApprovalPage";
 
 // Admin portal
 import { AdminLayout } from "./features/admin/AdminLayout";
@@ -59,11 +59,12 @@ import { AdminClassesPage } from "./features/admin/pages/AdminClassesPage";
 import { AdminSchedulePage } from "./features/admin/pages/AdminSchedulePage";
 import { AdminAttendancePage } from "./features/admin/pages/AdminAttendancePage";
 import { AdminTuitionPage } from "./features/admin/pages/AdminTuitionPage";
-import { AdminLeadsPage } from "./features/admin/pages/AdminLeadsPage";
-import { AdminTicketsPage } from "./features/admin/pages/AdminTicketsPage";
+import { AdminRescheduleApprovalPage } from "./features/admin/pages/AdminRescheduleApprovalPage";
+
+
 import { AdminReportsPage } from "./features/admin/pages/AdminReportsPage";
 
-import { AdminAuditPage } from "./features/admin/pages/AdminAuditPage";
+
 
 import NotFound from "./pages/NotFound";
 
@@ -91,14 +92,13 @@ const App = () => (
             <Route path="schedule" element={<SchedulePage />} />
             <Route path="attendance" element={<AttendancePage />} />
             <Route path="documents" element={<DocumentsPage />} />
-            <Route path="videos" element={<VideoLibrary />} />
-            <Route path="video-player" element={<VideoPlayer />} />
             <Route path="exams" element={<ExamList />} />
             <Route path="exam-taking" element={<ExamTaking />} />
             <Route path="exam-result" element={<ExamResult />} />
             <Route path="tuition" element={<TuitionPage />} />
             <Route path="leave" element={<LeavePage />} />
-            <Route path="tickets" element={<TicketsPage />} />
+            <Route path="grades" element={<UserGradesPage />} />
+
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
@@ -116,6 +116,7 @@ const App = () => (
             <Route path="exams/results/:id" element={<TeacherExamResults />} />
             <Route path="grades" element={<TeacherGradesPage />} />
             <Route path="reschedule" element={<TeacherReschedulePage />} />
+            <Route path="leave-approval" element={<TeacherLeaveApprovalPage />} />
             <Route path="notifications" element={<TeacherNotificationsPage />} />
             <Route path="profile" element={<TeacherProfilePage />} />
           </Route>
@@ -131,11 +132,12 @@ const App = () => (
             <Route path="schedule" element={<AdminSchedulePage />} />
             <Route path="attendance" element={<AdminAttendancePage />} />
             <Route path="tuition" element={<AdminTuitionPage />} />
-            <Route path="leads" element={<AdminLeadsPage />} />
-            <Route path="tickets" element={<AdminTicketsPage />} />
+            <Route path="reschedule-approval" element={<AdminRescheduleApprovalPage />} />
+
+
             <Route path="reports" element={<AdminReportsPage />} />
 
-            <Route path="audit" element={<AdminAuditPage />} />
+
           </Route>
 
           <Route path="*" element={<NotFound />} />
