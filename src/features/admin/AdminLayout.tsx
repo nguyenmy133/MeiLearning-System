@@ -15,6 +15,7 @@ import {
   Bell,
   User,
   LogOut,
+  Library,
   Menu,
   X,
   ChevronDown
@@ -34,18 +35,16 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
+  { icon: Building2, label: "Cơ sở vật chất", href: "/admin/facilities" },
   { icon: GraduationCap, label: "Giáo viên", href: "/admin/teachers" },
   { icon: Users, label: "Học viên", href: "/admin/students" },
+  { icon: Library, label: "Môn học", href: "/admin/subjects" },
   { icon: BookOpen, label: "Lớp học", href: "/admin/classes" },
   { icon: Calendar, label: "Lịch học", href: "/admin/schedule" },
   { icon: RefreshCw, label: "Duyệt đổi lịch", href: "/admin/reschedule-approval" },
   { icon: QrCode, label: "Điểm danh", href: "/admin/attendance" },
   { icon: CreditCard, label: "Học phí", href: "/admin/tuition" },
-
-
   { icon: BarChart3, label: "Báo cáo", href: "/admin/reports" },
-
-
   { icon: Settings, label: "Cấu hình QR", href: "/admin/qr-settings" },
 ];
 

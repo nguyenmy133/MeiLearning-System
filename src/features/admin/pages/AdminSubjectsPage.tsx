@@ -44,10 +44,25 @@ import {
   GraduationCap,
   Users,
   LayoutGrid,
+  MapPin,
 } from "lucide-react";
 
 // Mock data
-const subjects = [
+const ALL_FACILITIES = ["Cơ sở Quận 1", "Cơ sở Quận 3", "Cơ sở Thủ Đức"];
+
+type Subject = {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  category: string;
+  teachers: number;
+  classes: number;
+  status: string;
+  facilities: string[];
+};
+
+const subjects: Subject[] = [
   {
     id: 1,
     name: "Toán",
@@ -57,6 +72,7 @@ const subjects = [
     teachers: 3,
     classes: 6,
     status: "active",
+    facilities: ["Cơ sở Quận 1", "Cơ sở Quận 3"],
   },
   {
     id: 2,
@@ -67,6 +83,7 @@ const subjects = [
     teachers: 2,
     classes: 4,
     status: "active",
+    facilities: ["Cơ sở Quận 1"],
   },
   {
     id: 3,
@@ -77,6 +94,7 @@ const subjects = [
     teachers: 2,
     classes: 3,
     status: "active",
+    facilities: ["Cơ sở Quận 1", "Cơ sở Thủ Đức"],
   },
   {
     id: 4,
@@ -87,6 +105,7 @@ const subjects = [
     teachers: 1,
     classes: 2,
     status: "active",
+    facilities: ["Cơ sở Quận 3"],
   },
   {
     id: 5,
@@ -97,6 +116,7 @@ const subjects = [
     teachers: 4,
     classes: 8,
     status: "active",
+    facilities: ["Cơ sở Quận 1", "Cơ sở Quận 3", "Cơ sở Thủ Đức"],
   },
   {
     id: 6,
@@ -107,6 +127,7 @@ const subjects = [
     teachers: 2,
     classes: 4,
     status: "active",
+    facilities: ["Cơ sở Quận 1", "Cơ sở Quận 3"],
   },
   {
     id: 7,
@@ -117,6 +138,7 @@ const subjects = [
     teachers: 2,
     classes: 4,
     status: "active",
+    facilities: ["Cơ sở Thủ Đức"],
   },
   {
     id: 8,
@@ -127,6 +149,7 @@ const subjects = [
     teachers: 1,
     classes: 2,
     status: "inactive",
+    facilities: ["Cơ sở Quận 1"],
   },
 ];
 
@@ -186,63 +209,98 @@ export function AdminSubjectsPage() {
     initial,
   }: {
     onClose: () => void;
-    initial?: (typeof subjects)[0] | null;
-  }) => (
-    <div className="space-y-4 py-2">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>
-            Tên môn học <span className="text-destructive">*</span>
-          </Label>
-          <Input placeholder="VD: Toán" defaultValue={initial?.name} />
+    initial?: Subject | null;
+  }) => {
+    const [selectedFacilities, setSelectedFacilities] = useState<string[]>(
+      initial?.facilities || []
+    );
+
+    const toggleFacility = (facility: string) => {
+      setSelectedFacilities((prev) =>
+        prev.includes(facility)
+          ? prev.filter((f) => f !== facility)
+          : [...prev, facility]
+      );
+    };
+
+    return (
+      <div className="space-y-4 py-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>
+              Tên môn học <span className="text-destructive">*</span>
+            </Label>
+            <Input placeholder="VD: Toán" defaultValue={initial?.name} />
+          </div>
+          <div className="space-y-2">
+            <Label>
+              Mã môn <span className="text-destructive">*</span>
+            </Label>
+            <Input placeholder="VD: MATH" defaultValue={initial?.code} />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label>
-            Mã môn <span className="text-destructive">*</span>
-          </Label>
-          <Input placeholder="VD: MATH" defaultValue={initial?.code} />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Phân loại</Label>
+            <Select defaultValue={initial?.category ?? "Tự nhiên"}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn phân loại" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {initial && (
+            <div className="space-y-2">
+              <Label>Trạng thái</Label>
+              <Select defaultValue={initial.status}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Hoạt động</SelectItem>
+                  <SelectItem value="inactive">Tạm ngừng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Phân loại</Label>
-        <Select defaultValue={initial?.category ?? "Tự nhiên"}>
-          <SelectTrigger>
-            <SelectValue placeholder="Chọn phân loại" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
+
+        <div className="space-y-2">
+          <Label>Cơ sở giảng dạy</Label>
+          <div className="flex flex-wrap gap-2">
+            {ALL_FACILITIES.map((facility) => (
+              <Badge
+                key={facility}
+                variant={selectedFacilities.includes(facility) ? "default" : "outline"}
+                className="cursor-pointer transition-colors"
+                onClick={() => toggleFacility(facility)}
+              >
+                {facility}
+              </Badge>
             ))}
-          </SelectContent>
-        </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Mô tả</Label>
+          <Textarea
+            placeholder="Mô tả ngắn về môn học..."
+            defaultValue={initial?.description}
+            rows={3}
+          />
+        </div>
+        <Button className="w-full" onClick={onClose}>
+          {initial ? "Cập nhật môn học" : "Thêm môn học"}
+        </Button>
       </div>
-      <div className="space-y-2">
-        <Label>Trạng thái</Label>
-        <Select defaultValue={initial?.status ?? "active"}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Hoạt động</SelectItem>
-            <SelectItem value="inactive">Tạm ngừng</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label>Mô tả</Label>
-        <Textarea
-          placeholder="Mô tả ngắn về môn học..."
-          defaultValue={initial?.description}
-          rows={3}
-        />
-      </div>
-      <Button className="w-full" onClick={onClose}>
-        {initial ? "Cập nhật môn học" : "Thêm môn học"}
-      </Button>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -339,6 +397,7 @@ export function AdminSubjectsPage() {
                 <TableHead>Môn học</TableHead>
                 <TableHead className="hidden sm:table-cell">Mã môn</TableHead>
                 <TableHead className="hidden md:table-cell">Phân loại</TableHead>
+                <TableHead className="hidden lg:table-cell">Cơ sở giảng dạy</TableHead>
                 <TableHead className="text-center hidden sm:table-cell">
                   Giáo viên
                 </TableHead>
@@ -374,6 +433,15 @@ export function AdminSubjectsPage() {
                     <Badge variant="outline" className="text-xs">
                       {subject.category}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                      {subject.facilities.map((f) => (
+                        <Badge key={f} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                          {f}
+                        </Badge>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center hidden sm:table-cell">
                     <div className="flex items-center justify-center gap-1 text-muted-foreground">

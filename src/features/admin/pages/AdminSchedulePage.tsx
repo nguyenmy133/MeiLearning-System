@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import {
   Sparkles,
   CreditCard,
   Info,
+  AlertTriangle,
 } from "lucide-react";
 
 // Mock schedule data
@@ -116,6 +117,9 @@ export function AdminSchedulePage() {
   const [sessionStart, setSessionStart] = useState("");
   const [sessionEnd, setSessionEnd] = useState("");
   const [sessionNote, setSessionNote] = useState("");
+  const [sessionFacility, setSessionFacility] = useState("");
+  const [sessionRoom, setSessionRoom] = useState("");
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
 
   // Khi chọn lớp → tự điền GV và giờ mặc định từ lớp đó
   const handleClassChange = (classId: string) => {
@@ -128,6 +132,52 @@ export function AdminSchedulePage() {
     }
   };
 
+  // Logic kiểm tra trùng lịch (mô phỏng theo dữ liệu mock)
+  useEffect(() => {
+    if (!sessionDate || !sessionStart || !sessionTeacher) {
+      setConflictWarning(null);
+      return;
+    }
+    
+    // Convert 2024-12-16 to 16/12
+    const parts = sessionDate.split("-");
+    if (parts.length === 3) {
+      const formattedDate = `${parts[2]}/${parts[1]}`;
+      const daySchedule = weekSchedule.find((d) => d.date === formattedDate);
+      
+      if (daySchedule) {
+        // Map room code to name
+        const roomNameMap: Record<string, string> = {
+          "101": "Phòng 101",
+          "102": "Phòng 102",
+          "201": "Phòng 201",
+          "a1": "Phòng A1",
+          "lab1": "Phòng Lab 1"
+        };
+        const selectedRoomName = roomNameMap[sessionRoom] || "";
+
+        for (const s of daySchedule.sessions) {
+          // Check overlapping time logic (simple string matching for mock)
+          const isTimeOverlap = s.time.includes(sessionStart) || (sessionStart <= s.time.slice(0, 5) && sessionEnd > s.time.slice(0, 5));
+          
+          if (isTimeOverlap) {
+            // Check teacher conflict
+            if (s.teacher === sessionTeacher) {
+              setConflictWarning(`Trùng lịch Giáo viên: ${sessionTeacher} đang dạy lớp ${s.class} vào thời gian này.`);
+              return;
+            }
+            // Check room conflict
+            if (sessionRoom && s.room === selectedRoomName) {
+              setConflictWarning(`Trùng phòng: ${selectedRoomName} đang được lớp ${s.class} sử dụng vào thời gian này.`);
+              return;
+            }
+          }
+        }
+      }
+    }
+    setConflictWarning(null);
+  }, [sessionDate, sessionStart, sessionEnd, sessionTeacher, sessionRoom]);
+
   const handleDialogClose = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
@@ -138,6 +188,9 @@ export function AdminSchedulePage() {
       setSessionStart("");
       setSessionEnd("");
       setSessionNote("");
+      setSessionFacility("");
+      setSessionRoom("");
+      setConflictWarning(null);
     }
   };
 
@@ -385,7 +438,7 @@ export function AdminSchedulePage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Cơ sở</Label>
-                      <Select>
+                      <Select value={sessionFacility} onValueChange={setSessionFacility}>
                         <SelectTrigger>
                           <SelectValue placeholder="Chọn cơ sở" />
                         </SelectTrigger>
@@ -397,8 +450,8 @@ export function AdminSchedulePage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Phòng</Label>
-                      <Select>
+                      <Label>Phòng <span className="text-destructive">*</span></Label>
+                      <Select value={sessionRoom} onValueChange={setSessionRoom}>
                         <SelectTrigger>
                           <SelectValue placeholder="Chọn phòng" />
                         </SelectTrigger>
@@ -412,6 +465,17 @@ export function AdminSchedulePage() {
                       </Select>
                     </div>
                   </div>
+
+                  {/* Conflict Notice */}
+                  {conflictWarning && (
+                    <div className="flex items-start gap-2 p-3 rounded-lg border text-sm bg-destructive/10 border-destructive/20 text-destructive mt-4">
+                      <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">Cảnh báo trùng lịch!</p>
+                        <p className="text-sm mt-1">{conflictWarning}</p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* ─ Ghi chú ─ */}
                   <div className="space-y-2">
@@ -434,7 +498,7 @@ export function AdminSchedulePage() {
                 <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => handleDialogClose(false)}>Hủy</Button>
                   <Button
-                    disabled={!selectedClassId || !sessionDate || !sessionStart || !sessionEnd}
+                    disabled={!selectedClassId || !sessionDate || !sessionStart || !sessionEnd || !sessionRoom || !!conflictWarning}
                     onClick={() => handleDialogClose(false)}
                   >
                     <Plus className="w-4 h-4 mr-1" />

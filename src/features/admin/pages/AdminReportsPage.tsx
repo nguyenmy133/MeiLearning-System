@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -29,13 +27,10 @@ import {
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Users,
   CreditCard,
   BookOpen,
   GraduationCap,
-  AlertTriangle,
-  CheckCircle2,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import { ChartTooltip } from "../components/ChartTooltip";
@@ -49,6 +44,14 @@ const revenueByMonth = [
   { month: "T10", revenue: 80 },
   { month: "T11", revenue: 88 },
   { month: "T12", revenue: 95 },
+];
+
+const revenueBySubject = [
+  { name: "Toán Học", value: 40, color: "hsl(var(--primary))" },
+  { name: "Tiếng Anh", value: 30, color: "hsl(var(--secondary))" },
+  { name: "Ngữ Văn", value: 15, color: "#8b5cf6" },
+  { name: "Khoa học Tự nhiên", value: 10, color: "#f59e0b" },
+  { name: "Khác", value: 5, color: "#6b7280" },
 ];
 
 const attendanceByClass = [
@@ -81,14 +84,6 @@ const enrollmentTrend = [
   { month: "T12", students: 245 },
 ];
 
-const absentStudents = [
-  { name: "Phạm Thị Dung", class: "Văn 12", absences: 7, trend: "up" },
-  { name: "Trần Minh Khoa", class: "Hóa 11", absences: 5, trend: "up" },
-  { name: "Nguyễn Văn An", class: "Toán 10A", absences: 4, trend: "stable" },
-  { name: "Hoàng Thị Lan", class: "Lý 10A", absences: 4, trend: "down" },
-  { name: "Lê Quang Minh", class: "Tiếng Anh SP", absences: 3, trend: "stable" },
-];
-
 const tuitionSummary = {
   collected: 85000000,
   pending: 12500000,
@@ -101,8 +96,6 @@ const MONTHS = [
   "Tháng 10/2024", "Tháng 11/2024", "Tháng 12/2024",
 ];
 
-// ─── Custom tooltips → shared ChartTooltip ───────────────────────────────────
-
 // ─── Overview stats ───────────────────────────────────────────────────────────
 
 function formatCurrency(n: number) {
@@ -114,7 +107,7 @@ function formatCurrency(n: number) {
 
 export function AdminReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState("Tháng 12/2024");
-  const [selectedTab, setSelectedTab] = useState<"revenue" | "attendance" | "students">("revenue");
+  const [selectedTab, setSelectedTab] = useState<"financial" | "academic">("financial");
 
   const tuitionRate = Math.round((tuitionSummary.collected / tuitionSummary.total) * 100);
   const avgAttendance = Math.round(
@@ -192,8 +185,8 @@ export function AdminReportsPage() {
 
       {/* Tab switch */}
       <div className="flex gap-2 border-b border-border pb-1">
-        {(["revenue", "attendance", "students"] as const).map((tab) => {
-          const labels = { revenue: "Doanh thu", attendance: "Điểm danh", students: "Học viên" };
+        {(["financial", "academic"] as const).map((tab) => {
+          const labels = { financial: "Tổng quan Tài chính", academic: "Hiệu suất & Lớp học" };
           return (
             <button
               key={tab}
@@ -210,11 +203,11 @@ export function AdminReportsPage() {
         })}
       </div>
 
-      {/* ── Tab: Doanh thu ── */}
-      {selectedTab === "revenue" && (
-        <div className="space-y-6">
+      {/* ── Tab: Tài chính ── */}
+      {selectedTab === "financial" && (
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Revenue bar chart */}
-          <Card>
+          <Card className="lg:col-span-1">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-primary" />
@@ -231,112 +224,135 @@ export function AdminReportsPage() {
                   <Bar dataKey="revenue" name="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={45} />
                 </BarChart>
               </ResponsiveContainer>
-
             </CardContent>
           </Card>
 
-          {/* Tuition breakdown */}
-          <Card>
+          {/* Revenue by subject (pie) */}
+          <Card className="lg:col-span-1">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-primary" />
-                Tình trạng thu học phí — {selectedMonth}
+                <BarChart3 className="w-4 h-4 text-primary" />
+                Cơ cấu doanh thu theo Khối/Môn
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { label: "Đã thu", value: tuitionSummary.collected, color: "text-primary", bg: "bg-primary/10", icon: CheckCircle2 },
-                  { label: "Chờ thu", value: tuitionSummary.pending, color: "text-amber-500", bg: "bg-amber-500/10", icon: BookOpen },
-                  { label: "Quá hạn", value: tuitionSummary.overdue, color: "text-destructive", bg: "bg-destructive/10", icon: AlertTriangle },
-                ].map((item) => (
-                  <div key={item.label} className={`rounded-lg p-4 ${item.bg}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <item.icon className={`w-4 h-4 ${item.color}`} />
-                      <span className="text-xs text-muted-foreground">{item.label}</span>
-                    </div>
-                    <p className={`text-xl font-bold ${item.color}`}>{formatCurrency(item.value)}₫</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* ── Tab: Điểm danh ── */}
-      {selectedTab === "attendance" && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" />
-                Tỉ lệ điểm danh theo lớp — {selectedMonth}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={attendanceByClass} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                  <XAxis dataKey="class" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={revenueBySubject}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={65}
+                    outerRadius={95}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {revenueBySubject.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }}
-                    itemStyle={{ color: "hsl(var(--foreground))", fontSize: "14px", fontWeight: 500 }}
+                    formatter={(value: number) => [`${value}%`, ""]}
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
                   />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-                  <Bar yAxisId="left" dataKey="students" name="Sĩ số" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                  <Line yAxisId="right" type="monotone" dataKey="rate" name="Tỉ lệ %" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: "hsl(var(--card))", strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                </ComposedChart>
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value) => <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{value}</span>}
+                  />
+                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
-          {/* Most absent students */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-secondary" />
-                Học viên vắng nhiều nhất
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y divide-border">
-                {absentStudents.map((s, idx) => (
-                  <div key={s.name} className="flex items-center justify-between py-3">
-                    <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        idx === 0 ? "bg-destructive/20 text-destructive" :
-                        idx === 1 ? "bg-secondary/30 text-secondary-foreground" :
-                        "bg-muted text-muted-foreground"
-                      }`}>{idx + 1}</span>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.class}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`border-0 ${
-                        s.absences >= 5 ? "bg-destructive/10 text-destructive" :
-                        "bg-secondary/20 text-secondary-foreground"
-                      }`}>
-                        {s.absences} buổi vắng
-                      </Badge>
-                      {s.trend === "up" && <TrendingUp className="w-3.5 h-3.5 text-destructive" />}
-                      {s.trend === "down" && <TrendingDown className="w-3.5 h-3.5 text-primary" />}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 
-      {/* ── Tab: Học viên ── */}
-      {selectedTab === "students" && (
+      {/* ── Tab: Học thuật ── */}
+      {selectedTab === "academic" && (
         <div className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Class capacity */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-base font-display flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    Tỉ lệ sĩ số lớp
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4 mb-5 border-b border-border pb-4 w-full">
+                  <div className="flex flex-col flex-1">
+                    <span className="text-xl font-bold text-primary">3</span>
+                    <span className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 font-semibold tracking-wider whitespace-nowrap"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Sắp đầy (&gt;90%)</span>
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <span className="text-xl font-bold text-amber-500">3</span>
+                    <span className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 font-semibold tracking-wider whitespace-nowrap"><div className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Ổn định</span>
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <span className="text-xl font-bold text-destructive">2</span>
+                    <span className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 font-semibold tracking-wider whitespace-nowrap"><div className="w-1.5 h-1.5 rounded-full bg-destructive" /> Cần ghép (&lt;50%)</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {[...attendanceByClass].sort((a,b) => (b.students/b.capacity) - (a.students/a.capacity)).map((cls) => {
+                    const fillRate = Math.round((cls.students / cls.capacity) * 100);
+                    const isFull = fillRate >= 90;
+                    const isLow = fillRate < 50;
+                    
+                    return (
+                      <div key={cls.class} className="space-y-1.5">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium text-foreground">{cls.class}</span>
+                          <div className="flex gap-2 items-center">
+                            <span className="text-muted-foreground text-xs">{cls.students}/{cls.capacity} HV</span>
+                            {isFull && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20">Tuyển đủ</Badge>}
+                            {isLow && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-destructive/10 text-destructive border-destructive/20">Vắng</Badge>}
+                          </div>
+                        </div>
+                        <div className="w-full bg-secondary/30 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all ${isFull ? 'bg-primary' : isLow ? 'bg-destructive' : 'bg-amber-500'}`} 
+                            style={{ width: `${Math.min(fillRate, 100)}%` }} 
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  Tỉ lệ điểm danh theo lớp — {selectedMonth}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={380}>
+                  <ComposedChart data={attendanceByClass} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                    <XAxis dataKey="class" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))" }}
+                      itemStyle={{ color: "hsl(var(--foreground))", fontSize: "14px", fontWeight: 500 }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+                    <Bar yAxisId="left" dataKey="students" name="Sĩ số" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Line yAxisId="right" type="monotone" dataKey="rate" name="Tỉ lệ %" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: "hsl(var(--card))", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Enrollment trend */}
             <Card>
@@ -404,61 +420,6 @@ export function AdminReportsPage() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Class capacity */}
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-base font-display flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  Tỉ lệ sĩ số lớp
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4 mb-5 border-b border-border pb-4 w-full">
-                <div className="flex flex-col flex-1">
-                  <span className="text-xl font-bold text-primary">3</span>
-                  <span className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 font-semibold tracking-wider whitespace-nowrap"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Sắp đầy (&gt;90%)</span>
-                </div>
-                <div className="flex flex-col flex-1">
-                  <span className="text-xl font-bold text-amber-500">3</span>
-                  <span className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 font-semibold tracking-wider whitespace-nowrap"><div className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Ổn định</span>
-                </div>
-                <div className="flex flex-col flex-1">
-                  <span className="text-xl font-bold text-destructive">2</span>
-                  <span className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 font-semibold tracking-wider whitespace-nowrap"><div className="w-1.5 h-1.5 rounded-full bg-destructive" /> Cần ghép (&lt;50%)</span>
-                </div>
-              </div>
-
-              <div className="space-y-4 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-                {[...attendanceByClass].sort((a,b) => (b.students/b.capacity) - (a.students/a.capacity)).map((cls) => {
-                  const fillRate = Math.round((cls.students / cls.capacity) * 100);
-                  const isFull = fillRate >= 90;
-                  const isLow = fillRate < 50;
-                  
-                  return (
-                    <div key={cls.class} className="space-y-1.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium text-foreground">{cls.class}</span>
-                        <div className="flex gap-2 items-center">
-                          <span className="text-muted-foreground text-xs">{cls.students}/{cls.capacity} HV</span>
-                          {isFull && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20">Tuyển đủ</Badge>}
-                          {isLow && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-destructive/10 text-destructive border-destructive/20">Vắng</Badge>}
-                        </div>
-                      </div>
-                      <div className="w-full bg-secondary/30 h-1.5 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all ${isFull ? 'bg-primary' : isLow ? 'bg-destructive' : 'bg-amber-500'}`} 
-                          style={{ width: `${Math.min(fillRate, 100)}%` }} 
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>

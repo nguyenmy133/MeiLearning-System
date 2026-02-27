@@ -232,19 +232,7 @@ export function AdminFacilitiesPage() {
                         <Input placeholder="Tên người quản lý" />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Trạng thái</Label>
-                      <Select defaultValue="active">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Hoạt động</SelectItem>
-                          <SelectItem value="maintenance">Bảo trì</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button className="w-full" onClick={() => setIsFacilityDialogOpen(false)}>
+                    <Button className="w-full mt-6" onClick={() => setIsFacilityDialogOpen(false)}>
                       Lưu cơ sở
                     </Button>
                   </div>
