@@ -49,20 +49,20 @@ import { TeacherLeaveApprovalPage } from "./features/teacher/pages/TeacherLeaveA
 
 // Admin portal
 import { AdminLayout } from "./features/admin/AdminLayout";
-import { AdminDashboard } from "./features/admin/pages/AdminDashboard";
-import { QRSettingsPage } from "./features/admin/pages/QRSettingsPage";
+import { AdminDashboard } from "./features/admin/dashboard/pages/AdminDashboard";
+import { QRSettingsPage } from "./features/admin/qr-settings/pages/QRSettingsPage";
 import { AdminFacilitiesPage } from "./features/admin/facilities/pages/AdminFacilitiesPage";
 import { AdminTeachersPage } from "./features/admin/teachers/pages/AdminTeachersPage";
-import { AdminStudentsPage } from "./features/admin/pages/AdminStudentsPage";
-import { AdminSubjectsPage } from "./features/admin/pages/AdminSubjectsPage";
-import { AdminClassesPage } from "./features/admin/pages/AdminClassesPage";
-import { AdminSchedulePage } from "./features/admin/pages/AdminSchedulePage";
-import { AdminAttendancePage } from "./features/admin/pages/AdminAttendancePage";
-import { AdminTuitionPage } from "./features/admin/pages/AdminTuitionPage";
-import { AdminRescheduleApprovalPage } from "./features/admin/pages/AdminRescheduleApprovalPage";
+import { AdminStudentsPage } from "./features/admin/students/pages/AdminStudentsPage";
+import { AdminSubjectsPage } from "./features/admin/subjects/pages/AdminSubjectsPage";
+import { AdminClassesPage } from "./features/admin/classes/pages/AdminClassesPage";
+import { AdminSchedulePage } from "./features/admin/schedule/pages/AdminSchedulePage";
+import { AdminAttendancePage } from "./features/admin/attendance/pages/AdminAttendancePage";
+import { AdminTuitionPage } from "./features/admin/tuition/pages/AdminTuitionPage";
+import { AdminRescheduleApprovalPage } from "./features/admin/reschedule/pages/AdminRescheduleApprovalPage";
 
 
-import { AdminReportsPage } from "./features/admin/pages/AdminReportsPage";
+import { AdminReportsPage } from "./features/admin/reports/pages/AdminReportsPage";
 
 
 

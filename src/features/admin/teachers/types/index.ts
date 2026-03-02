@@ -27,12 +27,19 @@ export type TeacherStatusType =
 
 // ==================== ENTITY ====================
 
+export type Gender = "male" | "female" | "other";
+
 export interface Teacher {
   id: number;
   name: string;
+  username: string;        // Tên đăng nhập hệ thống
   email: string;
   phone: string;
   avatar: string;
+  dateOfBirth: string;     // YYYY-MM-DD
+  gender: Gender;
+  address: string;
+  bio?: string;            // Giới thiệu ngắn
   subjects: string[];
   classCount: number;
   status: TeacherStatusType;
@@ -51,6 +58,11 @@ export interface CreateTeacherDTO {
   subjects: string[];
   username: string;
   password: string;
+  // Thông tin cá nhân (tùy chọn khi tạo, bắt buộc ở trang sửa profile)
+  dateOfBirth?: string;
+  gender?: Gender;
+  address?: string;
+  bio?: string;
 }
 
 /** Cập nhật — CÓ status */
@@ -58,6 +70,8 @@ export interface UpdateTeacherDTO {
   name?: string;
   email?: string;
   phone?: string;
+  address?: string;
+  bio?: string;
   subjects?: string[];
   status?: TeacherStatusType;
 }

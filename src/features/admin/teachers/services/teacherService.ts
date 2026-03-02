@@ -134,9 +134,14 @@ export const createTeacher = async (
   const item: Teacher = {
     id: nextId++,
     name: dto.name.trim(),
+    username: dto.username.trim(),
     email: dto.email.trim(),
     phone: dto.phone.trim(),
     avatar: "",
+    dateOfBirth: dto.dateOfBirth ?? "",
+    gender: dto.gender ?? "other",
+    address: dto.address?.trim() ?? "",
+    bio: dto.bio?.trim(),
     subjects: dto.subjects,
     classCount: 0,
     status: "active", // Mặc định
