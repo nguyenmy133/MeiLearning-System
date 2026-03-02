@@ -79,12 +79,12 @@ const facilities = [
 ];
 
 const rooms = [
-  { id: 1, name: "Phòng 101", facility: "Cơ sở Quận 1", capacity: 20, equipment: "Máy chiếu, Bảng trắng", status: "available" },
-  { id: 2, name: "Phòng 102", facility: "Cơ sở Quận 1", capacity: 15, equipment: "Bảng trắng", status: "occupied" },
-  { id: 3, name: "Phòng 201", facility: "Cơ sở Quận 1", capacity: 25, equipment: "Máy chiếu, Bảng trắng, Điều hòa", status: "available" },
-  { id: 4, name: "Phòng A1", facility: "Cơ sở Quận 3", capacity: 18, equipment: "Máy chiếu", status: "maintenance" },
-  { id: 5, name: "Phòng A2", facility: "Cơ sở Quận 3", capacity: 22, equipment: "Bảng trắng, Điều hòa", status: "available" },
-  { id: 6, name: "Phòng Lab 1", facility: "Cơ sở Thủ Đức", capacity: 30, equipment: "Máy tính, Máy chiếu", status: "occupied" },
+  { id: 1, name: "Phòng 101", facility: "Cơ sở Quận 1", capacity: 20, status: "available" },
+  { id: 2, name: "Phòng 102", facility: "Cơ sở Quận 1", capacity: 15, status: "occupied" },
+  { id: 3, name: "Phòng 201", facility: "Cơ sở Quận 1", capacity: 25, status: "available" },
+  { id: 4, name: "Phòng A1", facility: "Cơ sở Quận 3", capacity: 18, status: "maintenance" },
+  { id: 5, name: "Phòng A2", facility: "Cơ sở Quận 3", capacity: 22, status: "available" },
+  { id: 6, name: "Phòng Lab 1", facility: "Cơ sở Thủ Đức", capacity: 30, status: "occupied" },
 ];
 
 export function AdminFacilitiesPage() {
@@ -347,28 +347,10 @@ export function AdminFacilitiesPage() {
                         </Select>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Sức chứa</Label>
-                        <Input type="number" placeholder="20" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Trạng thái</Label>
-                        <Select defaultValue="available">
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="available">Trống</SelectItem>
-                            <SelectItem value="occupied">Đang sử dụng</SelectItem>
-                            <SelectItem value="maintenance">Bảo trì</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
                     <div className="space-y-2">
-                      <Label>Thiết bị</Label>
-                      <Textarea placeholder="Máy chiếu, Bảng trắng, Điều hòa..." />
+                      <Label>Sức chứa</Label>
+                      <Input type="number" placeholder="20" min={1} max={200} />
+                      <p className="text-xs text-muted-foreground">Nhập số lượng từ 1 - 200 học viên</p>
                     </div>
                     <Button className="w-full" onClick={() => setIsRoomDialogOpen(false)}>
                       Lưu phòng
@@ -384,7 +366,6 @@ export function AdminFacilitiesPage() {
                     <TableHead>Tên phòng</TableHead>
                     <TableHead>Cơ sở</TableHead>
                     <TableHead className="text-center">Sức chứa</TableHead>
-                    <TableHead className="hidden md:table-cell">Thiết bị</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
@@ -406,9 +387,6 @@ export function AdminFacilitiesPage() {
                         </TableCell>
                         <TableCell>{room.facility}</TableCell>
                         <TableCell className="text-center">{room.capacity}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className="text-sm text-muted-foreground">{room.equipment}</span>
-                        </TableCell>
                         <TableCell>{getStatusBadge(room.status, "room")}</TableCell>
                         <TableCell>
                           <DropdownMenu>

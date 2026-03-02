@@ -51,8 +51,8 @@ import { TeacherLeaveApprovalPage } from "./features/teacher/pages/TeacherLeaveA
 import { AdminLayout } from "./features/admin/AdminLayout";
 import { AdminDashboard } from "./features/admin/pages/AdminDashboard";
 import { QRSettingsPage } from "./features/admin/pages/QRSettingsPage";
-import { AdminFacilitiesPage } from "./features/admin/pages/AdminFacilitiesPage";
-import { AdminTeachersPage } from "./features/admin/pages/AdminTeachersPage";
+import { AdminFacilitiesPage } from "./features/admin/facilities/pages/AdminFacilitiesPage";
+import { AdminTeachersPage } from "./features/admin/teachers/pages/AdminTeachersPage";
 import { AdminStudentsPage } from "./features/admin/pages/AdminStudentsPage";
 import { AdminSubjectsPage } from "./features/admin/pages/AdminSubjectsPage";
 import { AdminClassesPage } from "./features/admin/pages/AdminClassesPage";
