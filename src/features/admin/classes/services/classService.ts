@@ -85,6 +85,11 @@ export const getClasses = async (
     result = result.filter((c) => c.status === params.status);
   }
 
+  // Lọc theo giáo viên
+  if (params?.teacherId) {
+    result = result.filter((c) => c.teacher.id === params.teacherId);
+  }
+
   // Phân trang
   const page = params?.page || 1;
   const limit = params?.limit || 50;

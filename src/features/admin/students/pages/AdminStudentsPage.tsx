@@ -40,7 +40,7 @@ import {
 } from "../hooks";
 import type {
   Student, CreateStudentDTO, UpdateStudentDTO, DropStudentDTO,
-  StudentStatusType, TuitionStatusType,
+  StudentStatusType, TuitionStatusType, ClassEnrollment,
 } from "../types";
 import {
   STUDENT_STATUS_LABELS, TUITION_STATUS_LABELS,
@@ -171,39 +171,41 @@ function TableSkeleton() {
 // ============================================================================
 
 interface ClassPickerProps {
-  selected: string[];
-  onChange: (classes: string[]) => void;
+  selected: ClassEnrollment[];
+  onChange: (classes: ClassEnrollment[]) => void;
 }
 
 function ClassPicker({ selected, onChange }: ClassPickerProps) {
-  const toggle = (cls: string) =>
+  const toggle = (opt: { id: number; name: string }) => {
+    const exists = selected.some((c) => c.classId === opt.id);
     onChange(
-      selected.includes(cls)
-        ? selected.filter((c) => c !== cls)
-        : [...selected, cls]
+      exists
+        ? selected.filter((c) => c.classId !== opt.id)
+        : [...selected, { classId: opt.id, className: opt.name }]
     );
+  };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {CLASS_OPTIONS.map((cls) => (
+        {CLASS_OPTIONS.map((opt) => (
           <button
-            key={cls}
+            key={opt.id}
             type="button"
-            onClick={() => toggle(cls)}
+            onClick={() => toggle(opt)}
             className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              selected.includes(cls)
+              selected.some((c) => c.classId === opt.id)
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
             }`}
           >
-            {cls}
+            {opt.name}
           </button>
         ))}
       </div>
       {selected.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          Đã chọn: {selected.join(", ")}
+          Đã chọn: {selected.map((c) => c.className).join(", ")}
         </p>
       )}
     </div>
@@ -226,7 +228,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
   const [email, setEmail] = useState(initial?.email ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [parentPhone, setParentPhone] = useState(initial?.parentPhone ?? "");
-  const [classes, setClasses] = useState<string[]>(initial?.classes ?? []);
+  const [classes, setClasses] = useState<ClassEnrollment[]>(initial?.classes ?? []);
   const [tuitionStatus, setTuitionStatus] = useState<TuitionStatusType>(
     initial?.tuitionStatus ?? "pending"
   );
@@ -495,7 +497,7 @@ function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDial
 export function AdminStudentsPage() {
   // ── Filters ──
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterClass, setFilterClass] = useState("all");
+  const [filterClassId, setFilterClassId] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTuition, setFilterTuition] = useState("all");
 
@@ -512,7 +514,7 @@ export function AdminStudentsPage() {
   // ── Queries ──
   const { data: studentsData, isLoading } = useStudents({
     search: searchTerm || undefined,
-    className: filterClass !== "all" ? filterClass : undefined,
+    classId: filterClassId !== "all" ? Number(filterClassId) : undefined,
     status: filterStatus !== "all" ? (filterStatus as StudentStatusType) : undefined,
     tuitionStatus: filterTuition !== "all" ? (filterTuition as TuitionStatusType) : undefined,
   });
@@ -657,15 +659,15 @@ export function AdminStudentsPage() {
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              <Select value={filterClass} onValueChange={setFilterClass}>
+              <Select value={filterClassId} onValueChange={setFilterClassId}>
                 <SelectTrigger className="w-36">
                   <Filter className="w-4 h-4 mr-1" />
                   <SelectValue placeholder="Lớp" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả lớp</SelectItem>
-                  {CLASS_OPTIONS.map((cls) => (
-                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                  {CLASS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.id} value={String(opt.id)}>{opt.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -753,9 +755,9 @@ export function AdminStudentsPage() {
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <div className="flex flex-wrap gap-1">
-                        {student.classes.slice(0, 2).map((cls) => (
-                          <Badge key={cls} variant="secondary" className="text-xs">
-                            {cls}
+                        {student.classes.slice(0, 2).map((c) => (
+                          <Badge key={c.classId} variant="secondary" className="text-xs">
+                            {c.className}
                           </Badge>
                         ))}
                         {student.classes.length > 2 && (

@@ -196,7 +196,11 @@ export function AdminAttendancePage() {
                         </div>
                         {session.qrActive ? (
                           <Badge className="bg-green-500/10 text-green-600 border-0 flex items-center gap-1">
-                            <QrCode className="w-3 h-3" /> Đã QR mở
+                            <QrCode className="w-3 h-3" />
+                            QR mở
+                            {session.activeBy === "admin" && (
+                              <span className="text-green-700/70 font-normal">(Admin)</span>
+                            )}
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="border-0">
@@ -232,7 +236,7 @@ export function AdminAttendancePage() {
                           size="sm"
                           className="w-full text-xs h-8"
                           disabled={toggleQRMutation.isPending}
-                          onClick={() => toggleQRMutation.mutate(session.id)}
+                          onClick={() => toggleQRMutation.mutate({ sessionId: session.id, activatedBy: "admin" })}
                         >
                           {toggleQRMutation.isPending ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { AttendanceQueryParams, AttendanceRecordStatus } from "../types";
+import type { AttendanceQueryParams, AttendanceRecordStatus, QrActivatedBy } from "../types";
 import {
   getAttendanceSessions,
   getAttendanceStats,
@@ -59,7 +59,8 @@ export function useAbsentAlerts() {
 export function useToggleQR() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (sessionId: number) => toggleQR(sessionId),
+    mutationFn: ({ sessionId, activatedBy }: { sessionId: number; activatedBy?: QrActivatedBy }) =>
+      toggleQR(sessionId, activatedBy ?? "admin"),
     onSuccess: (session) => {
       qc.invalidateQueries({ queryKey: attendanceKeys.live() });
       toast.success(

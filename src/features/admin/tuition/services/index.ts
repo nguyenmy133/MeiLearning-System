@@ -3,5 +3,6 @@ export {
   getTuitionStats,
   approveInvoice,
   confirmCashPayment,
+  generateMonthlyInvoices,
   resetTuitionData,
 } from "./tuitionService";

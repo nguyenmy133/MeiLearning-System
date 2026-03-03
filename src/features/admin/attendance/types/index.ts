@@ -35,6 +35,9 @@ export interface AttendanceSession {
   updatedAt: string;
 }
 
+/** Ai kích hoạt QR – phân biệt giáo viên tự bật vs Admin override */
+export type QrActivatedBy = "teacher" | "admin";
+
 export interface LiveSession {
   id: number;
   classId: string;
@@ -49,6 +52,8 @@ export interface LiveSession {
   total: number;
   checkedIn: number;
   qrActive: boolean;
+  /** Người kích hoạt QR cuối cùng — null khi qrActive = false */
+  activeBy: QrActivatedBy | null;
 }
 
 export interface AbsentAlert {
@@ -74,6 +79,7 @@ export interface AttendanceQueryParams {
   search?: string;
   classId?: string;
   date?: string; // "YYYY-MM-DD"
+  teacherId?: number;
 }
 
 export const ATTENDANCE_CLASS_LIST = [

@@ -33,7 +33,7 @@ export async function getStats(): Promise<RescheduleStats> {
   };
 }
 
-export async function approveRequest(id: string): Promise<void> {
+export async function approveRequest(id: string): Promise<RescheduleRequest> {
   await randomDelay();
   const req = db.find((r) => r.id === id);
   if (!req) throw new Error("Không tìm thấy yêu cầu");
@@ -41,6 +41,8 @@ export async function approveRequest(id: string): Promise<void> {
     throw new Error("Yêu cầu không ở trạng thái chờ duyệt");
   req.status = "approved";
   req.reviewedAt = new Date().toLocaleDateString("vi-VN");
+  req.reviewedBy = "Admin";
+  return clone(req);
 }
 
 export async function rejectRequest(

@@ -67,9 +67,15 @@ export const getStudents = async (
     );
   }
 
-  // Lọc theo lớp
-  if (params?.className) {
-    result = result.filter((s) => s.classes.includes(params.className!));
+  // Lọc theo lớp (ưu tiên classId, fallback className)
+  if (params?.classId) {
+    result = result.filter((s) =>
+      s.classes.some((c) => c.classId === params.classId)
+    );
+  } else if (params?.className) {
+    result = result.filter((s) =>
+      s.classes.some((c) => c.className === params.className)
+    );
   }
 
   // Lọc trạng thái học viên

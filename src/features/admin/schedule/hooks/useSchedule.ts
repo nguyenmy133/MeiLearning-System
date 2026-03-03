@@ -21,10 +21,10 @@ export const scheduleKeys = {
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export function useWeekSessions(facilityId?: string) {
+export function useWeekSessions(facilityId?: string, teacherId?: number) {
   return useQuery({
-    queryKey: scheduleKeys.sessionsByFacility(facilityId),
-    queryFn: () => getWeekSessions(facilityId),
+    queryKey: [...scheduleKeys.sessionsByFacility(facilityId), teacherId ?? null],
+    queryFn: () => getWeekSessions(facilityId, teacherId),
   });
 }
 

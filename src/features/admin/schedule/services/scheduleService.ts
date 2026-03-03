@@ -40,11 +40,17 @@ let nextId = Math.max(...db.map((s) => s.id)) + 1;
  * Note: mock data is fixed to the demo week (2024-12-16 to 22). The weekStart
  * parameter is kept for API-compatibility but is currently ignored in mock mode.
  */
-export async function getWeekSessions(facilityId?: string): Promise<ScheduledSession[]> {
+export async function getWeekSessions(
+  facilityId?: string,
+  teacherId?: number
+): Promise<ScheduledSession[]> {
   await randomDelay();
   let result = clone(db).filter((s: ScheduledSession) => s.status !== "cancelled");
   if (facilityId && facilityId !== "all") {
     result = result.filter((s: ScheduledSession) => s.facilityId === facilityId);
+  }
+  if (teacherId) {
+    result = result.filter((s: ScheduledSession) => s.teacherId === teacherId);
   }
   return result.sort((a: ScheduledSession, b: ScheduledSession) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);

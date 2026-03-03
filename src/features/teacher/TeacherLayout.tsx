@@ -26,6 +26,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -39,7 +44,6 @@ const menuItems = [
   { icon: BarChart3, label: "Điểm & nhận xét", href: "/teacher/grades" },
   { icon: RefreshCw, label: "Yêu cầu đổi lịch", href: "/teacher/reschedule" },
   { icon: ClipboardList, label: "Duyệt đơn xin nghỉ", href: "/teacher/leave-approval" },
-  { icon: Bell, label: "Thông báo", href: "/teacher/notifications" },
   { icon: User, label: "Hồ sơ", href: "/teacher/profile" },
 ];
 
@@ -181,12 +185,37 @@ export function TeacherLayout() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
-                2
-              </Badge>
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="w-5 h-5" />
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
+                    2
+                  </Badge>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <p className="font-semibold text-sm">Thông báo</p>
+                  <Badge variant="secondary" className="text-xs">2 mới</Badge>
+                </div>
+                <ul className="divide-y divide-border">
+                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
+                    <p className="text-sm font-medium">Yêu cầu đổi lịch được duyệt</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Lớp Toán 10A — Admin đã chấp thuận</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">5 phút trước</p>
+                  </li>
+                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
+                    <p className="text-sm font-medium">Đơn xin nghỉ mới</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Nguyễn Văn An xin nghỉ buổi họ Toán 10A</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">20 phút trước</p>
+                  </li>
+                </ul>
+                <div className="px-4 py-2 border-t border-border">
+                  <p className="text-xs text-center text-muted-foreground">Không có thông báo cũ hơn</p>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

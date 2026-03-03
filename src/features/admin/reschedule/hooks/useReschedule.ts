@@ -32,9 +32,13 @@ export function useApproveRequest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => approveRequest(id),
-    onSuccess: () => {
+    onSuccess: (updatedReq) => {
       qc.invalidateQueries({ queryKey: rescheduleKeys.all });
-      toast.success("Đã duyệt yêu cầu thành công");
+      // Lịch học có thể thay đổi sau khi duyệt â‰ƒ invalidate schedule cache
+      qc.invalidateQueries({ queryKey: ["schedule"] });
+      toast.success(
+        `Đã duyệt yêu cầu của ${updatedReq.teacherName} — lớp ${updatedReq.className}`
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });

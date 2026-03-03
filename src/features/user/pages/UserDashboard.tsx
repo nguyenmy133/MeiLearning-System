@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, CreditCard, BookOpen, Bell, ChevronRight, CheckCircle } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Calendar, Clock, CreditCard, BookOpen, Bell, ChevronRight, CheckCircle, QrCode, Camera, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 const upcomingClasses = [
   { id: 1, subject: "Toán học", teacher: "Thầy An", time: "14:00 - 16:00", room: "P.101" },
@@ -13,7 +20,114 @@ const notifications = [
   { id: 2, title: "Học phí tháng 12", content: "Nhắc nhở đóng học phí trước ngày 25/12", time: "1 ngày trước" },
 ];
 
+// ── QR Check-in Sheet (inline, no page navigation needed) ─────────────────────
+function QRCheckInSheet({
+  open,
+  onClose,
+  className,
+}: {
+  open: boolean;
+  onClose: () => void;
+  className?: string;
+}) {
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState<"success" | "error" | null>(null);
+
+  const handleScan = () => {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      setResult(Math.random() > 0.3 ? "success" : "error");
+    }, 2000);
+  };
+
+  const reset = () => {
+    setResult(null);
+    setScanning(false);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+        <SheetHeader className="pb-4">
+          <SheetTitle className="font-display flex items-center gap-2">
+            <QrCode className="w-5 h-5 text-primary" />
+            Điểm danh QR{className ? ` — ${className}` : ""}
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="flex flex-col items-center gap-6 pt-2">
+          {/* Scanner area */}
+          <div className="w-full max-w-sm aspect-square rounded-2xl bg-accent/50 flex items-center justify-center border-2 border-dashed border-border overflow-hidden">
+            {scanning ? (
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+                <p className="text-muted-foreground">Đang quét mã QR...</p>
+              </div>
+            ) : result === "success" ? (
+              <div className="text-center p-6">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-10 h-10 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Điểm danh thành công!</h3>
+                <p className="text-muted-foreground mb-4">Buổi học đã được ghi nhận</p>
+                <Badge className="bg-primary/10 text-primary">Đúng giờ</Badge>
+              </div>
+            ) : result === "error" ? (
+              <div className="text-center p-6">
+                <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-10 h-10 text-destructive" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Điểm danh thất bại</h3>
+                <p className="text-muted-foreground mb-4">Mã QR đã hết hạn hoặc không hợp lệ</p>
+                <Button onClick={reset} variant="outline">Thử lại</Button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <QrCode className="w-10 h-10 text-primary" />
+                </div>
+                <p className="text-muted-foreground">Nhấn nút bên dưới để quét mã QR</p>
+              </div>
+            )}
+          </div>
+
+          {!result && (
+            <Button
+              onClick={handleScan}
+              disabled={scanning}
+              className="w-full max-w-sm h-12"
+            >
+              {scanning ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <Camera className="w-5 h-5 mr-2" />
+              )}
+              {scanning ? "Đang xử lý..." : "Mở camera quét QR"}
+            </Button>
+          )}
+          {result === "success" && (
+            <Button onClick={handleClose} className="w-full max-w-sm h-12">
+              Hoàn thành
+            </Button>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export function UserDashboard() {
+  const [qrOpen, setQrOpen] = useState(false);
+  const [activeClass, setActiveClass] = useState("");
+
   return (
     <div className="space-y-6">
       {/* Welcome */}
@@ -103,9 +217,14 @@ export function UserDashboard() {
                   </div>
                   <p className="text-sm text-muted-foreground">{cls.teacher} • {cls.time}</p>
                 </div>
-                <Button size="sm" variant="outline" className="btn-secondary">
-                  Điểm danh
-                </Button>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="btn-secondary"
+                    onClick={() => { setActiveClass(cls.subject); setQrOpen(true); }}
+                  >
+                    Điểm danh
+                  </Button>
               </div>
             ))}
           </CardContent>
@@ -135,6 +254,8 @@ export function UserDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <QRCheckInSheet open={qrOpen} onClose={() => setQrOpen(false)} className={activeClass} />
     </div>
   );
 }

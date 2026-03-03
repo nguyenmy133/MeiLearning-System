@@ -90,3 +90,54 @@ export async function confirmCashPayment(id: string): Promise<TuitionInvoice> {
 export function resetTuitionData(): void {
   db = clone(mockInvoices);
 }
+
+/**
+ * [POST] /api/tuition/generate
+ * Chốt công và tạo hóa đơn hàng loạt cho một tháng.
+ * - Mock: đếm số buổi học thực tế từ attendance sessions.
+ * - Tạo mới các invoice cho những học viên chưa có invoice tháng đó.
+ * Returns số hóa đơn được tạo.
+ */
+export async function generateMonthlyInvoices(
+  month: string // "MM/YYYY"
+): Promise<{ generated: number; skipped: number }> {
+  await randomDelay();
+
+  if (!month.match(/^\d{2}\/\d{4}$/)) {
+    throw new Error(`Định dạng tháng không hợp lệ: “${month}” (cần MM/YYYY)`);
+  }
+
+  // Kiểm tra hóa đơn đã tồn tại cho tháng này
+  const existing = db.filter((inv) => inv.month === month).map((inv) => inv.studentId);
+
+  // Giả lập: tạo bill cho các studentId 1-5 nếu chưa có
+  const candidates = [1, 2, 3, 4, 5].filter((sid) => !existing.includes(sid));
+
+  const [mm, yyyy] = month.split("/");
+  const dueDate = `05/${String(Number(mm) % 12 + 1).padStart(2, "0")}/${mm === "12" ? Number(yyyy) + 1 : yyyy}`;
+  const now = new Date().toISOString();
+
+  const newInvoices: TuitionInvoice[] = candidates.map((sid, i) => ({
+    id: `INV_${mm}${yyyy}_${String(existing.length + i + 1).padStart(3, "0")}`,
+    studentId: sid,
+    studentRef: String(sid).padStart(3, "0"),
+    studentName: ["Nguyễn Văn An", "Trần Thị Bích", "Lê Minh Cường", "Phạm Thị Dung", "Hoàng Văn Em"][sid - 1],
+    studentAvatar: "",
+    month,
+    totalAmount: 1500000,
+    discountAmount: 0,
+    discountReason: null,
+    dueDate,
+    status: "pending",
+    paidDate: null,
+    paymentMethod: null,
+    paymentProofUrl: null,
+    details: [{ className: "Toán 10A", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 }],
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  db.push(...newInvoices);
+
+  return { generated: newInvoices.length, skipped: existing.length };
+}

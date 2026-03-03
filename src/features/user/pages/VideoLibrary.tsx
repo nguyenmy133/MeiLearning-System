@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,9 +84,12 @@ const videos = [
 ];
 
 export function VideoLibrary() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  const handlePlay = (id: number) => navigate(`/user/videos?id=${id}`);
 
   const filteredVideos = videos.filter(video => {
     const matchesSearch = video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -172,18 +176,18 @@ export function VideoLibrary() {
           : "space-y-4"
         }>
           {filteredVideos.map((video) => (
-            <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handlePlay(video.id)}>
               {viewMode === "grid" ? (
                 <>
                   {/* Thumbnail */}
-                  <div className="relative aspect-video bg-muted group cursor-pointer">
+                  <div className="relative aspect-video bg-muted group">
                     <img 
                       src={video.thumbnail} 
                       alt={video.title}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="lg" className="rounded-full">
+                      <Button size="lg" className="rounded-full" onClick={(e) => { e.stopPropagation(); handlePlay(video.id); }}>
                         <Play className="w-6 h-6 mr-2" />
                         Xem ngay
                       </Button>
@@ -223,14 +227,14 @@ export function VideoLibrary() {
               ) : (
                 <div className="flex gap-4 p-4">
                   {/* Thumbnail */}
-                  <div className="relative w-48 aspect-video bg-muted flex-shrink-0 rounded-lg overflow-hidden group cursor-pointer">
+                  <div className="relative w-48 aspect-video bg-muted flex-shrink-0 rounded-lg overflow-hidden group">
                     <img 
                       src={video.thumbnail} 
                       alt={video.title}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="sm" className="rounded-full">
+                      <Button size="sm" className="rounded-full" onClick={() => handlePlay(video.id)}>
                         <Play className="w-4 h-4" />
                       </Button>
                     </div>

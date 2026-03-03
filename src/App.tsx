@@ -27,8 +27,6 @@ import { ExamResult } from "./features/user/pages/ExamResult";
 import { TuitionPage } from "./features/user/pages/TuitionPage";
 import { LeavePage } from "./features/user/pages/LeavePage";
 import { UserGradesPage } from "./features/user/pages/UserGradesPage";
-
-import { NotificationsPage } from "./features/user/pages/NotificationsPage";
 import { ProfilePage } from "./features/user/pages/ProfilePage";
 
 // Teacher portal
@@ -39,7 +37,6 @@ import { TeacherSchedulePage } from "./features/teacher/pages/TeacherSchedulePag
 import { TeacherClassesPage } from "./features/teacher/pages/TeacherClassesPage";
 import { TeacherGradesPage } from "./features/teacher/pages/TeacherGradesPage";
 import { TeacherReschedulePage } from "./features/teacher/pages/TeacherReschedulePage";
-import { TeacherNotificationsPage } from "./features/teacher/pages/TeacherNotificationsPage";
 import { TeacherProfilePage } from "./features/teacher/pages/TeacherProfilePage";
 import { TeacherDocumentsPage } from "./features/teacher/pages/TeacherDocumentsPage";
 import { TeacherExamManagement } from "./features/teacher/pages/TeacherExamManagement";
@@ -99,7 +96,6 @@ const App = () => (
             <Route path="leave" element={<LeavePage />} />
             <Route path="grades" element={<UserGradesPage />} />
 
-            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 
@@ -117,7 +113,6 @@ const App = () => (
             <Route path="grades" element={<TeacherGradesPage />} />
             <Route path="reschedule" element={<TeacherReschedulePage />} />
             <Route path="leave-approval" element={<TeacherLeaveApprovalPage />} />
-            <Route path="notifications" element={<TeacherNotificationsPage />} />
             <Route path="profile" element={<TeacherProfilePage />} />
           </Route>
 

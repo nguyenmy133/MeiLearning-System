@@ -6,6 +6,7 @@ import {
   getTuitionStats,
   approveInvoice,
   confirmCashPayment,
+  generateMonthlyInvoices,
 } from "../services";
 
 // ── Query key factory ─────────────────────────────────────────────────────────
@@ -56,6 +57,23 @@ export function useConfirmCashPayment() {
     onSuccess: (invoice) => {
       qc.invalidateQueries({ queryKey: tuitionKeys.all });
       toast.success(`Đã xác nhận thu tiền mặt từ ${invoice.studentName}`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useGenerateMonthlyInvoices() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (month: string) => generateMonthlyInvoices(month),
+    onSuccess: ({ generated, skipped }) => {
+      qc.invalidateQueries({ queryKey: tuitionKeys.all });
+      toast.success(
+        `Đã tạo ${generated} hóa đơn mới` +
+          (skipped > 0 ? ` (bỏ qua ${skipped} học viên đã có bill)` : "")
+      );
     },
     onError: (err: Error) => {
       toast.error(err.message);

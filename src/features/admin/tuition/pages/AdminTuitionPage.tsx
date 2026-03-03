@@ -60,6 +60,7 @@ import {
   useTuitionStats,
   useApproveInvoice,
   useConfirmCashPayment,
+  useGenerateMonthlyInvoices,
 } from "../hooks";
 import type { TuitionInvoice, TuitionQueryParams } from "../types";
 import {
@@ -174,6 +175,7 @@ export function AdminTuitionPage() {
   // ── Mutations ─────────────────────────────────────────────────────────────
   const approveMutation = useApproveInvoice();
   const cashMutation = useConfirmCashPayment();
+  const generateMutation = useGenerateMonthlyInvoices();
 
   const handleConfirmCash = () => {
     if (!confirmCashTarget) return;
@@ -256,13 +258,14 @@ export function AdminTuitionPage() {
             </Button>
             <Button
               size="sm"
-              onClick={() =>
-                toast.info(
-                  "Đang tự động đếm số buổi học và tạo hóa đơn hàng loạt..."
-                )
-              }
+              disabled={generateMutation.isPending}
+              onClick={() => generateMutation.mutate(filterMonth !== "all" ? filterMonth : "09/2024")}
             >
-              <TrendingUp className="w-4 h-4 mr-1" />
+              {generateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <TrendingUp className="w-4 h-4 mr-1" />
+              )}
               Chốt công &amp; Tạo Bill
             </Button>
           </div>

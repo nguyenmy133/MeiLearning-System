@@ -33,6 +33,10 @@ export async function getAttendanceSessions(
   await randomDelay();
   let result = clone(sessionDb);
 
+  if (params?.teacherId) {
+    result = result.filter((s: AttendanceSession) => s.teacherId === params.teacherId);
+  }
+
   if (params?.search) {
     const q = params.search.toLowerCase();
     result = result.filter(
@@ -82,12 +86,22 @@ export async function getAbsentAlerts(): Promise<AbsentAlert[]> {
   return clone(alertDb);
 }
 
-/** Toggle QR code on/off for a live session */
-export async function toggleQR(sessionId: number): Promise<LiveSession> {
+/** Toggle QR code on/off for a live session.
+ *  activatedBy: cần truyền vào khi Bật — dùng "admin" khi Admin override, "teacher" khi giáo viên tự bật.
+ */
+export async function toggleQR(
+  sessionId: number,
+  activatedBy: import("../types").QrActivatedBy = "admin"
+): Promise<LiveSession> {
   await randomDelay();
   const idx = liveDb.findIndex((s) => s.id === sessionId);
   if (idx === -1) throw new Error("Không tìm thấy buổi học");
-  liveDb[idx] = { ...liveDb[idx], qrActive: !liveDb[idx].qrActive };
+  const nextActive = !liveDb[idx].qrActive;
+  liveDb[idx] = {
+    ...liveDb[idx],
+    qrActive: nextActive,
+    activeBy: nextActive ? activatedBy : null,
+  };
   return clone(liveDb[idx]);
 }
 

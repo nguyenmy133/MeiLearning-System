@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { useClasses } from "@/features/admin/classes/hooks";
 import {
   QrCode,
   RefreshCw,
@@ -17,6 +18,9 @@ import {
   Save,
   Maximize2
 } from "lucide-react";
+
+// MOCK: current logged-in teacher ID — swap for auth context when BE is ready
+const CURRENT_TEACHER_ID = 1;
 
 // Mock initial data
 const initialStudents = [
@@ -34,6 +38,10 @@ export function TeacherAttendancePage() {
   const [selectedClass, setSelectedClass] = useState("");
   const [countdown, setCountdown] = useState(300); // 5 minutes
   const [students, setStudents] = useState(initialStudents);
+
+  // Fetch teacher's classes from admin service
+  const { data: classPage } = useClasses({ teacherId: CURRENT_TEACHER_ID, limit: 50 });
+  const myClasses = classPage?.data ?? [];
 
   // Handle countdown timer
   useEffect(() => {
@@ -142,8 +150,11 @@ export function TeacherAttendancePage() {
                       <SelectValue placeholder="-- Chọn lớp --" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="10a">Toán 10A</SelectItem>
-                      <SelectItem value="12b">Toán 12B</SelectItem>
+                      {myClasses.map((cls) => (
+                        <SelectItem key={cls.id} value={String(cls.id)}>
+                          {cls.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

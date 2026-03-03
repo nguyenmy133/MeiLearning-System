@@ -38,6 +38,14 @@ export type TuitionStatusType =
 
 export type Gender = "male" | "female" | "other";
 
+// ==================== CLASS ENROLLMENT ====================
+
+/** Đăng ký lớp (FK-based, BE-ready) */
+export interface ClassEnrollment {
+  classId: number;    // FK → Class.id
+  className: string;  // Tên lớp (denormalized để hiển thị)
+}
+
 export interface Student {
   id: number;
   name: string;
@@ -49,7 +57,7 @@ export interface Student {
   gender: Gender;
   grade: string;           // Lớp trường (VD: "10", "11", "12")
   address: string;
-  classes: string[];       // Danh sách tên lớp đang học
+  classes: ClassEnrollment[];  // Danh sách lớp đang học (FK-based)
   status: StudentStatusType;
   tuitionStatus: TuitionStatusType;
   enrollDate: string;      // YYYY-MM-DD
@@ -68,7 +76,7 @@ export interface CreateStudentDTO {
   email: string;
   phone: string;
   parentPhone: string;
-  classes: string[];
+  classes: ClassEnrollment[];
   username: string;
   password: string;
   // Thông tin cá nhân (tùy chọn khi tạo)
@@ -86,7 +94,7 @@ export interface UpdateStudentDTO {
   phone?: string;
   parentPhone?: string;
   address?: string;
-  classes?: string[];
+  classes?: ClassEnrollment[];
   tuitionStatus?: TuitionStatusType;
 }
 
@@ -101,7 +109,8 @@ export interface DropStudentDTO {
 
 export interface StudentQueryParams {
   search?: string;
-  className?: string;      // Lọc theo lớp
+  classId?: number;        // Lọc theo ID lớp (ưu tiên)
+  className?: string;      // Lọc theo tên lớp (legacy)
   status?: StudentStatusType;
   tuitionStatus?: TuitionStatusType;
   page?: number;
@@ -140,18 +149,21 @@ export const TUITION_STATUS_LABELS: Record<TuitionStatusType, string> = {
 
 // ==================== CONSTANTS ====================
 
-export const CLASS_OPTIONS = [
-  "IELTS-01",
-  "IELTS-02",
-  "TOEIC-A1",
-  "Toán 12-A",
-  "Toán 10-B",
-  "Hóa 11-A",
-  "Anh Văn Giao Tiếp",
-  "Tin Học Cơ Bản",
-] as const;
-
-export type ClassOptionType = (typeof CLASS_OPTIONS)[number];
+/** Danh sách lớp để chọn (phải khớp với Admin classes mockData IDs) */
+export const CLASS_OPTIONS: { id: number; name: string }[] = [
+  { id: 1,  name: "Toán 10A" },
+  { id: 2,  name: "IELTS-01" },
+  { id: 3,  name: "Hóa 11-A" },
+  { id: 4,  name: "Văn 12" },
+  { id: 5,  name: "Lý 10-B" },
+  { id: 6,  name: "TOEIC-A1" },
+  { id: 7,  name: "Sinh Học 12" },
+  { id: 8,  name: "Tin Học Cơ Bản" },
+  { id: 9,  name: "IELTS-02" },
+  { id: 10, name: "Toán 12-A" },
+  { id: 11, name: "Anh Văn Giao Tiếp" },
+  { id: 12, name: "Toán 10-B" },
+];
 
 export const DROP_REASONS = [
   "Bận việc cá nhân",

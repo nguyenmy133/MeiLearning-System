@@ -100,6 +100,7 @@ export interface ClassQueryParams {
   subject?: string;
   facility?: string;
   status?: ClassStatusType;
+  teacherId?: number;
   page?: number;
   limit?: number;
 }

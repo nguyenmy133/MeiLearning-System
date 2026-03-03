@@ -4,4 +4,5 @@ export {
   useTuitionStats,
   useApproveInvoice,
   useConfirmCashPayment,
+  useGenerateMonthlyInvoices,
 } from "./useTuition";

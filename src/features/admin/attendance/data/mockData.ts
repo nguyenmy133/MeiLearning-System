@@ -118,6 +118,7 @@ export const mockLiveSessions: LiveSession[] = [
     total: 20,
     checkedIn: 18,
     qrActive: true,
+    activeBy: "teacher",
   },
   {
     id: 102,
@@ -133,6 +134,7 @@ export const mockLiveSessions: LiveSession[] = [
     total: 15,
     checkedIn: 5,
     qrActive: false,
+    activeBy: null,
   },
 ];
 
