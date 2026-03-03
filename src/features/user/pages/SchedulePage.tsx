@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,25 +10,25 @@ const fullWeekDays = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Th�
 
 const scheduleData = [
   { day: 1, classes: [
-    { id: 1, name: "Tiếng Anh Giao tiếp", time: "08:00 - 09:30", room: "Phòng 101", teacher: "Cô Lan" },
-    { id: 2, name: "IELTS Speaking", time: "10:00 - 11:30", room: "Phòng 203", teacher: "Thầy Minh" },
+    { id: 1, name: "Toán 10A", time: "08:00 - 09:30", room: "Phòng 101", teacher: "Nguyễn Văn Toán" },
+    { id: 2, name: "Lý 10-B", time: "10:00 - 11:30", room: "Phòng 203", teacher: "Nguyễn Văn Toán" },
   ]},
   { day: 2, classes: [
-    { id: 3, name: "Business English", time: "14:00 - 15:30", room: "Phòng 105", teacher: "Cô Hương" },
+    { id: 3, name: "IELTS-01", time: "14:00 - 15:30", room: "Phòng 105", teacher: "Trần Thị Anh" },
   ]},
   { day: 3, classes: [
-    { id: 4, name: "Tiếng Anh Giao tiếp", time: "08:00 - 09:30", room: "Phòng 101", teacher: "Cô Lan" },
-    { id: 5, name: "IELTS Writing", time: "10:00 - 11:30", room: "Phòng 202", teacher: "Thầy Đức" },
+    { id: 4, name: "Toán 10A", time: "08:00 - 09:30", room: "Phòng 101", teacher: "Nguyễn Văn Toán" },
+    { id: 5, name: "Hóa 11-A", time: "10:00 - 11:30", room: "Phòng 202", teacher: "Lê Văn Hóa" },
   ]},
   { day: 4, classes: [
-    { id: 6, name: "IELTS Speaking", time: "10:00 - 11:30", room: "Phòng 203", teacher: "Thầy Minh" },
+    { id: 6, name: "Lý 10-B", time: "10:00 - 11:30", room: "Phòng 203", teacher: "Nguyễn Văn Toán" },
   ]},
   { day: 5, classes: [
-    { id: 7, name: "Business English", time: "14:00 - 15:30", room: "Phòng 105", teacher: "Cô Hương" },
-    { id: 8, name: "Tiếng Anh Giao tiếp", time: "16:00 - 17:30", room: "Phòng 101", teacher: "Cô Lan" },
+    { id: 7, name: "IELTS-01", time: "14:00 - 15:30", room: "Phòng 105", teacher: "Trần Thị Anh" },
+    { id: 8, name: "Toán 10A", time: "16:00 - 17:30", room: "Phòng 101", teacher: "Nguyễn Văn Toán" },
   ]},
   { day: 6, classes: [
-    { id: 9, name: "IELTS Practice", time: "09:00 - 11:00", room: "Phòng 301", teacher: "Thầy Minh" },
+    { id: 9, name: "Hóa 11-A", time: "09:00 - 11:00", room: "Phòng 301", teacher: "Lê Văn Hóa" },
   ]},
   { day: 0, classes: [] },
 ];
@@ -36,7 +36,10 @@ const scheduleData = [
 const getWeekDates = (offset: number) => {
   const today = new Date();
   const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay() + 1 + offset * 7);
+  // Get Monday
+  const day = today.getDay();
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+  startOfWeek.setDate(diff + offset * 7);
   
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(startOfWeek);
@@ -45,9 +48,9 @@ const getWeekDates = (offset: number) => {
   });
 };
 
-export function SchedulePage() {
+export function SchedulePage({ onCheckIn }: { onCheckIn?: (subject: string) => void }) {
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(new Date().getDay());
+
   const weekDates = getWeekDates(weekOffset);
   const today = new Date();
 
@@ -62,141 +65,91 @@ export function SchedulePage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
-          Thời khóa biểu
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Xem lịch học của bạn theo tuần
-        </p>
+    <div className="space-y-6 animate-fade-in pt-2">
+      {/* Controls Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+
+
+        {/* Week Paginator */}
+        <div className="flex items-center gap-4 bg-background border border-border rounded-lg p-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(prev => prev - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-center min-w-[140px]">
+            <p className="text-sm font-medium text-foreground">{formatDateRange()}</p>
+            <p className="text-xs text-muted-foreground">
+              {weekOffset === 0 ? "Tuần này" : weekOffset > 0 ? `${weekOffset} tuần sau` : `${Math.abs(weekOffset)} tuần trước`}
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(prev => prev + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Week Navigation */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => setWeekOffset(prev => prev - 1)}>
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div className="text-center">
-              <p className="font-medium text-foreground">{formatDateRange()}</p>
-              <p className="text-sm text-muted-foreground">
-                {weekOffset === 0 ? "Tuần này" : weekOffset > 0 ? `${weekOffset} tuần sau` : `${Math.abs(weekOffset)} tuần trước`}
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setWeekOffset(prev => prev + 1)}>
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 pb-4">
+          {weekDates.map((date, index) => {
+            const dayIndex = date.getDay(); // 0 is Sunday
+            const hasClasses = scheduleData.find(d => d.day === dayIndex)?.classes || [];
+            const currentDay = isToday(date);
 
-          {/* Week Days */}
-          <div className="grid grid-cols-7 gap-2 mt-4">
-            {weekDates.map((date, index) => {
-              const dayIndex = (index + 1) % 7; // Convert to match scheduleData (0 = Sunday)
-              const hasClasses = scheduleData.find(d => d.day === dayIndex)?.classes.length > 0;
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => setSelectedDay(dayIndex)}
-                  className={`p-2 rounded-lg text-center transition-colors ${
-                    selectedDay === dayIndex
-                      ? "bg-primary text-primary-foreground"
-                      : isToday(date)
-                      ? "bg-accent/20 text-accent"
-                      : "hover:bg-secondary"
-                  }`}
-                >
-                  <p className="text-xs font-medium">{weekDays[(index + 1) % 7]}</p>
-                  <p className={`text-lg font-bold ${selectedDay === dayIndex ? "" : "text-foreground"}`}>
-                    {date.getDate()}
-                  </p>
-                  {hasClasses && selectedDay !== dayIndex && (
-                    <div className="w-1.5 h-1.5 bg-primary rounded-full mx-auto mt-1" />
+            return (
+              <div
+                key={index}
+                className={`min-w-0 border rounded-2xl p-4 flex flex-col gap-4 bg-card ${
+                  currentDay ? "border-primary shadow-sm" : "border-border"
+                }`}
+              >
+                {/* Column Header */}
+                <div className="flex items-center flex-wrap gap-2">
+                  <span className={`font-semibold ${currentDay ? "text-primary" : "text-foreground"}`}>
+                    {dayIndex === 0 ? "CN" : `Thứ ${dayIndex + 1}`}
+                  </span>
+                  {currentDay && (
+                    <Badge variant="default" className="bg-primary text-primary-foreground hover:bg-primary border-none whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider">
+                      Hôm nay
+                    </Badge>
                   )}
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                </div>
 
-      {/* Schedule for Selected Day */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            {fullWeekDays[selectedDay]}, {weekDates[selectedDay === 0 ? 6 : selectedDay - 1]?.toLocaleDateString('vi-VN')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {scheduleData.find(d => d.day === selectedDay)?.classes.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Không có lớp học trong ngày này</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {scheduleData.find(d => d.day === selectedDay)?.classes.map((cls) => (
-                <div
-                  key={cls.id}
-                  className="p-4 bg-secondary/50 rounded-xl border border-border hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{cls.name}</h3>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
+                {/* Column Classes */}
+                <div className="flex-1 flex flex-col gap-3">
+                  {hasClasses.length > 0 ? (
+                    hasClasses.map(cls => (
+                      <div
+                        key={cls.id}
+                        className="p-3 rounded-xl bg-primary/10 border-l-[3px] border-primary flex flex-col gap-2"
+                      >
+                        <h4 className="font-semibold text-foreground text-sm">{cls.name}</h4>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
                           <span>{cls.time}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5" />
                           <span>{cls.room}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="h-4 w-4" />
-                          <span>{cls.teacher}</span>
-                        </div>
+                        
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="w-full mt-1.5 h-8 text-xs font-medium"
+                          onClick={() => onCheckIn?.(cls.name)}
+                        >
+                          Điểm danh
+                        </Button>
                       </div>
+                    ))
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground py-6 text-center">
+                      Không có lớp
                     </div>
-                    <Badge variant="outline">{cls.time.split(" - ")[0]}</Badge>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Course Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tổng quan khóa học</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-primary/5 rounded-lg text-center">
-              <p className="text-2xl font-bold text-primary">3</p>
-              <p className="text-sm text-muted-foreground">Khóa học</p>
-            </div>
-            <div className="p-4 bg-accent/5 rounded-lg text-center">
-              <p className="text-2xl font-bold text-accent">12</p>
-              <p className="text-sm text-muted-foreground">Buổi/tuần</p>
-            </div>
-            <div className="p-4 bg-info/5 rounded-lg text-center">
-              <p className="text-2xl font-bold text-info">18</p>
-              <p className="text-sm text-muted-foreground">Giờ/tuần</p>
-            </div>
-            <div className="p-4 bg-success/5 rounded-lg text-center">
-              <p className="text-2xl font-bold text-success">8</p>
-              <p className="text-sm text-muted-foreground">Tuần còn lại</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            );
+          })}
+        </div>
     </div>
   );
 }

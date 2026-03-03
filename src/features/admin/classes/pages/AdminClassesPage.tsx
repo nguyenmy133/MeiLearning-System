@@ -132,6 +132,7 @@ function TableSkeleton() {
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-5 w-28" />
           <Skeleton className="h-5 w-10" />
+          <Skeleton className="h-5 w-20" />
           <Skeleton className="h-5 w-16" />
         </div>
       ))}
@@ -286,6 +287,9 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
   const [maxStudents, setMaxStudents] = useState(
     initial?.maxStudents ?? 20
   );
+  const [pricePerSession, setPricePerSession] = useState(
+    initial?.pricePerSession ?? 150000
+  );
   const [schedule, setSchedule] = useState<SessionSlot[]>(
     initial?.schedule ?? []
   );
@@ -307,6 +311,10 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
       toast.error("Sĩ số tối đa phải từ 1 đến 200");
       return;
     }
+    if (pricePerSession < 0) {
+      toast.error("Giá mỗi buổi không được âm");
+      return;
+    }
     if (schedule.length === 0) {
       toast.error("Vui lòng chọn ít nhất một ngày học");
       return;
@@ -322,9 +330,9 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
     if (!startDate) { toast.error("Vui lòng chọn ngày bắt đầu"); return; }
 
     if (mode === "create") {
-      onSubmit({ name, subject, teacherId, facility, room, maxStudents, schedule, startDate, description } as CreateClassDTO);
+      onSubmit({ name, subject, teacherId, facility, room, maxStudents, pricePerSession, schedule, startDate, description } as CreateClassDTO);
     } else {
-      onSubmit({ name, subject, teacherId, facility, room, maxStudents, schedule, startDate, description, status } as UpdateClassDTO);
+      onSubmit({ name, subject, teacherId, facility, room, maxStudents, pricePerSession, schedule, startDate, description, status } as UpdateClassDTO);
     }
   };
 
@@ -398,17 +406,31 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
           />
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Sĩ số tối đa <span className="text-destructive">*</span></Label>
-        <Input
-          type="number"
-          min={1}
-          max={200}
-          value={maxStudents}
-          onChange={(e) => setMaxStudents(Number(e.target.value))}
-          className="w-32"
-        />
-        <p className="text-xs text-muted-foreground">Tối đa 200 học viên.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Sĩ số tối đa <span className="text-destructive">*</span></Label>
+          <Input
+            type="number"
+            min={1}
+            max={200}
+            value={maxStudents}
+            onChange={(e) => setMaxStudents(Number(e.target.value))}
+          />
+          <p className="text-xs text-muted-foreground">Tối đa 200 học viên.</p>
+        </div>
+        <div className="space-y-2">
+          <Label>Giá mỗi buổi (VND)</Label>
+          <Input
+            type="number"
+            min={0}
+            step={10000}
+            value={pricePerSession}
+            onChange={(e) => setPricePerSession(Number(e.target.value))}
+          />
+          <p className="text-xs text-muted-foreground">
+            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(pricePerSession)}
+          </p>
+        </div>
       </div>
 
       {/* Trạng thái — chỉ hiện khi Edit */}
@@ -668,6 +690,7 @@ export function AdminClassesPage() {
                   <TableHead className="hidden md:table-cell">Lịch học</TableHead>
                   <TableHead className="hidden lg:table-cell">Địa điểm</TableHead>
                   <TableHead className="text-center">Sĩ số</TableHead>
+                  <TableHead className="hidden lg:table-cell text-right">Giá/buổi</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
@@ -729,6 +752,9 @@ export function AdminClassesPage() {
                       >
                         {cls.students}/{cls.maxStudents}
                       </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-right font-medium">
+                      {new Intl.NumberFormat("vi-VN").format(cls.pricePerSession)}đ
                     </TableCell>
                     <TableCell>
                       <ClassStatusBadge status={cls.status} />

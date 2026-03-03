@@ -9,7 +9,7 @@ export const mockInvoices: TuitionInvoice[] = [
     studentAvatar:
       "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=100",
     month: "09/2024",
-    totalAmount: 2500000,
+    totalAmount: 3000000,
     discountAmount: 0,
     discountReason: null,
     dueDate: "05/10/2024",
@@ -25,10 +25,10 @@ export const mockInvoices: TuitionInvoice[] = [
         subTotal: 1500000,
       },
       {
-        className: "Lý 10 Cơ bản",
+        className: "Lý 10-B",
         billableSessions: 10,
-        pricePerSession: 100000,
-        subTotal: 1000000,
+        pricePerSession: 150000,
+        subTotal: 1500000,
       },
     ],
     createdAt: "2024-10-01T00:00:00.000Z",
@@ -42,7 +42,7 @@ export const mockInvoices: TuitionInvoice[] = [
     studentAvatar:
       "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100",
     month: "09/2024",
-    totalAmount: 1600000,
+    totalAmount: 2000000,
     discountAmount: 0,
     discountReason: null,
     dueDate: "05/10/2024",
@@ -52,10 +52,10 @@ export const mockInvoices: TuitionInvoice[] = [
     paymentProofUrl: null,
     details: [
       {
-        className: "Anh Văn B1",
+        className: "IELTS-01",
         billableSessions: 8,
-        pricePerSession: 200000,
-        subTotal: 1600000,
+        pricePerSession: 250000,
+        subTotal: 2000000,
       },
     ],
     createdAt: "2024-10-01T00:00:00.000Z",
@@ -69,7 +69,7 @@ export const mockInvoices: TuitionInvoice[] = [
     studentAvatar:
       "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100",
     month: "09/2024",
-    totalAmount: 1800000,
+    totalAmount: 1620000,
     discountAmount: 0,
     discountReason: null,
     dueDate: "05/10/2024",
@@ -79,10 +79,10 @@ export const mockInvoices: TuitionInvoice[] = [
     paymentProofUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400",
     details: [
       {
-        className: "Hóa 11",
+        className: "Hóa 11-A",
         billableSessions: 9,
-        pricePerSession: 200000,
-        subTotal: 1800000,
+        pricePerSession: 180000,
+        subTotal: 1620000,
       },
     ],
     createdAt: "2024-10-01T00:00:00.000Z",
@@ -106,7 +106,7 @@ export const mockInvoices: TuitionInvoice[] = [
     paymentProofUrl: null,
     details: [
       {
-        className: "Văn 12",
+        className: "Văn 12 - Luyện thi",
         billableSessions: 7,
         pricePerSession: 200000,
         subTotal: 1400000,
@@ -123,7 +123,7 @@ export const mockInvoices: TuitionInvoice[] = [
     studentAvatar:
       "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=100",
     month: "08/2024",
-    totalAmount: 2400000,
+    totalAmount: 2700000,
     discountAmount: 0,
     discountReason: null,
     dueDate: "05/09/2024",
@@ -139,10 +139,10 @@ export const mockInvoices: TuitionInvoice[] = [
         subTotal: 1350000,
       },
       {
-        className: "Lý 10 Cơ bản",
+        className: "Lý 10-B",
         billableSessions: 9,
-        pricePerSession: 100000,
-        subTotal: 900000,
+        pricePerSession: 150000,
+        subTotal: 1350000,
       },
     ],
     createdAt: "2024-09-01T00:00:00.000Z",

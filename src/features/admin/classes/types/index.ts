@@ -132,6 +132,8 @@ export const CLASS_STATUS_LABELS: Record<ClassStatusType, string> = {
 
 // ==================== CONSTANTS ====================
 
+/** Phải khớp với danh sách môn học (Subject.name) đang active.
+ *  Khi BE xong → thay bằng API call lấy từ GET /subjects?status=active */
 export const SUBJECT_OPTIONS = [
   "Toán",
   "Vật Lý",
@@ -140,6 +142,7 @@ export const SUBJECT_OPTIONS = [
   "Tiếng Anh",
   "Văn",
   "Tin Học",
+  "Địa Lý",
 ] as const;
 
 export type SubjectType = (typeof SUBJECT_OPTIONS)[number];

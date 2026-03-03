@@ -69,7 +69,7 @@ const documents: DocumentItem[] = [
     size: "2.5 MB",
     date: "10/12/2024",
     isNew: true,
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
   {
     id: 2,
@@ -79,17 +79,17 @@ const documents: DocumentItem[] = [
     size: "1.2 MB",
     date: "09/12/2024",
     isNew: true,
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
   {
     id: 3,
     name: "Công thức Hóa học cơ bản.xlsx",
-    course: "Hóa 10A",
+    course: "Hóa 11-A",
     type: "excel",
     size: "500 KB",
     date: "08/12/2024",
     isNew: false,
-    teacher: "Cô Lê Thị Hương",
+    teacher: "Lê Văn Hóa",
   },
   {
     id: 4,
@@ -99,17 +99,17 @@ const documents: DocumentItem[] = [
     size: "800 KB",
     date: "05/12/2024",
     isNew: false,
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
   {
     id: 5,
     name: "Slide bài giảng Vật lý - Cơ học.pptx",
-    course: "Lý 10A",
+    course: "Lý 10-B",
     type: "ppt",
     size: "5.2 MB",
     date: "03/12/2024",
     isNew: false,
-    teacher: "Cô Trần Thị Mai",
+    teacher: "Nguyễn Văn Toán",
   },
   {
     id: 6,
@@ -119,7 +119,7 @@ const documents: DocumentItem[] = [
     size: "1.8 MB",
     date: "01/12/2024",
     isNew: false,
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
   // Video items (merged from VideoLibrary)
   {
@@ -130,7 +130,7 @@ const documents: DocumentItem[] = [
     size: "",
     date: "15/12/2024",
     isNew: true,
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
     youtubeId: "dQw4w9WgXcQ",
     duration: "45:30",
     views: 234,
@@ -145,7 +145,7 @@ const documents: DocumentItem[] = [
     size: "",
     date: "12/12/2024",
     isNew: true,
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
     youtubeId: "dQw4w9WgXcQ",
     duration: "38:15",
     views: 189,
@@ -155,12 +155,12 @@ const documents: DocumentItem[] = [
   {
     id: 103,
     name: "Thí nghiệm: Định luật Newton",
-    course: "Lý 10A",
+    course: "Lý 10-B",
     type: "video",
     size: "",
     date: "08/12/2024",
     isNew: false,
-    teacher: "Cô Trần Thị Mai",
+    teacher: "Nguyễn Văn Toán",
     youtubeId: "dQw4w9WgXcQ",
     duration: "25:40",
     views: 156,
@@ -170,12 +170,12 @@ const documents: DocumentItem[] = [
   {
     id: 104,
     name: "Bài 3: Phản ứng Oxi hóa khử",
-    course: "Hóa 10A",
+    course: "Hóa 11-A",
     type: "video",
     size: "",
     date: "05/12/2024",
     isNew: false,
-    teacher: "Cô Lê Thị Hương",
+    teacher: "Lê Văn Hóa",
     youtubeId: "dQw4w9WgXcQ",
     duration: "52:10",
     views: 201,
@@ -186,9 +186,9 @@ const documents: DocumentItem[] = [
 
 const courses = [
   { id: "all", name: "Tất cả lớp" },
-  { id: "toan-10a", name: "Toán 10A" },
-  { id: "ly-10a", name: "Lý 10A" },
-  { id: "hoa-10a", name: "Hóa 10A" },
+  { id: "1", name: "Toán 10A" },
+  { id: "6", name: "Lý 10-B" },
+  { id: "3", name: "Hóa 11-A" },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -253,7 +253,7 @@ export function DocumentsPage() {
         .includes(searchQuery.toLowerCase());
       const matchesCourse =
         selectedCourse === "all" ||
-        doc.course.toLowerCase().replace(/\s/g, "-").includes(selectedCourse);
+        doc.course === courses.find(c => c.id === selectedCourse)?.name;
       return matchesSearch && matchesCourse;
     });
 

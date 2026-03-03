@@ -42,6 +42,7 @@ import { TeacherDocumentsPage } from "./features/teacher/pages/TeacherDocumentsP
 import { TeacherExamManagement } from "./features/teacher/pages/TeacherExamManagement";
 import { CreateExamPage } from "./features/teacher/pages/CreateExamPage";
 import { TeacherExamResults } from "./features/teacher/pages/TeacherExamResults";
+import { TeacherStudentExamResult } from "./features/teacher/pages/TeacherStudentExamResult";
 import { TeacherLeaveApprovalPage } from "./features/teacher/pages/TeacherLeaveApprovalPage";
 
 // Admin portal
@@ -86,8 +87,6 @@ const App = () => (
           <Route path="/user" element={<UserLayout />}>
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="check-in" element={<CheckInPage />} />
-            <Route path="schedule" element={<SchedulePage />} />
-            <Route path="attendance" element={<AttendancePage />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="exams" element={<ExamList />} />
             <Route path="exam-taking" element={<ExamTaking />} />
@@ -109,7 +108,8 @@ const App = () => (
             <Route path="exams" element={<TeacherExamManagement />} />
             <Route path="exams/create" element={<CreateExamPage />} />
             <Route path="exams/edit/:id" element={<CreateExamPage />} />
-            <Route path="exams/results/:id" element={<TeacherExamResults />} />
+            <Route path="exams/results/:examId" element={<TeacherExamResults />} />
+            <Route path="exams/results/:examId/student/:studentId" element={<TeacherStudentExamResult />} />
             <Route path="grades" element={<TeacherGradesPage />} />
             <Route path="reschedule" element={<TeacherReschedulePage />} />
             <Route path="leave-approval" element={<TeacherLeaveApprovalPage />} />

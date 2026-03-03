@@ -29,7 +29,7 @@ const notifications = [
     id: 3,
     type: "schedule",
     title: "Đổi phòng học",
-    content: "Lớp IELTS Speaking ngày 18/12 sẽ được chuyển từ phòng 203 sang phòng 205.",
+    content: "Lớp Lý 10-B ngày 18/12 sẽ được chuyển từ phòng 203 sang phòng 205.",
     time: "1 ngày trước",
     date: "15/12/2024",
     read: true
@@ -38,7 +38,7 @@ const notifications = [
     id: 4,
     type: "document",
     title: "Tài liệu mới được cập nhật",
-    content: "Giáo viên đã upload bài tập Speaking Week 2 cho lớp IELTS Speaking.",
+    content: "Giáo viên đã upload bài tập tuần 2 cho lớp Lý 10-B.",
     time: "1 ngày trước",
     date: "15/12/2024",
     read: true
@@ -56,7 +56,7 @@ const notifications = [
     id: 6,
     type: "schedule",
     title: "Lịch thi cuối kỳ",
-    content: "Lịch thi cuối kỳ khóa Tiếng Anh Giao tiếp: 25/12/2024 lúc 08:00.",
+    content: "Lịch thi cuối kỳ lớp Toán 10A: 25/12/2024 lúc 08:00.",
     time: "3 ngày trước",
     date: "13/12/2024",
     read: true

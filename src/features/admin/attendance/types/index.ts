@@ -16,7 +16,7 @@ export interface AttendanceRecord {
 
 export interface AttendanceSession {
   id: number;
-  classId: string;
+  classId: number;       // FK → Class.id (numeric)
   className: string;
   teacherName: string;
   teacherId: number;
@@ -40,7 +40,7 @@ export type QrActivatedBy = "teacher" | "admin";
 
 export interface LiveSession {
   id: number;
-  classId: string;
+  classId: number;       // FK → Class.id (numeric)
   className: string;
   teacherName: string;
   teacherId: number;
@@ -60,7 +60,7 @@ export interface AbsentAlert {
   id: number;
   studentId: number;
   studentName: string;
-  classId: string;
+  classId: number;       // FK → Class.id (numeric)
   className: string;
   absences: number;
   consecutiveAbsences: number; // số buổi vắng liên tiếp
@@ -77,17 +77,19 @@ export interface AttendanceStats {
 
 export interface AttendanceQueryParams {
   search?: string;
-  classId?: string;
+  classId?: number | string; // number FK hoặc "all"
   date?: string; // "YYYY-MM-DD"
   teacherId?: number;
 }
 
+/** Phải khớp với Class.id + Class.name trong classes/data/mockData.
+ *  Khi BE xong → thay bằng API call GET /classes?status=active */
 export const ATTENDANCE_CLASS_LIST = [
-  { id: "toan10a", name: "Toán 10A" },
-  { id: "anhvanb1", name: "Anh Văn B1" },
-  { id: "hoa11", name: "Hóa 11" },
-  { id: "van12", name: "Văn 12" },
-  { id: "ly10a", name: "Lý 10A" },
+  { id: 1, name: "Toán 10A" },
+  { id: 2, name: "IELTS-01" },
+  { id: 3, name: "Hóa 11-A" },
+  { id: 4, name: "Văn 12 - Luyện thi" },
+  { id: 6, name: "TOEIC-A1" },
 ] as const;
 
 export const ATTENDANCE_RECORD_STATUS_LABELS: Record<AttendanceRecordStatus, string> = {

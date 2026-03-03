@@ -20,9 +20,9 @@ import {
 const exams = [
   {
     id: 1,
-    title: "Kiểm tra giữa kỳ - Toán 12",
-    subject: "Toán học",
-    class: "Toán 12A",
+    title: "Kiểm tra giữa kỳ - Toán 10A",
+    subject: "Toán",
+    class: "Toán 10A",
     duration: 60, // minutes
     totalQuestions: 20,
     passingScore: 70,
@@ -36,7 +36,7 @@ const exams = [
     id: 2,
     title: "Bài tập tuần 3 - Tiếng Anh",
     subject: "Tiếng Anh",
-    class: "Tiếng Anh 10B",
+    class: "IELTS-01",
     duration: 30,
     totalQuestions: 15,
     passingScore: 60,
@@ -50,9 +50,9 @@ const exams = [
   },
   {
     id: 3,
-    title: "Ôn tập chương 1 - Vật lý",
-    subject: "Vật lý",
-    class: "Vật lý 11A",
+    title: "Ôn tập chương 1 - Vật Lý",
+    subject: "Vật Lý",
+    class: "Lý 10-B",
     duration: 45,
     totalQuestions: 25,
     passingScore: 65,

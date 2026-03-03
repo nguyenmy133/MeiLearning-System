@@ -46,7 +46,8 @@ export async function getAttendanceSessions(
     );
   }
   if (params?.classId && params.classId !== "all") {
-    result = result.filter((s: AttendanceSession) => s.classId === params.classId);
+    const filterClassId = typeof params.classId === "string" ? Number(params.classId) : params.classId;
+    result = result.filter((s: AttendanceSession) => s.classId === filterClassId);
   }
   if (params?.date) {
     result = result.filter((s: AttendanceSession) => s.date === params.date);

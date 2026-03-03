@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,22 +10,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { 
+import {
+  ArrowLeft,
   Trophy,
   CheckCircle,
   XCircle,
-  Clock,
   FileText,
   Download,
-  Share2,
-  Home,
-  RotateCcw,
   TrendingUp,
   Award,
-  Target
+  Target,
+  User,
 } from "lucide-react";
 
-// Mock exam result data
+// Mock exam result data - in real app, fetch by examId + studentId from params
 const examResult = {
   examId: 1,
   examTitle: "Kiểm tra giữa kỳ - Toán 10A",
@@ -34,8 +32,8 @@ const examResult = {
   studentName: "Nguyễn Văn A",
   studentId: "HV001",
   submittedAt: "2024-01-20 15:25:30",
-  duration: 60, // minutes
-  timeSpent: 55, // minutes
+  duration: 60,
+  timeSpent: 55,
   totalQuestions: 20,
   correctAnswers: 15,
   wrongAnswers: 4,
@@ -113,42 +111,78 @@ const examResult = {
         { id: "c", text: "(-∞, +∞)" },
         { id: "d", text: "(0, +∞)" },
       ],
-      explanation: "Tính y' = 3x² - 3. Hàm đồng biến khi y' > 0 ⟺ x² > 1 ⟺ x < -1 hoặc x > 1",
+      explanation:
+        "Tính y' = 3x² - 3. Hàm đồng biến khi y' > 0 ⟺ x² > 1 ⟺ x < -1 hoặc x > 1",
     },
   ],
 };
 
-export function ExamResult() {
+export function TeacherStudentExamResult() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const score = parseInt(searchParams.get("score") || "75");
+  const { examId, studentId } = useParams<{ examId: string; studentId: string }>();
 
   const isPassed = examResult.score >= examResult.passingScore;
   const accuracyRate = (examResult.correctAnswers / examResult.totalQuestions) * 100;
 
   const handleDownloadResult = () => {
-    // Mock download functionality
     alert("Tính năng tải kết quả đang được phát triển");
-  };
-
-  const handleShare = () => {
-    // Mock share functionality
-    alert("Tính năng chia sẻ đang được phát triển");
   };
 
   return (
     <div className="space-y-6 pb-6">
+      {/* Teacher context header */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(`/teacher/exams/results/${examId}`)}
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="gap-1 text-primary border-primary">
+              <User className="w-3 h-3" />
+              Chế độ giáo viên
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Đang xem kết quả của học viên{" "}
+              <span className="font-semibold text-foreground">
+                {examResult.studentName} ({studentId ?? examResult.studentId})
+              </span>
+            </span>
+          </div>
+          <h1 className="text-xl font-bold text-foreground mt-1">{examResult.examTitle}</h1>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleDownloadResult} className="gap-2">
+          <Download className="w-4 h-4" />
+          Xuất kết quả
+        </Button>
+      </div>
+
       {/* Result Header */}
-      <Card className={`border-2 ${isPassed ? 'border-success bg-success/5' : 'border-warning bg-warning/5'}`}>
+      <Card
+        className={`border-2 ${
+          isPassed ? "border-success bg-success/5" : "border-warning bg-warning/5"
+        }`}
+      >
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row items-center gap-6">
             {/* Score Circle */}
             <div className="relative">
-              <div className={`w-32 h-32 rounded-full flex items-center justify-center border-8 ${
-                isPassed ? 'border-success bg-success/10' : 'border-warning bg-warning/10'
-              }`}>
+              <div
+                className={`w-32 h-32 rounded-full flex items-center justify-center border-8 ${
+                  isPassed
+                    ? "border-success bg-success/10"
+                    : "border-warning bg-warning/10"
+                }`}
+              >
                 <div className="text-center">
-                  <p className={`text-4xl font-bold ${isPassed ? 'text-success' : 'text-warning'}`}>
+                  <p
+                    className={`text-4xl font-bold ${
+                      isPassed ? "text-success" : "text-warning"
+                    }`}
+                  >
                     {examResult.score}
                   </p>
                   <p className="text-xs text-muted-foreground">/{examResult.maxScore}</p>
@@ -164,10 +198,12 @@ export function ExamResult() {
             {/* Info */}
             <div className="flex-1 text-center lg:text-left space-y-3">
               <div>
-                <Badge className={`mb-2 ${isPassed ? 'bg-success' : 'bg-warning'}`}>
-                  {isPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}
+                <Badge
+                  className={`mb-2 ${isPassed ? "bg-success" : "bg-warning"}`}
+                >
+                  {isPassed ? "ĐẠT" : "CHƯA ĐẠT"}
                 </Badge>
-                <h1 className="text-2xl font-bold text-foreground">{examResult.examTitle}</h1>
+                <h2 className="text-xl font-bold text-foreground">{examResult.examTitle}</h2>
                 <p className="text-muted-foreground mt-1">
                   {examResult.subject} • {examResult.class}
                 </p>
@@ -176,33 +212,29 @@ export function ExamResult() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Số câu đúng</p>
-                  <p className="text-lg font-bold text-success">{examResult.correctAnswers}/{examResult.totalQuestions}</p>
+                  <p className="text-lg font-bold text-success">
+                    {examResult.correctAnswers}/{examResult.totalQuestions}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Độ chính xác</p>
-                  <p className="text-lg font-bold text-foreground">{accuracyRate.toFixed(1)}%</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {accuracyRate.toFixed(1)}%
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Thời gian</p>
-                  <p className="text-lg font-bold text-foreground">{examResult.timeSpent}/{examResult.duration} phút</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {examResult.timeSpent}/{examResult.duration} phút
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Xếp hạng</p>
-                  <p className="text-lg font-bold text-primary">{examResult.rank}/{examResult.totalStudents}</p>
+                  <p className="text-lg font-bold text-primary">
+                    {examResult.rank}/{examResult.totalStudents}
+                  </p>
                 </div>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex lg:flex-col gap-2">
-              <Button variant="outline" size="sm" onClick={handleDownloadResult} className="gap-2">
-                <Download className="w-4 h-4" />
-                Tải về
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-                <Share2 className="w-4 h-4" />
-                Chia sẻ
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -217,7 +249,9 @@ export function ExamResult() {
                 <CheckCircle className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-success">{examResult.correctAnswers}</p>
+                <p className="text-2xl font-bold text-success">
+                  {examResult.correctAnswers}
+                </p>
                 <p className="text-xs text-muted-foreground">Câu đúng</p>
               </div>
             </div>
@@ -231,7 +265,9 @@ export function ExamResult() {
                 <XCircle className="w-5 h-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-destructive">{examResult.wrongAnswers}</p>
+                <p className="text-2xl font-bold text-destructive">
+                  {examResult.wrongAnswers}
+                </p>
                 <p className="text-xs text-muted-foreground">Câu sai</p>
               </div>
             </div>
@@ -245,7 +281,9 @@ export function ExamResult() {
                 <FileText className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-muted-foreground">{examResult.skippedAnswers}</p>
+                <p className="text-2xl font-bold text-muted-foreground">
+                  {examResult.skippedAnswers}
+                </p>
                 <p className="text-xs text-muted-foreground">Bỏ qua</p>
               </div>
             </div>
@@ -259,7 +297,9 @@ export function ExamResult() {
                 <Target className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary">{accuracyRate.toFixed(0)}%</p>
+                <p className="text-2xl font-bold text-primary">
+                  {accuracyRate.toFixed(0)}%
+                </p>
                 <p className="text-xs text-muted-foreground">Độ chính xác</p>
               </div>
             </div>
@@ -279,9 +319,14 @@ export function ExamResult() {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Điểm số</span>
-              <span className="font-semibold">{examResult.score}/{examResult.maxScore}</span>
+              <span className="font-semibold">
+                {examResult.score}/{examResult.maxScore}
+              </span>
             </div>
-            <Progress value={(examResult.score / examResult.maxScore) * 100} className="h-2" />
+            <Progress
+              value={(examResult.score / examResult.maxScore) * 100}
+              className="h-2"
+            />
           </div>
 
           <Separator />
@@ -332,13 +377,15 @@ export function ExamResult() {
               <AccordionItem key={q.id} value={`question-${q.id}`}>
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3 text-left flex-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      q.isCorrect 
-                        ? 'bg-success/10 text-success' 
-                        : q.yourAnswer 
-                        ? 'bg-destructive/10 text-destructive'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        q.isCorrect
+                          ? "bg-success/10 text-success"
+                          : q.yourAnswer
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       {q.isCorrect ? (
                         <CheckCircle className="w-5 h-5" />
                       ) : q.yourAnswer ? (
@@ -349,9 +396,15 @@ export function ExamResult() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-foreground">Câu {index + 1}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-1">{q.question}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {q.question}
+                      </p>
                     </div>
-                    <Badge variant={q.isCorrect ? "default" : q.yourAnswer ? "destructive" : "secondary"}>
+                    <Badge
+                      variant={
+                        q.isCorrect ? "default" : q.yourAnswer ? "destructive" : "secondary"
+                      }
+                    >
                       {q.isCorrect ? "Đúng" : q.yourAnswer ? "Sai" : "Bỏ qua"}
                     </Badge>
                   </div>
@@ -360,7 +413,7 @@ export function ExamResult() {
                   <div className="pl-11 pr-4 space-y-4">
                     <div>
                       <p className="font-medium text-foreground mb-2">{q.question}</p>
-                      
+
                       {q.type === "multiple-choice" ? (
                         <div className="space-y-2">
                           {q.options?.map((option) => (
@@ -368,10 +421,10 @@ export function ExamResult() {
                               key={option.id}
                               className={`p-3 rounded-lg border-2 ${
                                 option.id === q.correctAnswer
-                                  ? 'border-success bg-success/5'
+                                  ? "border-success bg-success/5"
                                   : option.id === q.yourAnswer && !q.isCorrect
-                                  ? 'border-destructive bg-destructive/5'
-                                  : 'border-border'
+                                  ? "border-destructive bg-destructive/5"
+                                  : "border-border"
                               }`}
                             >
                               <div className="flex items-start gap-2">
@@ -382,13 +435,17 @@ export function ExamResult() {
                                   <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                                 )}
                                 <div className="flex-1">
-                                  <span className="font-semibold mr-2">{option.id.toUpperCase()}.</span>
+                                  <span className="font-semibold mr-2">
+                                    {option.id.toUpperCase()}.
+                                  </span>
                                   {option.text}
                                   {option.id === q.correctAnswer && (
                                     <Badge className="ml-2 bg-success">Đáp án đúng</Badge>
                                   )}
                                   {option.id === q.yourAnswer && !q.isCorrect && (
-                                    <Badge className="ml-2" variant="destructive">Bạn chọn</Badge>
+                                    <Badge className="ml-2" variant="destructive">
+                                      HV chọn
+                                    </Badge>
                                   )}
                                 </div>
                               </div>
@@ -398,12 +455,18 @@ export function ExamResult() {
                       ) : (
                         <div className="space-y-3">
                           <div className="p-3 rounded-lg bg-muted">
-                            <p className="text-sm font-medium text-muted-foreground mb-1">Câu trả lời của bạn:</p>
-                            <p className="text-foreground">{q.yourAnswer || "Không trả lời"}</p>
+                            <p className="text-sm font-medium text-muted-foreground mb-1">
+                              Câu trả lời của học viên:
+                            </p>
+                            <p className="text-foreground">
+                              {q.yourAnswer || "Không trả lời"}
+                            </p>
                           </div>
                           {q.teacherComment && (
                             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                              <p className="text-sm font-medium text-primary mb-1">Nhận xét của giáo viên:</p>
+                              <p className="text-sm font-medium text-primary mb-1">
+                                Nhận xét của giáo viên:
+                              </p>
                               <p className="text-foreground">{q.teacherComment}</p>
                             </div>
                           )}
@@ -416,7 +479,9 @@ export function ExamResult() {
                         <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
                           💡 Giải thích:
                         </p>
-                        <p className="text-sm text-blue-800 dark:text-blue-200">{q.explanation}</p>
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          {q.explanation}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -427,28 +492,19 @@ export function ExamResult() {
         </CardContent>
       </Card>
 
-      {/* Actions */}
+      {/* Teacher Actions - khác với student, không có nút "Làm lại bài thi" */}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Button
           variant="outline"
-          onClick={() => navigate("/user/exams")}
+          onClick={() => navigate(`/teacher/exams/results/${examId}`)}
           className="gap-2"
         >
-          <Home className="w-4 h-4" />
-          Về danh sách bài thi
+          <ArrowLeft className="w-4 h-4" />
+          Về danh sách kết quả
         </Button>
-        {!isPassed && (
-          <Button
-            onClick={() => navigate(`/user/exam-taking?id=${examResult.examId}`)}
-            className="gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Làm lại bài thi
-          </Button>
-        )}
         <Button
           variant="default"
-          onClick={() => navigate("/user/dashboard")}
+          onClick={() => navigate("/teacher/dashboard")}
           className="gap-2"
         >
           <Award className="w-4 h-4" />
@@ -462,7 +518,9 @@ export function ExamResult() {
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Học viên</p>
-              <p className="font-medium text-foreground">{examResult.studentName} ({examResult.studentId})</p>
+              <p className="font-medium text-foreground">
+                {examResult.studentName} ({examResult.studentId})
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Thời gian nộp bài</p>

@@ -5,7 +5,7 @@ import { Calendar, Users, Clock, QrCode, ChevronRight, TrendingUp } from "lucide
 
 const todayClasses = [
   { id: 1, name: "Toán 10A", time: "14:00 - 16:00", students: 8, room: "P.101" },
-  { id: 2, name: "Toán 12B", time: "16:30 - 18:30", students: 10, room: "P.102" },
+  { id: 6, name: "Lý 10-B", time: "16:30 - 18:30", students: 10, room: "P.102" },
 ];
 
 export function TeacherDashboard() {

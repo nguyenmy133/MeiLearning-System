@@ -281,7 +281,7 @@ export function AdminAttendancePage() {
                   <SelectContent>
                     <SelectItem value="all">Tất cả lớp</SelectItem>
                     {ATTENDANCE_CLASS_LIST.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem key={c.id} value={String(c.id)}>
                         {c.name}
                       </SelectItem>
                     ))}

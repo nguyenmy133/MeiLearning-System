@@ -31,7 +31,7 @@ const notifications = [
     id: 2,
     type: "student",
     title: "Học viên mới đăng ký",
-    content: "Học viên Nguyễn Thị D đã được thêm vào lớp Toán 11A.",
+    content: "Học viên Nguyễn Thị D đã được thêm vào lớp Toán 11-Nâng cao.",
     time: "1 giờ trước",
     read: false,
     icon: Users
@@ -40,7 +40,7 @@ const notifications = [
     id: 3,
     type: "system",
     title: "Nhắc nhở nhập điểm",
-    content: "Vui lòng nhập điểm kiểm tra 15 phút cho lớp Toán 12B trước ngày 25/01.",
+    content: "Vui lòng nhập điểm kiểm tra 15 phút cho lớp Lý 10-B trước ngày 25/01.",
     time: "2 giờ trước",
     read: false,
     icon: FileText
@@ -58,7 +58,7 @@ const notifications = [
     id: 5,
     type: "system",
     title: "Yêu cầu đổi lịch được duyệt",
-    content: "Yêu cầu hủy buổi dạy lớp Toán 12B ngày 20/01 đã được phê duyệt.",
+    content: "Yêu cầu hủy buổi dạy lớp Lý 10-B ngày 20/01 đã được phê duyệt.",
     time: "1 ngày trước",
     read: true,
     icon: CheckCircle

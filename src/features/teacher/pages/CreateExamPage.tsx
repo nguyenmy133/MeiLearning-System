@@ -216,10 +216,10 @@ export function CreateExamPage() {
                     <SelectValue placeholder="Chọn môn học" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="math">Toán học</SelectItem>
-                    <SelectItem value="physics">Vật lý</SelectItem>
-                    <SelectItem value="chemistry">Hóa học</SelectItem>
-                    <SelectItem value="english">Tiếng Anh</SelectItem>
+                    <SelectItem value="Toán">Toán</SelectItem>
+                    <SelectItem value="Vật Lý">Vật Lý</SelectItem>
+                    <SelectItem value="Hóa Học">Hóa Học</SelectItem>
+                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

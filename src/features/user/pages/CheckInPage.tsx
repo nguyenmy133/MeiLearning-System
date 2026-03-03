@@ -49,7 +49,7 @@ export function CheckInPage() {
                   <CheckCircle className="w-10 h-10 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Điểm danh thành công!</h3>
-                <p className="text-muted-foreground mb-4">Bạn đã điểm danh buổi học Toán lớp 10A</p>
+                <p className="text-muted-foreground mb-4">Bạn đã điểm danh buổi học Toán 10A</p>
                 <Badge className="bg-primary/10 text-primary">Đúng giờ</Badge>
               </div>
             ) : result === "error" ? (

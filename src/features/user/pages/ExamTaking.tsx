@@ -30,8 +30,8 @@ import {
 // Mock exam data
 const examData = {
   id: 1,
-  title: "Kiểm tra giữa kỳ - Toán 12",
-  subject: "Toán học",
+  title: "Kiểm tra giữa kỳ - Toán 10A",
+  subject: "Toán",
   duration: 60, // minutes
   totalQuestions: 20,
   questions: [

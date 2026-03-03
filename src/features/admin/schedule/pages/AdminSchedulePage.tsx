@@ -168,7 +168,7 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const { data: classRefs = [] } = useClassRefs();
 
   const [type, setType] = useState<"makeup" | "extra">("makeup");
-  const [classId, setClassId] = useState("");
+  const [classId, setClassId] = useState<number>(0);
   const [teacherId, setTeacherId] = useState(0);
   const [teacherName, setTeacherName] = useState("");
   const [date, setDate] = useState("");
@@ -178,7 +178,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const [room, setRoom] = useState("");
   const [notes, setNotes] = useState("");
 
-  const handleClassChange = (id: string) => {
+  const handleClassChange = (idStr: string) => {
+    const id = Number(idStr);
     setClassId(id);
     const found = classRefs.find((c) => c.id === id);
     if (found) {
@@ -273,13 +274,13 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
           <Label>
             Lớp học <span className="text-destructive">*</span>
           </Label>
-          <Select value={classId} onValueChange={handleClassChange}>
+          <Select value={classId ? String(classId) : ""} onValueChange={handleClassChange}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn lớp" />
             </SelectTrigger>
             <SelectContent>
               {classRefs.map((cls) => (
-                <SelectItem key={cls.id} value={cls.id}>
+                <SelectItem key={cls.id} value={String(cls.id)}>
                   {cls.name}
                 </SelectItem>
               ))}

@@ -4,8 +4,8 @@ export const mockSessions: ScheduledSession[] = [
   // ── Mon 16/12 ────────────────────────────────────────────────────────────
   {
     id: 1,
-    classId: "van12",
-    className: "Văn 12",
+    classId: 4,
+    className: "Văn 12 - Luyện thi",
     teacherId: 4,
     teacherName: "Phạm Minh Tuấn",
     facilityId: "q1",
@@ -23,7 +23,7 @@ export const mockSessions: ScheduledSession[] = [
   },
   {
     id: 2,
-    classId: "toan10a",
+    classId: 1,
     className: "Toán 10A",
     teacherId: 1,
     teacherName: "Nguyễn Thị Mai",
@@ -42,7 +42,7 @@ export const mockSessions: ScheduledSession[] = [
   },
   {
     id: 3,
-    classId: "toan10a",
+    classId: 1,
     className: "Toán 10A",
     teacherId: 1,
     teacherName: "Nguyễn Thị Mai",
@@ -62,8 +62,8 @@ export const mockSessions: ScheduledSession[] = [
   // ── Tue 17/12 ────────────────────────────────────────────────────────────
   {
     id: 4,
-    classId: "anhvanb1",
-    className: "Anh Văn B1",
+    classId: 2,
+    className: "IELTS-01",
     teacherId: 2,
     teacherName: "Trần Văn Hùng",
     facilityId: "q3",
@@ -82,8 +82,8 @@ export const mockSessions: ScheduledSession[] = [
   // ── Wed 18/12 ────────────────────────────────────────────────────────────
   {
     id: 5,
-    classId: "van12",
-    className: "Văn 12",
+    classId: 4,
+    className: "Văn 12 - Luyện thi",
     teacherId: 4,
     teacherName: "Phạm Minh Tuấn",
     facilityId: "q1",
@@ -101,7 +101,7 @@ export const mockSessions: ScheduledSession[] = [
   },
   {
     id: 6,
-    classId: "toan10a",
+    classId: 1,
     className: "Toán 10A",
     teacherId: 1,
     teacherName: "Nguyễn Thị Mai",
@@ -121,8 +121,8 @@ export const mockSessions: ScheduledSession[] = [
   // ── Thu 19/12 ────────────────────────────────────────────────────────────
   {
     id: 7,
-    classId: "anhvanb1",
-    className: "Anh Văn B1",
+    classId: 2,
+    className: "IELTS-01",
     teacherId: 2,
     teacherName: "Trần Văn Hùng",
     facilityId: "q3",
@@ -141,8 +141,8 @@ export const mockSessions: ScheduledSession[] = [
   // ── Fri 20/12 ────────────────────────────────────────────────────────────
   {
     id: 8,
-    classId: "van12",
-    className: "Văn 12",
+    classId: 4,
+    className: "Văn 12 - Luyện thi",
     teacherId: 4,
     teacherName: "Phạm Minh Tuấn",
     facilityId: "q1",
@@ -160,7 +160,7 @@ export const mockSessions: ScheduledSession[] = [
   },
   {
     id: 9,
-    classId: "toan10a",
+    classId: 1,
     className: "Toán 10A",
     teacherId: 1,
     teacherName: "Nguyễn Thị Mai",
@@ -180,14 +180,14 @@ export const mockSessions: ScheduledSession[] = [
   // ── Sat 21/12 ────────────────────────────────────────────────────────────
   {
     id: 10,
-    classId: "hoa11",
-    className: "Hóa 11",
+    classId: 3,
+    className: "Hóa 11-A",
     teacherId: 3,
     teacherName: "Lê Thị Hương",
     facilityId: "td",
     facilityName: "Cơ sở Thủ Đức",
     facilityShort: "TĐ",
-    room: "Phòng Lab 1",
+    room: "Phòng TD-Lab",
     date: "2024-12-21",
     startTime: "08:00",
     endTime: "10:00",
@@ -200,14 +200,14 @@ export const mockSessions: ScheduledSession[] = [
   // ── Sun 22/12 ────────────────────────────────────────────────────────────
   {
     id: 11,
-    classId: "hoa11",
-    className: "Hóa 11",
+    classId: 3,
+    className: "Hóa 11-A",
     teacherId: 3,
     teacherName: "Lê Thị Hương",
     facilityId: "td",
     facilityName: "Cơ sở Thủ Đức",
     facilityShort: "TĐ",
-    room: "Phòng Lab 1",
+    room: "Phòng TD-Lab",
     date: "2024-12-22",
     startTime: "08:00",
     endTime: "10:00",
@@ -220,9 +220,10 @@ export const mockSessions: ScheduledSession[] = [
 ];
 
 export const mockClassRefs: ClassRef[] = [
-  { id: "toan10a", name: "Toán 10A", teacherId: 1, teacherName: "Nguyễn Thị Mai", defaultStartTime: "18:00", defaultEndTime: "20:00", students: 18 },
-  { id: "anhvanb1", name: "Anh Văn B1", teacherId: 2, teacherName: "Trần Văn Hùng", defaultStartTime: "19:00", defaultEndTime: "21:00", students: 15 },
-  { id: "hoa11", name: "Hóa 11", teacherId: 3, teacherName: "Lê Thị Hương", defaultStartTime: "08:00", defaultEndTime: "10:00", students: 12 },
-  { id: "van12", name: "Văn 12 - Luyện thi", teacherId: 4, teacherName: "Phạm Minh Tuấn", defaultStartTime: "08:00", defaultEndTime: "10:00", students: 22 },
-  { id: "ly10a", name: "Lý 10A", teacherId: 1, teacherName: "Nguyễn Thị Mai", defaultStartTime: "18:00", defaultEndTime: "20:00", students: 20 },
+  { id: 1, name: "Toán 10A", teacherId: 1, teacherName: "Nguyễn Thị Mai", defaultStartTime: "18:00", defaultEndTime: "20:00", students: 18 },
+  { id: 2, name: "IELTS-01", teacherId: 2, teacherName: "Trần Văn Hùng", defaultStartTime: "19:00", defaultEndTime: "21:00", students: 15 },
+  { id: 3, name: "Hóa 11-A", teacherId: 3, teacherName: "Lê Thị Hương", defaultStartTime: "08:00", defaultEndTime: "10:00", students: 12 },
+  { id: 4, name: "Văn 12 - Luyện thi", teacherId: 4, teacherName: "Phạm Minh Tuấn", defaultStartTime: "08:00", defaultEndTime: "10:00", students: 22 },
+  { id: 5, name: "Lý 10-B", teacherId: 1, teacherName: "Nguyễn Thị Mai", defaultStartTime: "18:00", defaultEndTime: "20:00", students: 0 },
+  { id: 6, name: "TOEIC-A1", teacherId: 2, teacherName: "Trần Văn Hùng", defaultStartTime: "17:30", defaultEndTime: "19:30", students: 10 },
 ];

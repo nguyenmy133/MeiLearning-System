@@ -56,9 +56,9 @@ import { useToast } from "@/hooks/use-toast";
 
 // Mock classes for sharing
 const availableClasses = [
-  { id: "toan-10a", name: "Toán 10A", students: 32 },
-  { id: "toan-11b", name: "Toán 11B", students: 28 },
-  { id: "toan-12c", name: "Toán 12C", students: 25 },
+  { id: "1", name: "Toán 10A", students: 32 },
+  { id: "8", name: "Toán 11-Nâng cao", students: 28 },
+  { id: "6", name: "Lý 10-B", students: 25 },
 ];
 
 // Mock data
@@ -78,7 +78,7 @@ const mockDocuments = [
     name: "Bài tập Hình học không gian",
     type: "pdf",
     size: "1.8 MB",
-    class: "Toán 11B",
+    class: "Toán 11-Nâng cao",
     category: "Bài tập",
     uploadDate: "12/01/2025",
     downloads: 32,
@@ -88,7 +88,7 @@ const mockDocuments = [
     name: "Video bài giảng - Tích phân",
     type: "video",
     size: "125 MB",
-    class: "Toán 12C",
+    class: "Lý 10-B",
     category: "Video",
     uploadDate: "10/01/2025",
     downloads: 28,
@@ -108,7 +108,7 @@ const mockDocuments = [
     name: "Đề kiểm tra 15 phút - Đại số",
     type: "doc",
     size: "450 KB",
-    class: "Toán 11B",
+    class: "Toán 11-Nâng cao",
     category: "Đề thi",
     uploadDate: "05/01/2025",
     downloads: 18,
@@ -137,9 +137,9 @@ const categories = [
 
 const classes = [
   { value: "all", label: "Tất cả lớp" },
-  { value: "toan-10a", label: "Toán 10A" },
-  { value: "toan-11b", label: "Toán 11B" },
-  { value: "toan-12c", label: "Toán 12C" },
+  { value: "1", label: "Toán 10A" },
+  { value: "8", label: "Toán 11-Nâng cao" },
+  { value: "6", label: "Lý 10-B" },
 ];
 
 function getFileIcon(type: string) {
@@ -352,9 +352,9 @@ export function TeacherDocumentsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Tất cả lớp</SelectItem>
-                        <SelectItem value="toan-10a">Toán 10A</SelectItem>
-                        <SelectItem value="toan-11b">Toán 11B</SelectItem>
-                        <SelectItem value="toan-12c">Toán 12C</SelectItem>
+                        <SelectItem value="1">Toán 10A</SelectItem>
+                        <SelectItem value="8">Toán 11-Nâng cao</SelectItem>
+                        <SelectItem value="6">Lý 10-B</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

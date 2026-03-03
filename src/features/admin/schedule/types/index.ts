@@ -3,9 +3,9 @@ export type SessionType = "regular" | "makeup" | "extra";
 
 export interface ScheduledSession {
   id: number;
-  classId: string;
+  classId: number;       // FK → Class.id (numeric)
   className: string;
-  teacherId: number;   // FK → Teacher.id
+  teacherId: number;     // FK → Teacher.id
   teacherName: string;
   facilityId: string;
   facilityName: string;
@@ -23,9 +23,9 @@ export interface ScheduledSession {
 }
 
 export interface ClassRef {
-  id: string;
+  id: number;            // FK → Class.id (numeric)
   name: string;
-  teacherId: number;    // FK → Teacher.id
+  teacherId: number;     // FK → Teacher.id
   teacherName: string;
   defaultStartTime: string;
   defaultEndTime: string;
@@ -34,8 +34,8 @@ export interface ClassRef {
 
 export interface AddSessionDTO {
   type: "makeup" | "extra";
-  classId: string;
-  teacherId: number;   // FK → Teacher.id
+  classId: number;       // FK → Class.id (numeric)
+  teacherId: number;     // FK → Teacher.id
   teacherName: string;
   date: string; // "YYYY-MM-DD"
   startTime: string; // "HH:mm"
@@ -72,9 +72,9 @@ export const FACILITIES = [
 ] as const;
 
 export const ROOMS_BY_FACILITY: Record<string, string[]> = {
-  q1: ["Phòng 101", "Phòng 102", "Phòng 201"],
-  q3: ["Phòng A1", "Phòng A2"],
-  td: ["Phòng Lab 1", "Phòng Lab 2"],
+  q1: ["Phòng 101", "Phòng 102", "Phòng 201 - Lab", "Phòng 202", "Hội trường A"],
+  q3: ["Phòng A1", "Phòng A2", "Phòng B1 - Lab", "Phòng B2"],
+  td: ["Phòng TD-01", "Phòng TD-02", "Phòng TD-Lab", "Phòng TD-03"],
 };
 
 /** Index 0 = Sunday, 1 = Monday … 6 = Saturday */

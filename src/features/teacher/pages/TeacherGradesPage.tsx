@@ -77,13 +77,13 @@ interface Student {
 
 const classes = [
   { id: 1, name: "Toán 10A" },
-  { id: 2, name: "Toán 11A" },
-  { id: 3, name: "Toán 12B" },
+  { id: 8, name: "Toán 11-Nâng cao" },
+  { id: 6, name: "Lý 10-B" },
 ];
 
 // Bài thi đã kết thúc cho lớp Toán 10A (consistent with TeacherExamManagement)
 const completedExams: Exam[] = [
-  { id: 1, title: "Kiểm tra giữa kỳ - Toán 12", date: "20/01/2024" },
+  { id: 1, title: "Kiểm tra giữa kỳ - Toán 10A", date: "20/01/2024" },
   { id: 2, title: "Bài tập tuần 3 - Đạo hàm", date: "29/01/2024" },
 ];
 

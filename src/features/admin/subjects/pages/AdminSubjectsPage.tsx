@@ -99,6 +99,7 @@ function TableSkeleton() {
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-14" /></TableCell>
           <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
           <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
           <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -123,6 +124,9 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
   const [code, setCode] = useState(initial?.code ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [category, setCategory] = useState(initial?.category ?? SUBJECT_CATEGORIES[0]);
+  const [basePricePerSession, setBasePricePerSession] = useState(
+    initial?.basePricePerSession ?? 0
+  );
   const [status, setStatus] = useState<Subject["status"]>(initial?.status ?? "active");
   const [facilities, setFacilities] = useState<string[]>(initial?.facilities ?? []);
 
@@ -132,11 +136,14 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
     );
   };
 
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("vi-VN").format(value);
+
   const handleSubmit = () => {
     if (mode === "create") {
-      onSubmit({ name, code, description, category, facilities } as CreateSubjectDTO);
+      onSubmit({ name, code, description, category, basePricePerSession, facilities } as CreateSubjectDTO);
     } else {
-      onSubmit({ name, code, description, category, facilities, status } as UpdateSubjectDTO);
+      onSubmit({ name, code, description, category, basePricePerSession, facilities, status } as UpdateSubjectDTO);
     }
   };
 
@@ -197,6 +204,25 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
               </SelectContent>
             </Select>
           </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>
+          Giá mỗi buổi học (VND) <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          type="number"
+          min={0}
+          step={10000}
+          value={basePricePerSession}
+          onChange={(e) => setBasePricePerSession(Number(e.target.value))}
+          placeholder="VD: 150000"
+        />
+        {basePricePerSession > 0 && (
+          <p className="text-xs text-muted-foreground">
+            = {formatCurrency(basePricePerSession)}₫ / buổi (giá tham khảo khi tạo lớp)
+          </p>
         )}
       </div>
 
@@ -408,6 +434,7 @@ export function AdminSubjectsPage() {
                 <TableHead className="hidden sm:table-cell">Mã môn</TableHead>
                 <TableHead className="hidden md:table-cell">Phân loại</TableHead>
                 <TableHead className="hidden lg:table-cell">Cơ sở giảng dạy</TableHead>
+                <TableHead className="hidden md:table-cell">Giá/buổi</TableHead>
                 <TableHead className="text-center hidden sm:table-cell">Giáo viên</TableHead>
                 <TableHead className="text-center hidden sm:table-cell">Lớp học</TableHead>
                 <TableHead>Trạng thái</TableHead>
@@ -419,7 +446,7 @@ export function AdminSubjectsPage() {
                 <TableSkeleton />
               ) : subjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={9} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <BookOpen className="w-8 h-8 opacity-30" />
                       <p>Không tìm thấy môn học nào</p>
@@ -467,6 +494,12 @@ export function AdminSubjectsPage() {
                           </Badge>
                         ))}
                       </div>
+                    </TableCell>
+
+                    <TableCell className="hidden md:table-cell">
+                      <span className="text-sm font-medium text-primary">
+                        {new Intl.NumberFormat("vi-VN").format(subject.basePricePerSession)}₫
+                      </span>
                     </TableCell>
 
                     <TableCell className="text-center hidden sm:table-cell">

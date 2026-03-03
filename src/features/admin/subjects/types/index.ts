@@ -6,6 +6,8 @@ export interface Subject {
   code: string;
   description: string;
   category: string;
+  /** Giá tham khảo mỗi buổi học (VND) — dùng làm mặc định khi tạo lớp */
+  basePricePerSession: number;
   teachers: number;
   classes: number;
   status: SubjectStatus;
@@ -19,6 +21,7 @@ export interface CreateSubjectDTO {
   code: string;
   description: string;
   category: string;
+  basePricePerSession: number;
   facilities: string[];
 }
 
@@ -27,6 +30,7 @@ export interface UpdateSubjectDTO {
   code?: string;
   description?: string;
   category?: string;
+  basePricePerSession?: number;
   facilities?: string[];
   status?: SubjectStatus;
 }

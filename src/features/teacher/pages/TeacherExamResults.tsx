@@ -35,8 +35,8 @@ import {
 const examInfo = {
   id: 1,
   title: "Kiểm tra giữa kỳ - Toán 12",
-  subject: "Toán học",
-  classes: ["Toán 12A", "Toán 12B"],
+  subject: "Toán",
+  classes: ["Toán 10A", "Lý 10-B"],
   totalQuestions: 20,
   totalPoints: 100,
   passingScore: 70,
@@ -57,7 +57,7 @@ const studentResults = [
     id: 1,
     studentId: "HV001",
     studentName: "Nguyễn Văn A",
-    class: "Toán 12A",
+    class: "Toán 10A",
     score: 85,
     correctAnswers: 17,
     timeSpent: 48,
@@ -68,7 +68,7 @@ const studentResults = [
     id: 2,
     studentId: "HV002",
     studentName: "Trần Thị B",
-    class: "Toán 12A",
+    class: "Toán 10A",
     score: 92,
     correctAnswers: 18,
     timeSpent: 55,
@@ -79,7 +79,7 @@ const studentResults = [
     id: 3,
     studentId: "HV003",
     studentName: "Lê Văn C",
-    class: "Toán 12B",
+    class: "Lý 10-B",
     score: 65,
     correctAnswers: 13,
     timeSpent: 50,
@@ -90,7 +90,7 @@ const studentResults = [
     id: 4,
     studentId: "HV004",
     studentName: "Phạm Thị D",
-    class: "Toán 12B",
+    class: "Lý 10-B",
     score: 78,
     correctAnswers: 15,
     timeSpent: 45,
@@ -323,7 +323,7 @@ export function TeacherExamResults() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/user/exam-result?id=${examInfo.id}&studentId=${student.studentId}`)}
+                        onClick={() => navigate(`/teacher/exams/results/${examInfo.id}/student/${student.studentId}`)}
                         className="gap-2"
                       >
                         <Eye className="w-4 h-4" />

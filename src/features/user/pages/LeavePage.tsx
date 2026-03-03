@@ -76,7 +76,7 @@ const initialLeaveRequests: LeaveRequest[] = [
     reason: "Em bị kẹt xe trên đường đi học, dự kiến đến muộn 15 phút.",
     status: "approved",
     createdAt: "15/12/2024",
-    reviewedBy: "Thầy Nguyễn Văn An",
+    reviewedBy: "Nguyễn Văn Toán",
     reviewedAt: "15/12/2024",
   },
   {
@@ -88,7 +88,7 @@ const initialLeaveRequests: LeaveRequest[] = [
     reason: "Đi khám bệnh theo lịch hẹn bệnh viện.",
     status: "approved",
     createdAt: "08/12/2024",
-    reviewedBy: "Thầy Nguyễn Văn An",
+    reviewedBy: "Nguyễn Văn Toán",
     reviewedAt: "08/12/2024",
   },
   {
@@ -100,7 +100,7 @@ const initialLeaveRequests: LeaveRequest[] = [
     reason: "Tham dự đám cưới anh/chị.",
     status: "rejected",
     createdAt: "03/12/2024",
-    reviewedBy: "Thầy Nguyễn Văn An",
+    reviewedBy: "Nguyễn Văn Toán",
     reviewedAt: "03/12/2024",
     rejectReason: "Đã quá hạn gửi đơn (cần gửi trước 24 giờ).",
   },
@@ -113,21 +113,21 @@ const upcomingClasses = [
     name: "Toán 10A",
     date: "22/12/2024",
     time: "18:00 - 20:00",
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
   {
     id: 2,
     name: "Toán 10A",
     date: "24/12/2024",
     time: "18:00 - 20:00",
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
   {
     id: 3,
     name: "Toán 10A",
     date: "26/12/2024",
     time: "18:00 - 20:00",
-    teacher: "Thầy Nguyễn Văn An",
+    teacher: "Nguyễn Văn Toán",
   },
 ];
 

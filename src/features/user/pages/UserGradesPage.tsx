@@ -65,11 +65,11 @@ const gradesData: SubjectGrade[] = [
   {
     id: 1,
     className: "Toán 10A",
-    subjectName: "Toán học",
-    teacher: "Thầy Nguyễn Văn An",
+    subjectName: "Toán",
+    teacher: "Nguyễn Văn Toán",
     teacherAvatar: "",
     examScores: [
-      { examId: 1, examTitle: "Kiểm tra giữa kỳ - Toán 12", score: 8.5, passed: true, date: "20/01/2024" },
+      { examId: 1, examTitle: "Kiểm tra giữa kỳ - Toán 10A", score: 8.5, passed: true, date: "20/01/2024" },
       { examId: 2, examTitle: "Bài tập tuần 3 - Đạo hàm", score: 9.0, passed: true, date: "29/01/2024" },
     ],
     avgScore: 8.8,
@@ -81,13 +81,13 @@ const gradesData: SubjectGrade[] = [
   },
   {
     id: 2,
-    className: "Lý 10A",
-    subjectName: "Vật lý",
-    teacher: "Cô Trần Thị Mai",
+    className: "Lý 10-B",
+    subjectName: "Vật Lý",
+    teacher: "Nguyễn Văn Toán",
     teacherAvatar: "",
     examScores: [
       { examId: 10, examTitle: "KT chương 1 - Cơ học", score: 7.5, passed: true, date: "08/10/2024" },
-      { examId: 11, examTitle: "Kiểm tra giữa kỳ - Lý 10", score: 7.0, passed: true, date: "28/11/2024" },
+      { examId: 11, examTitle: "Kiểm tra giữa kỳ - Lý 10-B", score: 7.0, passed: true, date: "28/11/2024" },
     ],
     avgScore: 7.3,
     trend: "stable",
@@ -98,13 +98,13 @@ const gradesData: SubjectGrade[] = [
   },
   {
     id: 3,
-    className: "Hóa 10A",
-    subjectName: "Hóa học",
-    teacher: "Cô Lê Thị Hương",
+    className: "Hóa 11-A",
+    subjectName: "Hóa Học",
+    teacher: "Lê Văn Hóa",
     teacherAvatar: "",
     examScores: [
       { examId: 20, examTitle: "KT 15 phút - Oxi hóa khử", score: 9.0, passed: true, date: "06/10/2024" },
-      { examId: 21, examTitle: "KT giữa kỳ - Hóa 10", score: 9.5, passed: true, date: "22/11/2024" },
+      { examId: 21, examTitle: "KT giữa kỳ - Hóa 11-A", score: 9.5, passed: true, date: "22/11/2024" },
     ],
     avgScore: 9.3,
     trend: "up",
@@ -115,9 +115,9 @@ const gradesData: SubjectGrade[] = [
   },
   {
     id: 4,
-    className: "Anh Văn B1",
+    className: "IELTS-01",
     subjectName: "Tiếng Anh",
-    teacher: "Thầy Trần Văn Hùng",
+    teacher: "Trần Thị Anh",
     teacherAvatar: "",
     examScores: [
       { examId: 30, examTitle: "Reading Test Unit 1-3", score: 6.5, passed: true, date: "10/10/2024" },

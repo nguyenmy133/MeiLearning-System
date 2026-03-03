@@ -49,12 +49,15 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   overdue: "Quá hạn",
 };
 
+/** Phải khớp với Class.name trong classes/data/mockData.
+ *  Khi BE xong → thay bằng API call GET /classes?status=active */
 export const TUITION_CLASS_LIST = [
   "Toán 10A",
-  "Lý 10 Cơ bản",
-  "Anh Văn B1",
-  "Hóa 11",
-  "Văn 12",
+  "Lý 10-B",
+  "IELTS-01",
+  "Hóa 11-A",
+  "Văn 12 - Luyện thi",
+  "TOEIC-A1",
 ] as const;
 
 export const TUITION_MONTHS = ["09/2024", "08/2024"] as const;

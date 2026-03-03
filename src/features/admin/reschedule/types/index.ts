@@ -3,7 +3,7 @@ export type RequestStatus = "pending" | "approved" | "rejected";
 
 export interface RescheduleRequest {
   id: string;
-  classId: string;          // FK → Class.id
+  classId: number;          // FK → Class.id (numeric)
   sessionId: number | null; // FK → ScheduledSession.id (null nếu request tổng quát)
   teacherId: number;
   teacherName: string;

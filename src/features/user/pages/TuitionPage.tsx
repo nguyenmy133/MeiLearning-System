@@ -10,12 +10,12 @@ import { QRPaymentModal } from "@/components/QRPaymentModal";
 const currentInvoice = {
   id: "INV_092024_001",
   month: "09/2024",
-  totalAmount: 2500000,
+  totalAmount: 3000000,
   dueDate: "05/10/2024",
   status: "pending",
   details: [
     { className: "Toán 10A", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 },
-    { className: "Lý 10 Cơ bản", billableSessions: 10, pricePerSession: 100000, subTotal: 1000000 }
+    { className: "Lý 10-B", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 }
   ]
 };
 

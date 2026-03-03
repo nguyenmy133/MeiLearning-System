@@ -47,6 +47,16 @@ const menuItems = [
   { icon: User, label: "Hồ sơ", href: "/teacher/profile" },
 ];
 
+function getPageTitle(pathname: string): string {
+  // Exact match first
+  const exact = menuItems.find(item => item.href === pathname);
+  if (exact) return exact.label;
+  // StartsWith match — sort by length desc to match most specific route first
+  const sorted = [...menuItems].sort((a, b) => b.href.length - a.href.length);
+  const partial = sorted.find(item => pathname.startsWith(item.href + "/"));
+  return partial?.label ?? "Dashboard";
+}
+
 export function TeacherLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -178,7 +188,7 @@ export function TeacherLayout() {
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-display font-semibold text-foreground hidden sm:block">
-              {menuItems.find(item => item.href === location.pathname)?.label || "Dashboard"}
+              {getPageTitle(location.pathname)}
             </h1>
           </div>
 

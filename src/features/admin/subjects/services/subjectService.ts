@@ -78,6 +78,10 @@ export async function createSubject(dto: CreateSubjectDTO): Promise<Subject> {
   if (!dto.facilities || dto.facilities.length === 0) {
     throw new Error("Phải chọn ít nhất một cơ sở giảng dạy");
   }
+  // Validate price
+  if (dto.basePricePerSession < 0) {
+    throw new Error("Giá mỗi buổi học không được âm");
+  }
 
   const now = new Date().toISOString();
   const subject: Subject = {

@@ -49,7 +49,7 @@ const requests = [
   {
     id: "RS-202401-003",
     type: "reschedule",
-    className: "Toán 12B",
+    className: "Lý 10-B",
     originalDate: "22/01/2024",
     originalTime: "16:30 - 18:30",
     requestedDate: "23/01/2024",
@@ -61,7 +61,7 @@ const requests = [
   {
     id: "RS-202401-005",
     type: "reschedule",
-    className: "Toán 11A",
+    className: "Toán 11-Nâng cao",
     originalDate: "12/01/2024",
     originalTime: "14:00 - 16:00",
     requestedDate: "14/01/2024",
@@ -75,7 +75,7 @@ const requests = [
   {
     id: "RS-202401-006",
     type: "reschedule",
-    className: "Toán 11A",
+    className: "Toán 11-Nâng cao",
     originalDate: "10/01/2024",
     originalTime: "14:00 - 16:00",
     requestedDate: "11/01/2024",
@@ -89,10 +89,8 @@ const requests = [
 
 const classes = [
   { id: 1, name: "Toán 10A", schedule: "Thứ 2, 4 | 14:00 - 16:00" },
-  { id: 2, name: "Toán 11A", schedule: "Thứ 3, 5 | 14:00 - 16:00" },
-  { id: 3, name: "Toán 12B", schedule: "Thứ 2, 5 | 16:30 - 18:30" },
-  { id: 4, name: "Toán 10B", schedule: "Thứ 4, 6 | 18:00 - 20:00" },
-  { id: 5, name: "Ôn thi THPT", schedule: "Thứ 7 | 08:00 - 11:00" },
+  { id: 6, name: "Lý 10-B", schedule: "Thứ 3, 5 | 14:00 - 16:00" },
+  { id: 8, name: "Toán 11-Nâng cao", schedule: "Thứ 2, 5 | 16:30 - 18:30" },
 ];
 
 export function TeacherReschedulePage() {

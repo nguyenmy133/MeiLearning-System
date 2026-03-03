@@ -7,7 +7,6 @@ import {
   FileText,
   CreditCard,
   ClipboardList,
-  MessageSquare,
   Bell,
   User,
   LogOut,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ZaloWidget } from "@/components/ZaloWidget";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,16 +36,31 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/user/dashboard" },
-  { icon: Calendar, label: "Thời khóa biểu", href: "/user/schedule" },
-  { icon: History, label: "Lịch sử điểm danh", href: "/user/attendance" },
   { icon: FileText, label: "Tài liệu & Video", href: "/user/documents" },
   { icon: FileCheck, label: "Bài thi", href: "/user/exams" },
   { icon: Award, label: "Kết quả học tập", href: "/user/grades" },
   { icon: CreditCard, label: "Học phí", href: "/user/tuition" },
   { icon: ClipboardList, label: "Xin nghỉ/đi muộn", href: "/user/leave" },
-  { icon: MessageSquare, label: "Liên hệ Zalo", href: "https://zalo.me", external: true },
   { icon: User, label: "Hồ sơ", href: "/user/profile" },
 ];
+
+// Map sub-routes that don't share a prefix with any menuItem href
+const subRouteMap: Record<string, string> = {
+  "/user/exam-taking": "Bài thi",
+  "/user/exam-result": "Bài thi",
+};
+
+function getPageTitle(pathname: string): string {
+  // Check explicit sub-route map first
+  if (subRouteMap[pathname]) return subRouteMap[pathname];
+  // Exact match
+  const exact = menuItems.find(item => item.href === pathname);
+  if (exact) return exact.label;
+  // StartsWith match — sort by length desc to match most specific route first
+  const sorted = [...menuItems].sort((a, b) => b.href.length - a.href.length);
+  const partial = sorted.find(item => pathname.startsWith(item.href + "/"));
+  return partial?.label ?? "Dashboard";
+}
 
 export function UserLayout() {
   const location = useLocation();
@@ -88,32 +103,17 @@ export function UserLayout() {
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
-              const className = `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+              const cls = `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                 isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`;
               return (
                 <li key={item.href}>
-                  {(item as any).external ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={className}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-                    </a>
-                  ) : (
-                    <Link
-                      to={item.href}
-                      className={className}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-                    </Link>
-                  )}
+                  <Link to={item.href} className={cls}>
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+                  </Link>
                 </li>
               );
             })}
@@ -176,27 +176,14 @@ export function UserLayout() {
               }`;
               return (
                 <li key={item.href}>
-                  {(item as any).external ? (
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setMobileSidebarOpen(false)}
-                      className={cls}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </a>
-                  ) : (
-                    <Link
-                      to={item.href}
-                      onClick={() => setMobileSidebarOpen(false)}
-                      className={cls}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </Link>
-                  )}
+                  <Link
+                    to={item.href}
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className={cls}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
                 </li>
               );
             })}
@@ -216,7 +203,7 @@ export function UserLayout() {
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-display font-semibold text-foreground hidden sm:block">
-              {menuItems.find(item => item.href === location.pathname)?.label || "Dashboard"}
+              {getPageTitle(location.pathname)}
             </h1>
           </div>
 
@@ -296,6 +283,9 @@ export function UserLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Zalo contact widget */}
+      <ZaloWidget />
     </div>
   );
 }

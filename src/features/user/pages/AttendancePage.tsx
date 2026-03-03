@@ -6,24 +6,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 
 const attendanceRecords = [
-  { id: 1, date: "16/12/2024", day: "Thứ hai", class: "Tiếng Anh Giao tiếp", time: "08:00", status: "present", checkInTime: "07:55" },
-  { id: 2, date: "16/12/2024", day: "Thứ hai", class: "IELTS Speaking", time: "10:00", status: "present", checkInTime: "09:58" },
-  { id: 3, date: "14/12/2024", day: "Thứ bảy", class: "IELTS Practice", time: "09:00", status: "present", checkInTime: "08:50" },
-  { id: 4, date: "13/12/2024", day: "Thứ sáu", class: "Business English", time: "14:00", status: "late", checkInTime: "14:20" },
-  { id: 5, date: "13/12/2024", day: "Thứ sáu", class: "Tiếng Anh Giao tiếp", time: "16:00", status: "present", checkInTime: "15:55" },
-  { id: 6, date: "12/12/2024", day: "Thứ năm", class: "IELTS Speaking", time: "10:00", status: "absent", checkInTime: null },
-  { id: 7, date: "11/12/2024", day: "Thứ tư", class: "Tiếng Anh Giao tiếp", time: "08:00", status: "present", checkInTime: "07:50" },
-  { id: 8, date: "11/12/2024", day: "Thứ tư", class: "IELTS Writing", time: "10:00", status: "present", checkInTime: "09:55" },
-  { id: 9, date: "10/12/2024", day: "Thứ ba", class: "Business English", time: "14:00", status: "present", checkInTime: "13:58" },
-  { id: 10, date: "09/12/2024", day: "Thứ hai", class: "Tiếng Anh Giao tiếp", time: "08:00", status: "late", checkInTime: "08:18" },
+  { id: 1, date: "16/12/2024", day: "Thứ hai", class: "Toán 10A", time: "08:00", status: "present", checkInTime: "07:55" },
+  { id: 2, date: "16/12/2024", day: "Thứ hai", class: "Lý 10-B", time: "10:00", status: "present", checkInTime: "09:58" },
+  { id: 3, date: "14/12/2024", day: "Thứ bảy", class: "Hóa 11-A", time: "09:00", status: "present", checkInTime: "08:50" },
+  { id: 4, date: "13/12/2024", day: "Thứ sáu", class: "IELTS-01", time: "14:00", status: "late", checkInTime: "14:20" },
+  { id: 5, date: "13/12/2024", day: "Thứ sáu", class: "Toán 10A", time: "16:00", status: "present", checkInTime: "15:55" },
+  { id: 6, date: "12/12/2024", day: "Thứ năm", class: "Lý 10-B", time: "10:00", status: "absent", checkInTime: null },
+  { id: 7, date: "11/12/2024", day: "Thứ tư", class: "Toán 10A", time: "08:00", status: "present", checkInTime: "07:50" },
+  { id: 8, date: "11/12/2024", day: "Thứ tư", class: "Hóa 11-A", time: "10:00", status: "present", checkInTime: "09:55" },
+  { id: 9, date: "10/12/2024", day: "Thứ ba", class: "IELTS-01", time: "14:00", status: "present", checkInTime: "13:58" },
+  { id: 10, date: "09/12/2024", day: "Thứ hai", class: "Toán 10A", time: "08:00", status: "late", checkInTime: "08:18" },
 ];
 
 const courses = [
-  { id: "all", name: "Tất cả khóa học" },
-  { id: "english", name: "Tiếng Anh Giao tiếp" },
-  { id: "ielts-speaking", name: "IELTS Speaking" },
-  { id: "ielts-writing", name: "IELTS Writing" },
-  { id: "business", name: "Business English" },
+  { id: "all", name: "Tất cả lớp học" },
+  { id: "1", name: "Toán 10A" },
+  { id: "6", name: "Lý 10-B" },
+  { id: "3", name: "Hóa 11-A" },
+  { id: "2", name: "IELTS-01" },
 ];
 
 const getStatusIcon = (status: string) => {

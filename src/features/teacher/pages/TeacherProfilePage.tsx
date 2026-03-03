@@ -34,7 +34,7 @@ const teacherData = {
   birthday: "1985-05-15",
   gender: "Nam",
   teacherId: "GV001",
-  department: "Toán học",
+  department: "Toán",
   position: "Giáo viên chính",
   startDate: "2020-09-01",
   avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",

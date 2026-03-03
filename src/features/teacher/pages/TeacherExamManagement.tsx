@@ -49,8 +49,8 @@ const exams = [
   {
     id: 1,
     title: "Kiểm tra giữa kỳ - Toán 12",
-    subject: "Toán học",
-    classes: ["Toán 12A", "Toán 12B"],
+    subject: "Toán",
+    classes: ["Toán 10A", "Lý 10-B"],
     duration: 60,
     totalQuestions: 20,
     startTime: "2024-01-20 14:00",
@@ -65,8 +65,8 @@ const exams = [
   {
     id: 2,
     title: "Bài tập tuần 3 - Đạo hàm",
-    subject: "Toán học",
-    classes: ["Toán 12A"],
+    subject: "Toán",
+    classes: ["Toán 10A"],
     duration: 30,
     totalQuestions: 15,
     startTime: "2024-01-22 10:00",
@@ -81,8 +81,8 @@ const exams = [
   {
     id: 3,
     title: "Ôn tập chương 1",
-    subject: "Toán học",
-    classes: ["Toán 12B"],
+    subject: "Toán",
+    classes: ["Lý 10-B"],
     duration: 45,
     totalQuestions: 25,
     startTime: "2024-01-25 08:00",
@@ -97,8 +97,8 @@ const exams = [
   {
     id: 4,
     title: "Kiểm tra cuối kỳ",
-    subject: "Toán học",
-    classes: ["Toán 12A", "Toán 12B"],
+    subject: "Toán",
+    classes: ["Toán 10A", "Lý 10-B"],
     duration: 90,
     totalQuestions: 30,
     startTime: "",
