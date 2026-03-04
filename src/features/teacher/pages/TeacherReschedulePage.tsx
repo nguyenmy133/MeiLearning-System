@@ -32,82 +32,35 @@ import {
   RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
+import { useClasses } from "@/features/admin/classes/hooks";
+import { useRescheduleRequests, useCreateReschedule } from "../reschedule/hooks";
+import { authService } from "@/features/shared/auth/authService";
 
-const requests = [
-  {
-    id: "RS-202401-001",
-    type: "reschedule",
-    className: "Toán 10A",
-    originalDate: "18/01/2024",
-    originalTime: "14:00 - 16:00",
-    requestedDate: "19/01/2024",
-    requestedTime: "14:00 - 16:00",
-    reason: "Có cuộc họp với phụ huynh không thể dời được.",
-    status: "pending",
-    createdAt: "15/01/2024"
-  },
-  {
-    id: "RS-202401-003",
-    type: "reschedule",
-    className: "Lý 10-B",
-    originalDate: "22/01/2024",
-    originalTime: "16:30 - 18:30",
-    requestedDate: "23/01/2024",
-    requestedTime: "16:30 - 18:30",
-    reason: "Xin đổi lịch do trùng lịch bồi dưỡng chuyên môn tại Sở GD.",
-    status: "pending",
-    createdAt: "19/01/2024"
-  },
-  {
-    id: "RS-202401-005",
-    type: "reschedule",
-    className: "Toán 11-Nâng cao",
-    originalDate: "12/01/2024",
-    originalTime: "14:00 - 16:00",
-    requestedDate: "14/01/2024",
-    requestedTime: "14:00 - 16:00",
-    reason: "Đổi sang Chủ nhật để cho học viên ôn bài.",
-    status: "approved",
-    createdAt: "10/01/2024",
-    approvedBy: "Admin",
-    approvedAt: "10/01/2024"
-  },
-  {
-    id: "RS-202401-006",
-    type: "reschedule",
-    className: "Toán 11-Nâng cao",
-    originalDate: "10/01/2024",
-    originalTime: "14:00 - 16:00",
-    requestedDate: "11/01/2024",
-    requestedTime: "16:00 - 18:00",
-    reason: "Xin đổi để phù hợp với lịch cá nhân.",
-    status: "rejected",
-    createdAt: "08/01/2024",
-    rejectedReason: "Phòng học không khả dụng vào thời gian yêu cầu."
-  }
-];
+const TEACHER_ID = authService.getCurrentTeacherId();
 
-const classes = [
-  { id: 1, name: "Toán 10A", schedule: "Thứ 2, 4 | 14:00 - 16:00" },
-  { id: 6, name: "Lý 10-B", schedule: "Thứ 3, 5 | 14:00 - 16:00" },
-  { id: 8, name: "Toán 11-Nâng cao", schedule: "Thứ 2, 5 | 16:30 - 18:30" },
-];
+const dummy = `// Removed static mock data`;
 
 export function TeacherReschedulePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [requestType, setRequestType] = useState("reschedule");
-  const [selectedClass, setSelectedClass] = useState("");
+  const [requestType, setRequestType] = useState<"reschedule" | "makeup">("reschedule");
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [originalDate, setOriginalDate] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("");
   const [reason, setReason] = useState("");
 
+  const { data: classPage } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
+  const myClasses = classPage?.data ?? [];
+
+  const { data: requests = [] } = useRescheduleRequests();
+  const createReschedule = useCreateReschedule();
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-warning/10 text-warning border-warning/20">Chờ duyệt</Badge>;
+        return <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400">Chờ duyệt</Badge>;
       case "approved":
-        return <Badge className="bg-success/10 text-success border-success/20">Đã duyệt</Badge>;
+        return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">Đã duyệt</Badge>;
       case "rejected":
         return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Từ chối</Badge>;
       default:
@@ -118,9 +71,9 @@ export function TeacherReschedulePage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
-        return <AlertCircle className="w-5 h-5 text-warning" />;
+        return <AlertCircle className="w-5 h-5 text-amber-500" />;
       case "approved":
-        return <CheckCircle className="w-5 h-5 text-success" />;
+        return <CheckCircle className="w-5 h-5 text-emerald-500" />;
       case "rejected":
         return <XCircle className="w-5 h-5 text-destructive" />;
       default:
@@ -129,7 +82,7 @@ export function TeacherReschedulePage() {
   };
 
   const handleSubmit = () => {
-    if (!selectedClass || !originalDate || !reason) {
+    if (!selectedClassId || !originalDate || !reason) {
       toast.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
@@ -139,13 +92,27 @@ export function TeacherReschedulePage() {
       return;
     }
 
-    toast.success("Đã gửi yêu cầu thành công!");
-    setIsDialogOpen(false);
-    setSelectedClass("");
-    setOriginalDate("");
-    setNewDate("");
-    setNewTime("");
-    setReason("");
+    createReschedule.mutate(
+      {
+        classId: Number(selectedClassId),
+        type: requestType,
+        originalDate,
+        originalTime: "14:00 - 16:00", // Would be selected dynamically based on class schedule in a full app
+        requestedDate: requestType === "reschedule" ? newDate : undefined,
+        requestedTime: requestType === "reschedule" ? newTime : undefined,
+        reason,
+      },
+      {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+          setSelectedClassId("");
+          setOriginalDate("");
+          setNewDate("");
+          setNewTime("");
+          setReason("");
+        },
+      }
+    );
   };
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
@@ -173,27 +140,27 @@ export function TeacherReschedulePage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Loại yêu cầu</label>
-                <Select value={requestType} onValueChange={setRequestType}>
+                <Select value={requestType} onValueChange={(v: "reschedule" | "makeup") => setRequestType(v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="reschedule">Đổi lịch dạy</SelectItem>
-                    <SelectItem value="cancel">Hủy buổi dạy</SelectItem>
+                    <SelectItem value="makeup">Dạy bù</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Lớp học</label>
-                <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn lớp" />
                   </SelectTrigger>
                   <SelectContent>
-                    {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id.toString()}>
-                        {cls.name} ({cls.schedule})
+                    {myClasses.map((cls) => (
+                      <SelectItem key={cls.id} value={String(cls.id)}>
+                        {cls.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -252,7 +219,7 @@ export function TeacherReschedulePage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button onClick={handleSubmit}>
+              <Button onClick={handleSubmit} disabled={createReschedule.isPending}>
                 <Send className="w-4 h-4 mr-2" />
                 Gửi yêu cầu
               </Button>
@@ -266,8 +233,8 @@ export function TeacherReschedulePage() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2">
-              <AlertCircle className="w-5 h-5 text-warning" />
-              <span className="text-2xl font-bold text-warning">{pendingCount}</span>
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              <span className="text-2xl font-bold text-amber-500">{pendingCount}</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">Chờ duyệt</p>
           </CardContent>
@@ -275,8 +242,8 @@ export function TeacherReschedulePage() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5 text-success" />
-              <span className="text-2xl font-bold text-success">{approvedCount}</span>
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+              <span className="text-2xl font-bold text-emerald-500">{approvedCount}</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">Đã duyệt</p>
           </CardContent>
@@ -317,7 +284,7 @@ export function TeacherReschedulePage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold text-foreground">{request.className}</h4>
                       <Badge variant="outline">
-                        {request.type === "reschedule" ? "Đổi lịch" : "Hủy buổi"}
+                        {request.type === "reschedule" ? "Đổi lịch" : "Dạy bù"}
                       </Badge>
                       {getStatusBadge(request.status)}
                     </div>
@@ -379,7 +346,7 @@ export function TeacherReschedulePage() {
             <Card key={request.id}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  <AlertCircle className="w-10 h-10 p-2 rounded-lg bg-warning/10 text-warning" />
+                  <AlertCircle className="w-10 h-10 p-2 rounded-lg bg-amber-50 text-amber-500" />
                   <div className="flex-1">
                     <h4 className="font-semibold">{request.className}</h4>
                     <p className="text-sm text-muted-foreground">{request.originalDate} • {request.originalTime}</p>
@@ -397,7 +364,7 @@ export function TeacherReschedulePage() {
             <Card key={request.id}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  <CheckCircle className="w-10 h-10 p-2 rounded-lg bg-success/10 text-success" />
+                  <CheckCircle className="w-10 h-10 p-2 rounded-lg bg-emerald-50 text-emerald-500" />
                   <div className="flex-1">
                     <h4 className="font-semibold">{request.className}</h4>
                     <p className="text-sm text-muted-foreground">{request.originalDate} • {request.originalTime}</p>

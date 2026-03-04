@@ -164,6 +164,12 @@ const WEEKDAYS = [
   { label: "CN", value: "CN" },
 ];
 
+const MOCK_STUDENTS = [
+  { id: 1, name: "Nguyễn Minh Anh", email: "minhanh@test.com", phone: "0901111222", avatar: null },
+  { id: 2, name: "Trần Văn Bình", email: "binhtv@test.com", phone: "0901222333", avatar: null },
+  { id: 3, name: "Lê Thị Hương", email: "huonglt@test.com", phone: "0901333444", avatar: null },
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminClassesPage() {
@@ -172,6 +178,7 @@ export function AdminClassesPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterFacility, setFilterFacility] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isStudentsDialogOpen, setIsStudentsDialogOpen] = useState(false);
 
   // State cho lịch học — mỗi buổi có khung giờ riêng
   type Session = { day: string; start: string; end: string };
@@ -627,7 +634,7 @@ export function AdminClassesPage() {
                           <Eye className="w-4 h-4 mr-2" />
                           Xem chi tiết
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsStudentsDialogOpen(true)}>
                           <Users className="w-4 h-4 mr-2" />
                           Danh sách HV
                         </DropdownMenuItem>
@@ -693,6 +700,48 @@ export function AdminClassesPage() {
               Xác nhận kết thúc
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Danh sách học viên ── */}
+      <Dialog open={isStudentsDialogOpen} onOpenChange={setIsStudentsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Danh sách học viên</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto mt-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Học viên</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Số điện thoại</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {MOCK_STUDENTS.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={student.avatar || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {student.name.split(" ").map(n => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm text-foreground">{student.name}</p>
+                          <p className="text-xs text-muted-foreground">HV00{student.id}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{student.email}</TableCell>
+                    <TableCell className="text-sm">{student.phone}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

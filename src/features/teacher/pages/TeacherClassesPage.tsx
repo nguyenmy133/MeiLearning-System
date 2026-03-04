@@ -13,15 +13,39 @@ import {
   TrendingUp,
   BookOpen,
   UserCheck,
+  Eye,
 } from "lucide-react";
 import { useClasses } from "@/features/admin/classes/hooks";
 import { formatSchedule, CLASS_STATUS_LABELS } from "@/features/admin/classes/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // MOCK: current logged-in teacher ID — swap for auth context when BE is ready
 const CURRENT_TEACHER_ID = 1;
 
+const MOCK_STUDENTS = [
+  { id: 1, name: "Nguyễn Minh Anh", email: "minhanh@test.com", phone: "0901111222", avatar: null },
+  { id: 2, name: "Trần Văn Bình", email: "binhtv@test.com", phone: "0901222333", avatar: null },
+  { id: 3, name: "Lê Thị Hương", email: "huonglt@test.com", phone: "0901333444", avatar: null },
+];
+
 export function TeacherClassesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: classPage, isLoading } = useClasses({
     teacherId: CURRENT_TEACHER_ID,
@@ -165,6 +189,18 @@ export function TeacherClassesPage() {
                   </div>
                   <Progress value={(cls.students / cls.maxStudents) * 100} className="h-2" />
                 </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={() => {
+                    setSelectedClassId(cls.id);
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Xem danh sách
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -176,6 +212,48 @@ export function TeacherClassesPage() {
           )}
         </div>
       )}
+
+      {/* Danh sách học viên Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Danh sách học viên</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto mt-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Học viên</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Số điện thoại</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {MOCK_STUDENTS.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={student.avatar || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {student.name.split(" ").map(n => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm text-foreground">{student.name}</p>
+                          <p className="text-xs text-muted-foreground">HV00{student.id}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{student.email}</TableCell>
+                    <TableCell className="text-sm">{student.phone}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

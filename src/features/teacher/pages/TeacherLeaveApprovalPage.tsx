@@ -5,13 +5,11 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Users,
   Search,
   Filter,
   Eye,
   MessageSquare,
   ClipboardList,
-  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -44,165 +43,14 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
+import { useLeaveRequests, useLeaveStats, useApproveLeave, useRejectLeave } from "../leave/hooks";
+import type { StudentLeaveRequest } from "../leave/types";
+import { useClasses } from "@/features/admin/classes/hooks";
+import { authService } from "@/features/shared/auth/authService";
 
-// ── Shared mock data ────────────────────────────────────────────────────
-// Matches classes from TeacherClassesPage / TeacherAttendancePage / TeacherSchedulePage
-const teacherClasses = [
-  { id: "1", name: "Toán 10A", students: 32 },
-  { id: "8", name: "Toán 11-Nâng cao", students: 28 },
-  { id: "6", name: "Lý 10-B", students: 25 },
-];
+const TEACHER_ID = authService.getCurrentTeacherId();
 
-// ── Leave requests for students in teacher's classes ────────────────────
-// id format: LR-{year}{month}-{seq}
-// studentId matches student data from TeacherAttendancePage / TeacherGradesPage
-interface LeaveRequest {
-  id: string;
-  studentId: number;
-  studentName: string;
-  studentAvatar: string;
-  classId: string;
-  className: string;
-  type: "leave" | "late";
-  date: string;           // ngày xin nghỉ / đi muộn
-  sessionTime: string;    // ca học
-  reason: string;
-  status: "pending" | "approved" | "rejected";
-  createdAt: string;      // ngày gửi đơn
-  reviewedAt?: string;    // ngày duyệt
-  rejectReason?: string;  // lý do từ chối (nếu có)
-  totalAbsences: number;  // tổng số buổi đã nghỉ trong khóa
-}
-
-const initialLeaveRequests: LeaveRequest[] = [
-  {
-    id: "LR-202412-001",
-    studentId: 1,
-    studentName: "Nguyễn Minh Anh",
-    studentAvatar: "",
-    classId: "1",
-    className: "Toán 10A",
-    type: "leave",
-    date: "20/12/2024",
-    sessionTime: "18:00 - 20:00",
-    reason: "Có việc gia đình đột xuất, xin phép nghỉ 1 buổi.",
-    status: "pending",
-    createdAt: "18/12/2024",
-    totalAbsences: 1,
-  },
-  {
-    id: "LR-202412-002",
-    studentId: 3,
-    studentName: "Lê Thị Hương",
-    studentAvatar: "",
-    classId: "1",
-    className: "Toán 10A",
-    type: "late",
-    date: "19/12/2024",
-    sessionTime: "18:00 - 20:00",
-    reason: "Em bị kẹt xe trên đường đi học, dự kiến đến muộn 15 phút.",
-    status: "pending",
-    createdAt: "18/12/2024",
-    totalAbsences: 0,
-  },
-  {
-    id: "LR-202412-003",
-    studentId: 5,
-    studentName: "Hoàng Văn Đức",
-    studentAvatar: "",
-    classId: "8",
-    className: "Toán 11-Nâng cao",
-    type: "leave",
-    date: "21/12/2024",
-    sessionTime: "19:00 - 21:00",
-    reason: "Em bị ốm sốt, xin phép nghỉ buổi học ngày mai.",
-    status: "pending",
-    createdAt: "19/12/2024",
-    totalAbsences: 2,
-  },
-  {
-    id: "LR-202412-004",
-    studentId: 2,
-    studentName: "Trần Văn Bình",
-    studentAvatar: "",
-    classId: "1",
-    className: "Toán 10A",
-    type: "leave",
-    date: "16/12/2024",
-    sessionTime: "18:00 - 20:00",
-    reason: "Đi khám bệnh theo lịch hẹn bệnh viện.",
-    status: "approved",
-    createdAt: "14/12/2024",
-    reviewedAt: "14/12/2024",
-    totalAbsences: 1,
-  },
-  {
-    id: "LR-202412-005",
-    studentId: 4,
-    studentName: "Phạm Thị Dung",
-    studentAvatar: "",
-    classId: "6",
-    className: "Lý 10-B",
-    type: "leave",
-    date: "10/12/2024",
-    sessionTime: "17:00 - 19:00",
-    reason: "Tham dự đám cưới anh/chị.",
-    status: "approved",
-    createdAt: "08/12/2024",
-    reviewedAt: "08/12/2024",
-    totalAbsences: 2,
-  },
-  {
-    id: "LR-202412-006",
-    studentId: 6,
-    studentName: "Vũ Văn Phong",
-    studentAvatar: "",
-    classId: "8",
-    className: "Toán 11-Nâng cao",
-    type: "late",
-    date: "15/12/2024",
-    sessionTime: "19:00 - 21:00",
-    reason: "Em đi học thêm môn khác bị trễ giờ.",
-    status: "approved",
-    createdAt: "14/12/2024",
-    reviewedAt: "14/12/2024",
-    totalAbsences: 0,
-  },
-  {
-    id: "LR-202412-007",
-    studentId: 7,
-    studentName: "Đặng Thị Giang",
-    studentAvatar: "",
-    classId: "6",
-    className: "Lý 10-B",
-    type: "leave",
-    date: "05/12/2024",
-    sessionTime: "17:00 - 19:00",
-    reason: "Em muốn nghỉ để đi chơi với bạn.",
-    status: "rejected",
-    createdAt: "03/12/2024",
-    reviewedAt: "03/12/2024",
-    rejectReason: "Lý do không chính đáng. Vui lòng đến lớp đầy đủ.",
-    totalAbsences: 1,
-  },
-  {
-    id: "LR-202412-008",
-    studentId: 8,
-    studentName: "Bùi Minh Hoàng",
-    studentAvatar: "",
-    classId: "1",
-    className: "Toán 10A",
-    type: "leave",
-    date: "02/12/2024",
-    sessionTime: "18:00 - 20:00",
-    reason: "Gia đình có việc tang.",
-    status: "approved",
-    createdAt: "01/12/2024",
-    reviewedAt: "01/12/2024",
-    totalAbsences: 1,
-  },
-];
+// Mock data has been removed and uses service layer directly
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -261,89 +109,54 @@ const getInitials = (name: string) => {
 // ── Component ───────────────────────────────────────────────────────────
 
 export function TeacherLeaveApprovalPage() {
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(initialLeaveRequests);
   const [filterClass, setFilterClass] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
 
   // Dialog states
-  const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<StudentLeaveRequest | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  // ── Stats ──
-  const stats = {
-    total: leaveRequests.length,
-    pending: leaveRequests.filter((r) => r.status === "pending").length,
-    approved: leaveRequests.filter((r) => r.status === "approved").length,
-    rejected: leaveRequests.filter((r) => r.status === "rejected").length,
-  };
+  // ── Service layer hooks ──────────────────────────────────────────────────
+  const { data: classPage } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
+  const myClasses = classPage?.data ?? [];
 
-  // ── Filters ──
-  const getFilteredRequests = (tabStatus: string) => {
-    return leaveRequests.filter((req) => {
-      const matchStatus = tabStatus === "all" || req.status === tabStatus;
-      const matchClass = filterClass === "all" || req.classId === filterClass;
-      const matchSearch =
-        searchTerm === "" ||
-        req.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.id.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchStatus && matchClass && matchSearch;
-    });
-  };
+  const { data: leaveRequests = [], isLoading } = useLeaveRequests({
+    classId: filterClass !== "all" ? filterClass : undefined,
+    search: searchTerm || undefined,
+  });
+  const { data: statsData } = useLeaveStats();
+  const approveLeave = useApproveLeave();
+  const rejectLeave = useRejectLeave();
+
+  const stats = statsData ?? { total: 0, pending: 0, approved: 0, rejected: 0 };
+
+  // Filters by tab
+  const getFilteredRequests = (tabStatus: string) =>
+    leaveRequests.filter((r) => tabStatus === "all" || r.status === tabStatus);
 
   // ── Actions ──
-  const handleApprove = (request: LeaveRequest) => {
-    const now = new Date();
-    const dateStr = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
-
-    setLeaveRequests((prev) =>
-      prev.map((r) =>
-        r.id === request.id
-          ? { ...r, status: "approved" as const, reviewedAt: dateStr }
-          : r
-      )
-    );
-    toast.success("Đã duyệt đơn", {
-      description: `Đơn ${request.type === "leave" ? "xin nghỉ" : "đi muộn"} của ${request.studentName} đã được duyệt.`,
-    });
+  const handleApprove = (request: StudentLeaveRequest) => {
+    approveLeave.mutate(request.id);
     setShowDetailDialog(false);
   };
 
   const handleReject = () => {
     if (!selectedRequest || !rejectReason.trim()) return;
-
-    const now = new Date();
-    const dateStr = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
-
-    setLeaveRequests((prev) =>
-      prev.map((r) =>
-        r.id === selectedRequest.id
-          ? {
-              ...r,
-              status: "rejected" as const,
-              reviewedAt: dateStr,
-              rejectReason: rejectReason.trim(),
-            }
-          : r
-      )
-    );
-    toast.error("Đã từ chối đơn", {
-      description: `Đơn của ${selectedRequest.studentName} đã bị từ chối.`,
-    });
+    rejectLeave.mutate({ id: selectedRequest.id, dto: { rejectReason: rejectReason.trim() } });
     setShowRejectDialog(false);
     setShowDetailDialog(false);
     setRejectReason("");
   };
 
-  const openDetail = (request: LeaveRequest) => {
+  const openDetail = (request: StudentLeaveRequest) => {
     setSelectedRequest(request);
     setShowDetailDialog(true);
   };
 
-  const openRejectDialog = (request: LeaveRequest) => {
+  const openRejectDialog = (request: StudentLeaveRequest) => {
     setSelectedRequest(request);
     setRejectReason("");
     setShowRejectDialog(true);
@@ -450,8 +263,8 @@ export function TeacherLeaveApprovalPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả lớp</SelectItem>
-                {teacherClasses.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
+                {myClasses.map((cls) => (
+                  <SelectItem key={cls.id} value={String(cls.id)}>
                     {cls.name}
                   </SelectItem>
                 ))}
@@ -544,7 +357,7 @@ export function TeacherLeaveApprovalPage() {
                                 <TableCell>
                                   <div className="flex items-center gap-3">
                                     <Avatar className="h-9 w-9">
-                                      <AvatarImage src={request.studentAvatar} />
+                                      <AvatarImage src={request.avatar} />
                                       <AvatarFallback className="text-xs bg-primary/10 text-primary">
                                         {getInitials(request.studentName)}
                                       </AvatarFallback>
@@ -660,7 +473,7 @@ export function TeacherLeaveApprovalPage() {
               {/* Student info */}
               <div className="flex items-center gap-3 p-3 bg-accent/50 rounded-lg">
                 <Avatar className="h-11 w-11">
-                  <AvatarImage src={selectedRequest.studentAvatar} />
+                  <AvatarImage src={selectedRequest.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                     {getInitials(selectedRequest.studentName)}
                   </AvatarFallback>

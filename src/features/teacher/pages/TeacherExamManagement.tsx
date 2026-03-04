@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -37,80 +38,14 @@ import {
   Eye,
   Copy,
   Trash2,
-  Users,
+  Archive,
   Clock,
   CheckCircle,
-  XCircle,
   TrendingUp
 } from "lucide-react";
+import { useTeacherExams, useExamStats, useDeleteExam, useArchiveExam } from "../exam/hooks";
+import { EXAM_STATUS_LABELS } from "../exam/types";
 
-// Mock data
-const exams = [
-  {
-    id: 1,
-    title: "Kiểm tra giữa kỳ - Toán 12",
-    subject: "Toán",
-    classes: ["Toán 10A", "Lý 10-B"],
-    duration: 60,
-    totalQuestions: 20,
-    startTime: "2024-01-20 14:00",
-    endTime: "2024-01-20 16:00",
-    status: "ended",
-    totalStudents: 45,
-    completedStudents: 42,
-    averageScore: 76,
-    passRate: 85,
-    createdAt: "2024-01-15",
-  },
-  {
-    id: 2,
-    title: "Bài tập tuần 3 - Đạo hàm",
-    subject: "Toán",
-    classes: ["Toán 10A"],
-    duration: 30,
-    totalQuestions: 15,
-    startTime: "2024-01-22 10:00",
-    endTime: "2024-01-29 23:59",
-    status: "ongoing",
-    totalStudents: 25,
-    completedStudents: 18,
-    averageScore: 82,
-    passRate: 90,
-    createdAt: "2024-01-18",
-  },
-  {
-    id: 3,
-    title: "Ôn tập chương 1",
-    subject: "Toán",
-    classes: ["Lý 10-B"],
-    duration: 45,
-    totalQuestions: 25,
-    startTime: "2024-01-25 08:00",
-    endTime: "2024-01-25 23:59",
-    status: "published",
-    totalStudents: 20,
-    completedStudents: 0,
-    averageScore: 0,
-    passRate: 0,
-    createdAt: "2024-01-20",
-  },
-  {
-    id: 4,
-    title: "Kiểm tra cuối kỳ",
-    subject: "Toán",
-    classes: ["Toán 10A", "Lý 10-B"],
-    duration: 90,
-    totalQuestions: 30,
-    startTime: "",
-    endTime: "",
-    status: "draft",
-    totalStudents: 0,
-    completedStudents: 0,
-    averageScore: 0,
-    passRate: 0,
-    createdAt: "2024-01-21",
-  },
-];
 
 export function TeacherExamManagement() {
   const navigate = useNavigate();
@@ -119,42 +54,34 @@ export function TeacherExamManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<number | null>(null);
 
-  const filteredExams = exams.filter(exam => {
-    const matchesSearch = exam.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || exam.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  // ── Service layer hooks (replaces inline mock data) ────────────────────────
+  const { data: exams = [], isLoading } = useTeacherExams({
+    search: searchQuery || undefined,
+    status: statusFilter !== "all" ? (statusFilter as any) : undefined,
   });
+  const { data: statsData } = useExamStats();
+  const deleteExam = useDeleteExam();
+  const archiveExam = useArchiveExam();
 
-  const stats = {
-    total: exams.length,
-    ongoing: exams.filter(e => e.status === "ongoing").length,
-    ended: exams.filter(e => e.status === "ended").length,
-    averagePassRate: Math.round(exams.reduce((acc, e) => acc + e.passRate, 0) / exams.length),
-  };
+  const stats = statsData ?? { total: 0, ongoing: 0, ended: 0, averagePassRate: 0, draft: 0 };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">Nháp</Badge>;
-      case "published":
-        return <Badge className="bg-primary">Đã xuất bản</Badge>;
-      case "ongoing":
-        return <Badge className="bg-warning">Đang diễn ra</Badge>;
-      case "ended":
-        return <Badge className="bg-muted text-muted-foreground">Đã kết thúc</Badge>;
-      default:
-        return null;
-    }
+    const labels: Record<string, JSX.Element> = {
+      draft: <Badge variant="secondary">Nháp</Badge>,
+      published: <Badge className="bg-primary">Đã xuất bản</Badge>,
+      ongoing: <Badge className="bg-warning">Đang diễn ra</Badge>,
+      ended: <Badge className="bg-muted text-muted-foreground">Đã kết thúc</Badge>,
+      archived: <Badge variant="outline">Đã lưu trữ</Badge>,
+    };
+    return labels[status] ?? null;
   };
 
-  const handleDelete = (id: number) => {
-    setExamToDelete(id);
-    setDeleteDialogOpen(true);
-  };
+  const handleDelete = (id: number) => { setExamToDelete(id); setDeleteDialogOpen(true); };
 
   const confirmDelete = () => {
-    // Mock delete
-    console.log("Delete exam:", examToDelete);
+    if (examToDelete !== null) {
+      deleteExam.mutate(examToDelete);
+    }
     setDeleteDialogOpen(false);
     setExamToDelete(null);
   };
@@ -268,7 +195,9 @@ export function TeacherExamManagement() {
 
       {/* Exam List */}
       <div className="space-y-4">
-        {filteredExams.length === 0 ? (
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)
+        ) : exams.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileCheck className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -276,7 +205,7 @@ export function TeacherExamManagement() {
             </CardContent>
           </Card>
         ) : (
-          filteredExams.map((exam) => (
+          exams.map((exam) => (
             <Card key={exam.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -287,7 +216,7 @@ export function TeacherExamManagement() {
                         <h3 className="font-semibold text-lg text-foreground">{exam.title}</h3>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <Badge variant="secondary">{exam.subject}</Badge>
-                          {exam.classes.map((cls, idx) => (
+                          {exam.classNames.map((cls, idx) => (
                             <Badge key={idx} variant="outline">{cls}</Badge>
                           ))}
                           {getStatusBadge(exam.status)}
@@ -346,21 +275,25 @@ export function TeacherExamManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/teacher/exams/edit/${exam.id}`)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/teacher/exams/create?duplicate=${exam.id}`)}>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Nhân bản
-                        </DropdownMenuItem>
                         {exam.status === "draft" && (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem onClick={() => navigate(`/teacher/exams/edit/${exam.id}`)}>
+                            <Edit className="w-4 h-4 mr-2" />Chỉnh sửa
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => navigate(`/teacher/exams/create?duplicate=${exam.id}`)}>
+                          <Copy className="w-4 h-4 mr-2" />Nhân bản
+                        </DropdownMenuItem>
+                        {exam.status === "ended" && (
+                          <DropdownMenuItem onClick={() => archiveExam.mutate(exam.id)}>
+                            <Archive className="w-4 h-4 mr-2" />Lưu trữ
+                          </DropdownMenuItem>
+                        )}
+                        {exam.status === "draft" && (
+                          <DropdownMenuItem
                             onClick={() => handleDelete(exam.id)}
                             className="text-destructive"
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Xóa
+                            <Trash2 className="w-4 h-4 mr-2" />Xóa
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>

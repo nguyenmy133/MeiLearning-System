@@ -196,10 +196,10 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      {/* ── Revenue chart + Attendance today ── */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      {/* ── Revenue chart ── */}
+      <div className="grid lg:grid-cols-1 gap-6">
         {/* Revenue area chart */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-display flex items-center gap-2">
@@ -253,69 +253,6 @@ export function AdminDashboard() {
                 />
               </AreaChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Attendance today */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-display flex items-center gap-2">
-              <CalendarCheck className="w-4 h-4 text-primary" />
-              Điểm danh hôm nay
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Circle-like summary */}
-            <div className="text-center py-2">
-              <p className="text-4xl font-bold text-foreground">
-                {todayAttendance.present}
-                <span className="text-xl text-muted-foreground font-normal">
-                  /{todayAttendance.total}
-                </span>
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">Học viên có mặt</p>
-              <Progress value={attendanceRate} className="mt-3 h-2" />
-              <p className="text-xs text-muted-foreground mt-1">
-                Tỉ lệ: <span className="font-semibold text-primary">{attendanceRate}%</span>
-              </p>
-            </div>
-
-            {/* Breakdown */}
-            <div className="space-y-2">
-              {[
-                {
-                  icon: UserCheck,
-                  label: "Có mặt",
-                  value: todayAttendance.present,
-                  color: "text-primary",
-                },
-                {
-                  icon: Clock,
-                  label: "Đi muộn",
-                  value: todayAttendance.late,
-                  color: "text-secondary-foreground",
-                },
-                {
-                  icon: UserX,
-                  label: "Vắng mặt",
-                  value: todayAttendance.absent,
-                  color: "text-destructive",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent/40"
-                >
-                  <div className="flex items-center gap-2">
-                    <item.icon className={`w-4 h-4 ${item.color}`} />
-                    <span className="text-sm text-foreground">{item.label}</span>
-                  </div>
-                  <span className={`text-sm font-semibold ${item.color}`}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>

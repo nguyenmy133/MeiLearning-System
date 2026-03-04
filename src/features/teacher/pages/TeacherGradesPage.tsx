@@ -46,7 +46,13 @@ import {
   Users,
   Info,
 } from "lucide-react";
-import { toast } from "sonner";
+import { useClassGrades, useGradeStats, useUpdateComment } from "../grade/hooks";
+import type { StudentGrade } from "../grade/types";
+import { useClasses } from "@/features/admin/classes/hooks";
+import { authService } from "@/features/shared/auth/authService";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const TEACHER_ID = authService.getCurrentTeacherId();
 
 // ── Data ─────────────────────────────────────────────────────────────────
 // Exams that have ended → grades are auto-generated from student submissions
@@ -87,81 +93,11 @@ const completedExams: Exam[] = [
   { id: 2, title: "Bài tập tuần 3 - Đạo hàm", date: "29/01/2024" },
 ];
 
-// Học viên với điểm TỪ BÀI THI (thang 10, tự chấm)
-const studentsData: Student[] = [
-  {
-    id: 1, studentId: "HV001", name: "Nguyễn Minh Anh", avatar: "",
-    examScores: [
-      { examId: 1, score: 8.5, passed: true },
-      { examId: 2, score: 9.0, passed: true },
-    ],
-    avgScore: 8.8, trend: "up",
-    comment: "Học tập chăm chỉ, tiến bộ tốt trong các bài kiểm tra.",
-  },
-  {
-    id: 2, studentId: "HV002", name: "Trần Văn Bình", avatar: "",
-    examScores: [
-      { examId: 1, score: 7.0, passed: true },
-      { examId: 2, score: 6.5, passed: true },
-    ],
-    avgScore: 6.8, trend: "down",
-    comment: "Cần chú ý hơn trong phần hình học.",
-  },
-  {
-    id: 3, studentId: "HV003", name: "Lê Thị Chi", avatar: "",
-    examScores: [
-      { examId: 1, score: 9.2, passed: true },
-      { examId: 2, score: 8.5, passed: true },
-    ],
-    avgScore: 8.9, trend: "up",
-    comment: "Xuất sắc! Có khả năng tư duy logic tốt.",
-  },
-  {
-    id: 4, studentId: "HV004", name: "Phạm Đức Duy", avatar: "",
-    examScores: [
-      { examId: 1, score: 7.8, passed: true },
-      { examId: 2, score: 7.5, passed: true },
-    ],
-    avgScore: 7.7, trend: "stable",
-    comment: "Ổn định, cần luyện tập thêm.",
-  },
-  {
-    id: 5, studentId: "HV005", name: "Hoàng Thị Em", avatar: "",
-    examScores: [
-      { examId: 1, score: 4.5, passed: false },
-      { examId: 2, score: 5.0, passed: false },
-    ],
-    avgScore: 4.8, trend: "down",
-    comment: "Cần hỗ trợ thêm, nên đăng ký học phụ đạo.",
-  },
-  {
-    id: 6, studentId: "HV006", name: "Vũ Văn Phong", avatar: "",
-    examScores: [
-      { examId: 1, score: 9.5, passed: true },
-      { examId: 2, score: 10, passed: true },
-    ],
-    avgScore: 9.8, trend: "up",
-    comment: "Học sinh xuất sắc, có thể tham gia đội tuyển.",
-  },
-  {
-    id: 7, studentId: "HV007", name: "Đặng Thị Giang", avatar: "",
-    examScores: [
-      { examId: 1, score: 7.5, passed: true },
-      { examId: 2, score: 8.0, passed: true },
-    ],
-    avgScore: 7.8, trend: "up",
-    comment: "Tiến bộ đều đặn, rất tích cực trong lớp.",
-  },
-  {
-    id: 8, studentId: "HV008", name: "Bùi Minh Hoàng", avatar: "",
-    examScores: [
-      { examId: 1, score: 6.5, passed: true },
-      { examId: 2, score: 7.0, passed: true },
-    ],
-    avgScore: 6.8, trend: "up",
-    comment: "Khá tốt, cần cải thiện kỹ năng giải bài tập nhanh.",
-  },
-];
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const dummy = `// studentsData removed — now from gradeService
+`;
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -201,31 +137,36 @@ const getInitials = (name: string) =>
 
 export function TeacherGradesPage() {
   const navigate = useNavigate();
-  const [selectedClass, setSelectedClass] = useState("1");
+  const [selectedClassId, setSelectedClassId] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [students, setStudents] = useState(studentsData);
 
   // Comment dialog
   const [showCommentDialog, setShowCommentDialog] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<StudentGrade | null>(null);
   const [newComment, setNewComment] = useState("");
 
-  const filteredStudents = students.filter((s) =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.studentId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // ── Service layer hooks ──────────────────────────────────────────────────
+  const { data: classPage } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
+  const myClasses = classPage?.data ?? [];
 
-  // Computed stats
-  const classAvg = students.length > 0
-    ? (students.reduce((sum, s) => sum + s.avgScore, 0) / students.length)
-    : 0;
+  const { data: students = [], isLoading: studentsLoading } = useClassGrades(selectedClassId, {
+    search: searchTerm || undefined,
+  });
+  const { data: gradeStatsData } = useGradeStats(selectedClassId);
+  const updateComment = useUpdateComment();
+
+  // Derive exam columns from student data
+  const completedExams = students[0]?.examScores ?? [];
+
+  // Computed grade distribution
+  const classAvg = gradeStatsData?.averageScore ?? 0;
   const gioi = students.filter((s) => s.avgScore >= 8).length;
   const kha = students.filter((s) => s.avgScore >= 6.5 && s.avgScore < 8).length;
   const tb = students.filter((s) => s.avgScore >= 5 && s.avgScore < 6.5).length;
   const yeu = students.filter((s) => s.avgScore < 5).length;
 
   // Comment handlers
-  const openCommentDialog = (student: Student) => {
+  const openCommentDialog = (student: StudentGrade) => {
     setEditingStudent(student);
     setNewComment(student.comment);
     setShowCommentDialog(true);
@@ -233,13 +174,10 @@ export function TeacherGradesPage() {
 
   const handleSaveComment = () => {
     if (!editingStudent) return;
-    setStudents((prev) =>
-      prev.map((s) =>
-        s.id === editingStudent.id ? { ...s, comment: newComment.trim() } : s
-      )
-    );
-    toast.success("Đã lưu nhận xét", {
-      description: `Nhận xét cho ${editingStudent.name} đã được cập nhật.`,
+    updateComment.mutate({
+      studentId: editingStudent.studentId,
+      classId: selectedClassId,
+      comment: newComment.trim(),
     });
     setShowCommentDialog(false);
     setEditingStudent(null);
@@ -258,13 +196,13 @@ export function TeacherGradesPage() {
             Điểm tự động từ kết quả bài thi • Giáo viên thêm nhận xét
           </p>
         </div>
-        <Select value={selectedClass} onValueChange={setSelectedClass}>
+        <Select value={String(selectedClassId)} onValueChange={(v) => setSelectedClassId(Number(v))}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Chọn lớp" />
           </SelectTrigger>
           <SelectContent>
-            {classes.map((cls) => (
-              <SelectItem key={cls.id} value={cls.id.toString()}>
+            {myClasses.map((cls) => (
+              <SelectItem key={cls.id} value={String(cls.id)}>
                 {cls.name}
               </SelectItem>
             ))}
@@ -393,7 +331,7 @@ export function TeacherGradesPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-display">Bảng điểm tổng hợp</CardTitle>
           <CardDescription>
-            Điểm thang 10 — Tự động từ {completedExams.length} bài thi đã kết thúc
+            Điểm thang 10 — Tự động từ {completedExams.length} bài thi
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -404,14 +342,14 @@ export function TeacherGradesPage() {
                   <TableHead className="w-12 text-center">#</TableHead>
                   <TableHead className="min-w-[180px]">Học viên</TableHead>
                   {completedExams.map((exam) => (
-                    <TableHead key={exam.id} className="text-center min-w-[120px]">
+                    <TableHead key={exam.examId} className="text-center min-w-[120px]">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
                             className="text-xs hover:text-primary transition-colors cursor-pointer underline-offset-2 hover:underline"
-                            onClick={() => navigate(`/teacher/exams/results/${exam.id}`)}
+                            onClick={() => navigate(`/teacher/exams/results/${exam.examId}`)}
                           >
-                            {exam.title}
+                            {exam.examTitle}
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -427,7 +365,9 @@ export function TeacherGradesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.map((student, index) => (
+                {studentsLoading ? (
+                  <TableRow><TableCell colSpan={99}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                ) : students.map((student, index) => (
                   <TableRow key={student.id} className={student.avgScore < 5 ? "bg-destructive/5" : ""}>
                     <TableCell className="text-center text-muted-foreground text-sm">
                       {index + 1}
@@ -449,9 +389,9 @@ export function TeacherGradesPage() {
 
                     {/* Exam scores — dynamic columns */}
                     {completedExams.map((exam) => {
-                      const result = student.examScores.find((es) => es.examId === exam.id);
+                      const result = student.examScores.find((es) => es.examId === exam.examId);
                       return (
-                        <TableCell key={exam.id} className="text-center">
+                        <TableCell key={exam.examId} className="text-center">
                           {result ? (
                             <span className={`font-semibold ${getScoreColor(result.score)}`}>
                               {result.score.toFixed(1)}
@@ -494,7 +434,7 @@ export function TeacherGradesPage() {
             </Table>
           </div>
 
-          {filteredStudents.length === 0 && (
+          {!studentsLoading && students.length === 0 && (
             <div className="text-center py-12">
               <Search className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
               <p className="text-sm text-muted-foreground">Không tìm thấy học viên nào</p>
@@ -516,7 +456,7 @@ export function TeacherGradesPage() {
           <div className="space-y-2">
             {completedExams.map((exam) => (
               <div
-                key={exam.id}
+                key={exam.examId}
                 className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
               >
                 <div className="flex items-center gap-3">
@@ -524,7 +464,7 @@ export function TeacherGradesPage() {
                     <FileCheck className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{exam.title}</p>
+                    <p className="text-sm font-medium">{exam.examTitle}</p>
                     <p className="text-xs text-muted-foreground">Ngày thi: {exam.date}</p>
                   </div>
                 </div>
@@ -532,7 +472,7 @@ export function TeacherGradesPage() {
                   variant="ghost"
                   size="sm"
                   className="gap-1.5 text-xs"
-                  onClick={() => navigate(`/teacher/exams/results/${exam.id}`)}
+                  onClick={() => navigate(`/teacher/exams/results/${exam.examId}`)}
                 >
                   <Eye className="w-3.5 h-3.5" />
                   Xem kết quả

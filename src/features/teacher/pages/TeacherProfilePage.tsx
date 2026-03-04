@@ -22,7 +22,8 @@ import {
   Clock,
   BookOpen,
   Users,
-  Star
+  Star,
+  Lock
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -153,6 +154,7 @@ export function TeacherProfilePage() {
           <TabsTrigger value="info">Thông tin cá nhân</TabsTrigger>
           <TabsTrigger value="work">Công việc</TabsTrigger>
           <TabsTrigger value="education">Học vấn</TabsTrigger>
+          <TabsTrigger value="security">Bảo mật</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info">
@@ -319,6 +321,36 @@ export function TeacherProfilePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <Lock className="w-5 h-5" />
+                Đổi mật khẩu
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6 max-w-md">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Mật khẩu hiện tại</label>
+                  <Input type="password" placeholder="Nhập mật khẩu hiện tại" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Mật khẩu mới</label>
+                  <Input type="password" placeholder="Nhập mật khẩu mới" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Nhập lại mật khẩu mới</label>
+                  <Input type="password" placeholder="Nhập lại mật khẩu mới" />
+                </div>
+                <Button className="w-full" onClick={() => toast.success("Mật khẩu đã được cập nhật thành công!")}>
+                  Cập nhật mật khẩu
+                </Button>
               </div>
             </CardContent>
           </Card>
