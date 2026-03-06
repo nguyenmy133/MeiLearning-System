@@ -1,80 +1,52 @@
 import { useState } from "react";
-import { ClipboardCheck, CheckCircle, XCircle, AlertCircle, Calendar, TrendingUp, Filter } from "lucide-react";
+import { ClipboardCheck, CheckCircle, XCircle, AlertCircle, Calendar, TrendingUp, Filter, BadgeCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMyAttendance, useAttendanceSummary } from "@/features/user/attendance/hooks";
+import { useMyClasses } from "@/features/user/schedule/hooks";
+import { ATTENDANCE_STATUS_LABELS, type AttendanceStatus } from "@/features/user/attendance/types";
 
-const attendanceRecords = [
-  { id: 1, date: "16/12/2024", day: "Thứ hai", class: "Toán 10A", time: "08:00", status: "present", checkInTime: "07:55" },
-  { id: 2, date: "16/12/2024", day: "Thứ hai", class: "Lý 10-B", time: "10:00", status: "present", checkInTime: "09:58" },
-  { id: 3, date: "14/12/2024", day: "Thứ bảy", class: "Hóa 11-A", time: "09:00", status: "present", checkInTime: "08:50" },
-  { id: 4, date: "13/12/2024", day: "Thứ sáu", class: "IELTS-01", time: "14:00", status: "late", checkInTime: "14:20" },
-  { id: 5, date: "13/12/2024", day: "Thứ sáu", class: "Toán 10A", time: "16:00", status: "present", checkInTime: "15:55" },
-  { id: 6, date: "12/12/2024", day: "Thứ năm", class: "Lý 10-B", time: "10:00", status: "absent", checkInTime: null },
-  { id: 7, date: "11/12/2024", day: "Thứ tư", class: "Toán 10A", time: "08:00", status: "present", checkInTime: "07:50" },
-  { id: 8, date: "11/12/2024", day: "Thứ tư", class: "Hóa 11-A", time: "10:00", status: "present", checkInTime: "09:55" },
-  { id: 9, date: "10/12/2024", day: "Thứ ba", class: "IELTS-01", time: "14:00", status: "present", checkInTime: "13:58" },
-  { id: 10, date: "09/12/2024", day: "Thứ hai", class: "Toán 10A", time: "08:00", status: "late", checkInTime: "08:18" },
-];
-
-const courses = [
-  { id: "all", name: "Tất cả lớp học" },
-  { id: "1", name: "Toán 10A" },
-  { id: "6", name: "Lý 10-B" },
-  { id: "3", name: "Hóa 11-A" },
-  { id: "2", name: "IELTS-01" },
-];
-
-const getStatusIcon = (status: string) => {
+const getStatusIcon = (status: AttendanceStatus) => {
   switch (status) {
-    case "present":
+    case "PRESENT":
       return <CheckCircle className="h-5 w-5 text-green-500" />;
-    case "late":
+    case "LATE":
       return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-    case "absent":
+    case "ABSENT_UNEXCUSED":
       return <XCircle className="h-5 w-5 text-red-500" />;
-    default:
-      return null;
+    case "ABSENT_EXCUSED":
+      return <BadgeCheck className="h-5 w-5 text-blue-500" />;
   }
 };
 
-const getStatusText = (status: string) => {
+const getStatusBadgeClass = (status: AttendanceStatus) => {
   switch (status) {
-    case "present":
-      return "Có mặt";
-    case "late":
-      return "Đi muộn";
-    case "absent":
-      return "Vắng mặt";
-    default:
-      return "";
-  }
-};
-
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "present":
-      return "default";
-    case "late":
-      return "secondary";
-    case "absent":
-      return "destructive";
-    default:
-      return "outline";
+    case "PRESENT": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+    case "LATE": return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
+    case "ABSENT_UNEXCUSED": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+    case "ABSENT_EXCUSED": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
   }
 };
 
 export function AttendancePage() {
-  const [selectedCourse, setSelectedCourse] = useState("all");
-  const [selectedMonth, setSelectedMonth] = useState("12");
+  const [selectedClassId, setSelectedClassId] = useState("all");
 
-  // Calculate statistics
-  const totalClasses = attendanceRecords.length;
-  const presentCount = attendanceRecords.filter(r => r.status === "present").length;
-  const lateCount = attendanceRecords.filter(r => r.status === "late").length;
-  const absentCount = attendanceRecords.filter(r => r.status === "absent").length;
-  const attendanceRate = Math.round(((presentCount + lateCount) / totalClasses) * 100);
+  const { data: classes = [] } = useMyClasses();
+  const { data: records = [], isLoading } = useMyAttendance(
+    selectedClassId === "all" ? undefined : selectedClassId
+  );
+  const { data: summaries = [] } = useAttendanceSummary();
+
+  // Overall stats from records
+  const present = records.filter((r) => r.status === "PRESENT").length;
+  const late = records.filter((r) => r.status === "LATE").length;
+  const absentExcused = records.filter((r) => r.status === "ABSENT_EXCUSED").length;
+  const absentUnexcused = records.filter((r) => r.status === "ABSENT_UNEXCUSED").length;
+  const total = records.length;
+  const attendanceRate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -84,7 +56,7 @@ export function AttendancePage() {
           Lịch sử điểm danh
         </h1>
         <p className="text-muted-foreground mt-1">
-          Theo dõi tình hình điểm danh của bạn
+          Theo dõi tình hình điểm danh và ảnh hưởng đến học phí
         </p>
       </div>
 
@@ -97,7 +69,7 @@ export function AttendancePage() {
                 <ClipboardCheck className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{totalClasses}</p>
+                <p className="text-2xl font-bold text-foreground">{total}</p>
                 <p className="text-xs text-muted-foreground">Tổng số buổi</p>
               </div>
             </div>
@@ -111,7 +83,7 @@ export function AttendancePage() {
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{presentCount}</p>
+                <p className="text-2xl font-bold text-foreground">{present}</p>
                 <p className="text-xs text-muted-foreground">Có mặt</p>
               </div>
             </div>
@@ -121,12 +93,12 @@ export function AttendancePage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-warning/10 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-warning" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <BadgeCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{lateCount}</p>
-                <p className="text-xs text-muted-foreground">Đi muộn</p>
+                <p className="text-2xl font-bold text-foreground">{absentExcused}</p>
+                <p className="text-xs text-muted-foreground">Nghỉ có phép</p>
               </div>
             </div>
           </CardContent>
@@ -139,8 +111,8 @@ export function AttendancePage() {
                 <XCircle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{absentCount}</p>
-                <p className="text-xs text-muted-foreground">Vắng mặt</p>
+                <p className="text-2xl font-bold text-foreground">{absentUnexcused}</p>
+                <p className="text-xs text-muted-foreground">Nghỉ không phép</p>
               </div>
             </div>
           </CardContent>
@@ -155,56 +127,55 @@ export function AttendancePage() {
             Tỷ lệ điểm danh
           </CardTitle>
           <CardDescription>
-            Tỷ lệ có mặt (bao gồm đi muộn) trong tháng
+            Tỷ lệ có mặt (bao gồm đi muộn). Nghỉ có phép không tính vào học phí.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Tiến độ</span>
+              <span className="text-sm text-muted-foreground">Tỷ lệ hiện tại</span>
               <span className="text-2xl font-bold text-primary">{attendanceRate}%</span>
             </div>
-            <Progress value={attendanceRate} className="h-3" />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Mục tiêu: 90%</span>
-              <span className={attendanceRate >= 90 ? "text-success" : "text-warning"}>
-                {attendanceRate >= 90 ? "Đạt mục tiêu ✓" : `Còn ${90 - attendanceRate}% nữa`}
-              </span>
-            </div>
           </div>
+
+          {/* Per-class summary */}
+          {summaries.length > 0 && (
+            <div className="mt-4 space-y-2 pt-4 border-t">
+              <p className="text-sm font-medium text-foreground mb-3">Theo từng lớp</p>
+              {summaries.map((s) => (
+                <div key={s.classId} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{s.className}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      {s.present}/{s.totalSessions} buổi
+                    </span>
+                    <span className={`font-medium ${s.attendanceRate >= 90 ? "text-success" : "text-warning"}`}>
+                      {s.attendanceRate}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Filters */}
+      {/* Filter */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-2 flex-1">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Chọn khóa học" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map(course => (
-                    <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2 flex-1">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Chọn tháng" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="12">Tháng 12/2024</SelectItem>
-                  <SelectItem value="11">Tháng 11/2024</SelectItem>
-                  <SelectItem value="10">Tháng 10/2024</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Chọn lớp học" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả lớp học</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -214,38 +185,63 @@ export function AttendancePage() {
         <CardHeader>
           <CardTitle>Chi tiết điểm danh</CardTitle>
           <CardDescription>
-            Danh sách điểm danh theo thời gian
+            Danh sách điểm danh theo thời gian. 💡 Buổi nghỉ có phép không tính học phí.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {attendanceRecords.map((record) => (
-              <div
-                key={record.id}
-                className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  {getStatusIcon(record.status)}
-                  <div>
-                    <p className="font-medium text-foreground">{record.class}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {record.day}, {record.date} • {record.time}
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : records.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p>Chưa có dữ liệu điểm danh.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {records.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    {getStatusIcon(record.status)}
+                    <div>
+                      <p className="font-medium text-foreground">{record.className}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(record.date).toLocaleDateString("vi-VN", {
+                          weekday: "short",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                        {" "}• {record.sessionTime}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <Badge className={`text-xs ${getStatusBadgeClass(record.status)}`} variant="outline">
+                      {ATTENDANCE_STATUS_LABELS[record.status]}
+                    </Badge>
+                    <p className={`text-xs ${record.isBillable ? "text-warning" : "text-blue-500"}`}>
+                      {record.isBillable ? "💰 Tính phí" : "✅ Miễn phí"}
                     </p>
+                    {record.checkedInAt && (
+                      <p className="text-xs text-muted-foreground">
+                        Check-in: {new Date(record.checkedInAt).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge variant={getStatusBadgeVariant(record.status) as any}>
-                    {getStatusText(record.status)}
-                  </Badge>
-                  {record.checkInTime && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Check-in: {record.checkInTime}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

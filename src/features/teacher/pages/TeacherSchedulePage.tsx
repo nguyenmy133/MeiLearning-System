@@ -171,7 +171,6 @@ export function TeacherSchedulePage() {
     return sum + (eh * 60 + em - (sh * 60 + sm)) / 60;
   }, 0);
   const uniqueClasses = new Set(weekSessions.map((s) => s.classId)).size;
-  const totalStudents = weekSessions.reduce((sum, s) => sum + s.students, 0);
 
   return (
     <div className="space-y-6">
@@ -200,7 +199,7 @@ export function TeacherSchedulePage() {
       </div>
 
       {/* ── Stat cards — di chuyển LÊN TRÊN Tabs ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-foreground">
@@ -223,14 +222,6 @@ export function TeacherSchedulePage() {
               {isLoading ? "—" : uniqueClasses}
             </div>
             <p className="text-sm text-muted-foreground">Lớp phụ trách</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">
-              {isLoading ? "—" : totalStudents}
-            </div>
-            <p className="text-sm text-muted-foreground">Tổng học viên/tuần</p>
           </CardContent>
         </Card>
       </div>
@@ -281,9 +272,15 @@ export function TeacherSchedulePage() {
                           return (
                             <div
                               key={cls.id}
-                              className="p-2 bg-primary/10 rounded-lg border-l-2 border-primary space-y-1"
+                              className={`p-2 rounded-lg border-l-2 space-y-1 transition-all duration-300 hover:opacity-100 hover:grayscale-0 ${
+                                status === "done" || status === "missed"
+                                  ? "bg-muted/30 border-muted-foreground/20 opacity-50 grayscale"
+                                  : "bg-primary/10 border-primary"
+                              }`}
                             >
-                              <p className="font-medium text-sm text-foreground leading-tight">
+                              <p className={`font-medium text-sm leading-tight ${
+                                status === "done" || status === "missed" ? "text-muted-foreground line-through decoration-muted-foreground/30" : "text-foreground"
+                              }`}>
                                 {cls.className}
                               </p>
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -348,21 +345,27 @@ export function TeacherSchedulePage() {
                     return (
                       <div
                         key={cls.id}
-                        className={`flex items-center gap-4 p-4 rounded-lg transition-colors ${
-                          isMissed
-                            ? "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800"
+                        className={`flex items-center gap-4 p-4 rounded-lg transition-all duration-300 hover:opacity-100 hover:grayscale-0 cursor-default ${
+                          status === "done" || status === "missed"
+                            ? isMissed
+                              ? "bg-red-50/40 dark:bg-red-900/10 border border-red-200/50 opacity-50 grayscale"
+                              : "bg-muted/30 border border-transparent opacity-50 grayscale"
                             : "bg-accent/50 hover:bg-accent"
                         }`}
                       >
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex flex-col items-center justify-center shrink-0">
-                          <Calendar className="w-4 h-4 text-primary mb-0.5" />
-                          <span className="text-[10px] font-medium text-primary">
+                        <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center shrink-0 ${
+                           status === "done" || status === "missed" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                        }`}>
+                          <Calendar className="w-4 h-4 mb-0.5" />
+                          <span className="text-[10px] font-medium">
                             {weekDays[dayIdx]}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-semibold text-foreground">{cls.className}</h4>
+                            <h4 className={`font-semibold ${status === "done" || status === "missed" ? "text-muted-foreground line-through decoration-muted-foreground/30" : "text-foreground"}`}>
+                                {cls.className}
+                            </h4>
                             <Badge variant="secondary" className="text-xs">
                               {cls.room}
                             </Badge>

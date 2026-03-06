@@ -60,7 +60,6 @@ export function ProfilePage() {
       <Tabs defaultValue="info" className="w-full">
         <TabsList>
           <TabsTrigger value="info">Thông tin cá nhân</TabsTrigger>
-          <TabsTrigger value="courses">Khóa học của tôi</TabsTrigger>
           <TabsTrigger value="security">Bảo mật</TabsTrigger>
         </TabsList>
 
@@ -205,48 +204,7 @@ export function ProfilePage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="courses" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Khóa học đang tham gia</CardTitle>
-              <CardDescription>
-                {profile.courses.length} khóa học
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {profile.courses.map((course) => (
-                  <div
-                    key={course.id}
-                    className="p-4 bg-secondary/50 rounded-lg border border-border"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-foreground">{course.name}</h3>
-                        <Badge variant="outline" className="mt-1">{course.level}</Badge>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {course.startDate} - {course.endDate}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{course.progress}%</p>
-                        <p className="text-xs text-muted-foreground">Hoàn thành</p>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${course.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
 
         <TabsContent value="security" className="mt-6">
           <Card>

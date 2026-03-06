@@ -30,6 +30,7 @@ import {
   Users, Plus, Search, MoreHorizontal, Edit, Trash2, Eye,
   Mail, Phone, Filter, CreditCard, UserCheck, UserX, KeyRound,
   RefreshCw, Copy, Check, AlertTriangle, UserMinus, Loader2,
+  FileSpreadsheet,
 } from "lucide-react";
 
 // ===== Module imports =====
@@ -38,6 +39,7 @@ import {
   useCreateStudent, useUpdateStudent, useDeleteStudent,
   useResetStudentPassword, useDropStudent, useReactivateStudent,
 } from "../hooks";
+import { ImportStudentsDialog } from "../components/ImportStudentsDialog";
 import type {
   Student, CreateStudentDTO, UpdateStudentDTO, DropStudentDTO,
   StudentStatusType, TuitionStatusType, ClassEnrollment,
@@ -233,8 +235,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     initial?.tuitionStatus ?? "pending"
   );
 
-  // Chỉ dùng cho create
-  const [username, setUsername] = useState("");
+  // Chỉ dùng cho create — username = SĐT (auto)
   const [password, setPassword] = useState(() => generatePassword());
   const [copied, setCopied] = useState(false);
 
@@ -247,9 +248,9 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
   const handleSubmit = () => {
     if (!name.trim()) { toast.error("Vui lòng nhập họ tên"); return; }
     if (mode === "create") {
-      if (!username.trim()) { toast.error("Vui lòng nhập tên đăng nhập"); return; }
+      if (!phone.trim()) { toast.error("Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)"); return; }
       if (!password.trim()) { toast.error("Vui lòng nhập mật khẩu"); return; }
-      onSubmit({ name, email, phone, parentPhone, classes, username, password } as CreateStudentDTO);
+      onSubmit({ name, email, phone, parentPhone, classes, username: phone, password } as CreateStudentDTO);
     } else {
       onSubmit({ name, email, phone, parentPhone, classes, tuitionStatus } as UpdateStudentDTO);
     }
@@ -271,8 +272,11 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@gmail.com" />
         </div>
         <div className="space-y-2">
-          <Label>Số điện thoại</Label>
+          <Label>Số điện thoại {mode === "create" && <span className="text-destructive">*</span>}</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0901234567" />
+          {mode === "create" && phone && (
+            <p className="text-[10px] text-muted-foreground">Tên đăng nhập sẽ là: <span className="font-mono font-semibold">{phone}</span></p>
+          )}
         </div>
       </div>
       <div className="space-y-2">
@@ -314,16 +318,13 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Tài khoản hệ thống
           </p>
-          <div className="space-y-2">
-            <Label>Tên đăng nhập <span className="text-destructive">*</span></Label>
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="VD: nguyenvana hoặc dùng email"
-            />
-            <p className="text-xs text-muted-foreground">
-              Học viên sẽ dùng tên này để đăng nhập.
-            </p>
+          <div className="p-3 rounded-lg bg-secondary/50 space-y-0.5">
+            <p className="text-xs text-muted-foreground">Tên đăng nhập (tự động = Số điện thoại)</p>
+            {phone ? (
+              <p className="font-mono font-semibold text-sm">{phone}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">— nhập SĐT ở trên để tự điền</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Mật khẩu tạm thời <span className="text-destructive">*</span></Label>
@@ -354,6 +355,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
           </div>
         </>
       )}
+
 
       <Button className="w-full" onClick={handleSubmit} disabled={isPending}>
         {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -503,6 +505,7 @@ export function AdminStudentsPage() {
 
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [droppingStudent, setDroppingStudent] = useState<Student | null>(null);
@@ -625,8 +628,15 @@ export function AdminStudentsPage() {
         <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
           <CardTitle className="text-lg font-display">Danh sách học viên</CardTitle>
 
-          {/* ── Add Dialog ── */}
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <div className="flex items-center gap-2">
+            {/* Import Excel button */}
+            <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+              <FileSpreadsheet className="w-4 h-4 mr-1" />
+              Import Excel
+            </Button>
+
+            {/* ── Add Dialog ── */}
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" />
@@ -643,11 +653,16 @@ export function AdminStudentsPage() {
                 isPending={createMutation.isPending}
               />
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </CardHeader>
+
+        {/* Import Excel Dialog */}
+        <ImportStudentsDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
 
         <CardContent className="space-y-4">
           {/* ── Search & Filter ── */}
+
           <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

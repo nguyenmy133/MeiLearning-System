@@ -21,7 +21,7 @@ const MOCK_CURRENT_USER: CurrentUser = {
     id: 1,
     name: "Nguyễn Văn An",
     role: "teacher",
-    email: "teacher.an@edutrack.vn",
+    email: "teacher.an@meilearn.vn",
 };
 
 export const authService = {

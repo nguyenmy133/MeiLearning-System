@@ -1,7 +1,28 @@
 import type { ScheduledSession, ClassRef } from "../types";
 
+// Get Monday of the current week
+const getMonday = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+};
+
+const monday = getMonday();
+
+// Calculate date for a given day offset (0 = Mon, 6 = Sun)
+const getDateOffset = (offset: number) => {
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + offset);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const date = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${date}`;
+};
+
 export const mockSessions: ScheduledSession[] = [
-  // ── Mon 16/12 ────────────────────────────────────────────────────────────
+  // ── Mon (offset: 0) ────────────────────────────────────────────────────────────
   {
     id: 1,
     classId: 4,
@@ -12,7 +33,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 201",
-    date: "2024-12-16",
+    date: getDateOffset(0),
     startTime: "08:00",
     endTime: "10:00",
     students: 22,
@@ -31,7 +52,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 101",
-    date: "2024-12-16",
+    date: getDateOffset(0),
     startTime: "14:00",
     endTime: "16:00",
     students: 18,
@@ -50,7 +71,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 101",
-    date: "2024-12-16",
+    date: getDateOffset(0),
     startTime: "18:00",
     endTime: "20:00",
     students: 18,
@@ -59,7 +80,7 @@ export const mockSessions: ScheduledSession[] = [
     createdAt: "2024-12-01T00:00:00.000Z",
     updatedAt: "2024-12-01T00:00:00.000Z",
   },
-  // ── Tue 17/12 ────────────────────────────────────────────────────────────
+  // ── Tue (offset: 1) ────────────────────────────────────────────────────────────
   {
     id: 4,
     classId: 2,
@@ -70,7 +91,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 3",
     facilityShort: "Q3",
     room: "Phòng A1",
-    date: "2024-12-17",
+    date: getDateOffset(1),
     startTime: "19:00",
     endTime: "21:00",
     students: 15,
@@ -79,7 +100,7 @@ export const mockSessions: ScheduledSession[] = [
     createdAt: "2024-12-01T00:00:00.000Z",
     updatedAt: "2024-12-01T00:00:00.000Z",
   },
-  // ── Wed 18/12 ────────────────────────────────────────────────────────────
+  // ── Wed (offset: 2) ────────────────────────────────────────────────────────────
   {
     id: 5,
     classId: 4,
@@ -90,7 +111,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 201",
-    date: "2024-12-18",
+    date: getDateOffset(2),
     startTime: "08:00",
     endTime: "10:00",
     students: 22,
@@ -109,7 +130,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 101",
-    date: "2024-12-18",
+    date: getDateOffset(2),
     startTime: "18:00",
     endTime: "20:00",
     students: 18,
@@ -118,7 +139,7 @@ export const mockSessions: ScheduledSession[] = [
     createdAt: "2024-12-01T00:00:00.000Z",
     updatedAt: "2024-12-01T00:00:00.000Z",
   },
-  // ── Thu 19/12 ────────────────────────────────────────────────────────────
+  // ── Thu (offset: 3) ────────────────────────────────────────────────────────────
   {
     id: 7,
     classId: 2,
@@ -129,7 +150,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 3",
     facilityShort: "Q3",
     room: "Phòng A1",
-    date: "2024-12-19",
+    date: getDateOffset(3),
     startTime: "19:00",
     endTime: "21:00",
     students: 15,
@@ -138,7 +159,7 @@ export const mockSessions: ScheduledSession[] = [
     createdAt: "2024-12-01T00:00:00.000Z",
     updatedAt: "2024-12-01T00:00:00.000Z",
   },
-  // ── Fri 20/12 ────────────────────────────────────────────────────────────
+  // ── Fri (offset: 4) ────────────────────────────────────────────────────────────
   {
     id: 8,
     classId: 4,
@@ -149,7 +170,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 201",
-    date: "2024-12-20",
+    date: getDateOffset(4),
     startTime: "08:00",
     endTime: "10:00",
     students: 22,
@@ -168,7 +189,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Quận 1",
     facilityShort: "Q1",
     room: "Phòng 101",
-    date: "2024-12-20",
+    date: getDateOffset(4),
     startTime: "18:00",
     endTime: "20:00",
     students: 18,
@@ -177,7 +198,7 @@ export const mockSessions: ScheduledSession[] = [
     createdAt: "2024-12-01T00:00:00.000Z",
     updatedAt: "2024-12-01T00:00:00.000Z",
   },
-  // ── Sat 21/12 ────────────────────────────────────────────────────────────
+  // ── Sat (offset: 5) ────────────────────────────────────────────────────────────
   {
     id: 10,
     classId: 3,
@@ -188,7 +209,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Thủ Đức",
     facilityShort: "TĐ",
     room: "Phòng TD-Lab",
-    date: "2024-12-21",
+    date: getDateOffset(5),
     startTime: "08:00",
     endTime: "10:00",
     students: 12,
@@ -197,7 +218,7 @@ export const mockSessions: ScheduledSession[] = [
     createdAt: "2024-12-01T00:00:00.000Z",
     updatedAt: "2024-12-01T00:00:00.000Z",
   },
-  // ── Sun 22/12 ────────────────────────────────────────────────────────────
+  // ── Sun (offset: 6) ────────────────────────────────────────────────────────────
   {
     id: 11,
     classId: 3,
@@ -208,7 +229,7 @@ export const mockSessions: ScheduledSession[] = [
     facilityName: "Cơ sở Thủ Đức",
     facilityShort: "TĐ",
     room: "Phòng TD-Lab",
-    date: "2024-12-22",
+    date: getDateOffset(6),
     startTime: "08:00",
     endTime: "10:00",
     students: 12,

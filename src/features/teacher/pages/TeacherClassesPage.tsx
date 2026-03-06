@@ -84,7 +84,7 @@ export function TeacherClassesPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{isLoading ? "—" : classes.length}</p>
-                <p className="text-xs text-muted-foreground">Lớp phụ trách</p>
+                <p className="text-xs text-muted-foreground">Tổng số lớp</p>
               </div>
             </div>
           </CardContent>
@@ -111,8 +111,10 @@ export function TeacherClassesPage() {
                 <UserCheck className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">—</p>
-                <p className="text-xs text-muted-foreground">Chuyên cần TB</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? "—" : classes.filter(c => c.status === "active").length}
+                </p>
+                <p className="text-xs text-muted-foreground">Lớp đang dạy</p>
               </div>
             </div>
           </CardContent>
@@ -121,12 +123,14 @@ export function TeacherClassesPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-info" />
+              <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">—</p>
-                <p className="text-xs text-muted-foreground">Điểm TB</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? "—" : classes.filter(c => c.status === "upcoming").length}
+                </p>
+                <p className="text-xs text-muted-foreground">Sắp khai giảng</p>
               </div>
             </div>
           </CardContent>

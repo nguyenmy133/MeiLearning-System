@@ -645,8 +645,8 @@ export function TeacherLeaveApprovalPage() {
             <div className="text-sm">
               <p className="font-medium text-foreground">Quy định duyệt đơn</p>
               <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-1">
-                <li>Đơn xin nghỉ cần được gửi trước ít nhất 24 giờ trước buổi học</li>
-                <li>Mỗi học viên được phép nghỉ tối đa 3 buổi/khóa học</li>
+                <li>Đơn xin nghỉ / đi muộn hợp lệ khi gửi trước thời gian bắt đầu buổi học</li>
+                <li>Mỗi học viên được phép có phép tối đa 3 buổi/khóa học</li>
                 <li>Khi duyệt đơn, hệ thống sẽ tự động cập nhật trạng thái cho học viên</li>
                 <li>Học viên nghỉ quá 3 buổi sẽ hiển thị cảnh báo</li>
               </ul>

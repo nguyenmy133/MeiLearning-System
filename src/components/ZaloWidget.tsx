@@ -1,16 +1,50 @@
 import { useState } from "react";
 import { MessageCircle, X, ExternalLink, Phone } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Floating Zalo contact widget — hiển thị ở góc dưới phải.
- * Khi click sẽ mở popup nhỏ với link đến Zalo OA của trung tâm.
+ * Được tối ưu hoá:
+ * - Load dữ liệu từ Environment (.env) thay vì Hardcode.
+ * - Event Tracking (Marketing Analytics).
+ * - Cross-device UX (Mobile gọi ngay, Desktop copy số).
  */
 
-const ZALO_OA_URL = "https://zalo.me";
-const ZALO_PHONE = "0123 456 789";
+const ZALO_URL = import.meta.env.VITE_ZALO_URL || "https://zalo.me";
+const HOTLINE = import.meta.env.VITE_HOTLINE || "19001234";
+
+function formatTel(phone: string) {
+  // Chuẩn hoá đầu số quốc tế cho tính tương thích
+  return `tel:${phone.replace(/[\s.-]/g, "").replace(/^0/, "+84")}`;
+}
 
 export function ZaloWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleContactClick = (method: "ZALO" | "HOTLINE") => {
+    // Ví dụ giả lập bắn sự kiện Analytics cho Ads/Marketing
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "generate_lead", {
+        contact_method: method,
+      });
+    }
+  };
+
+  const handlePhoneClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    handleContactClick("HOTLINE");
+
+    // Phát hiện thiết bị, nếu là PC thì copy vào clipboard thay vì mở App gọi điện
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) {
+      e.preventDefault(); // Chặn hành vi mở app trên máy tính
+      navigator.clipboard.writeText(HOTLINE);
+      toast({
+        title: "Đã sao chép số điện thoại",
+        description: `Bạn có thể dán (Ctrl+V) để liên hệ: ${HOTLINE}`,
+      });
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
@@ -33,7 +67,7 @@ export function ZaloWidget() {
                 />
               </svg>
               <span className="text-white font-semibold text-sm">
-                Liên hệ EduTrack
+                Liên hệ MeiLearn
               </span>
             </div>
             <button
@@ -52,9 +86,10 @@ export function ZaloWidget() {
             </p>
 
             <a
-              href={ZALO_OA_URL}
+              href={ZALO_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => handleContactClick("ZALO")}
               className="flex items-center gap-3 p-3 rounded-xl bg-[#0068FF]/10 hover:bg-[#0068FF]/20 transition-colors group"
             >
               <div className="w-10 h-10 rounded-full bg-[#0068FF] flex items-center justify-center flex-shrink-0">
@@ -72,8 +107,9 @@ export function ZaloWidget() {
             </a>
 
             <a
-              href={`tel:${ZALO_PHONE.replace(/\s/g, "")}`}
-              className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors group"
+              href={formatTel(HOTLINE)}
+              onClick={handlePhoneClick}
+              className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors group cursor-pointer"
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <Phone className="w-5 h-5 text-primary" />
@@ -82,7 +118,7 @@ export function ZaloWidget() {
                 <p className="text-sm font-semibold text-foreground">
                   Gọi hotline
                 </p>
-                <p className="text-xs text-muted-foreground">{ZALO_PHONE}</p>
+                <p className="text-xs text-muted-foreground">{HOTLINE}</p>
               </div>
             </a>
           </div>

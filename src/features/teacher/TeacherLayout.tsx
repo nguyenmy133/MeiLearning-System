@@ -78,10 +78,10 @@ export function TeacherLayout() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
-              <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
+              <img src="/Logo.png" alt="MeiLearn Logo" className="w-full h-full object-contain" />
             </div>
             {sidebarOpen && (
-              <span className="font-display font-semibold text-foreground">EduTrack</span>
+              <span className="font-display font-semibold text-foreground">MeiLearn</span>
             )}
           </Link>
           <button
@@ -147,9 +147,9 @@ export function TeacherLayout() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center">
-              <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
+              <img src="/Logo.png" alt="MeiLearn Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-display font-semibold text-foreground">EduTrack</span>
+            <span className="font-display font-semibold text-foreground">MeiLearn</span>
           </Link>
           <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-accent">
             <X className="w-5 h-5" />

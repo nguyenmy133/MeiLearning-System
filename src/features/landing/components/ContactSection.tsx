@@ -97,7 +97,7 @@ export function ContactSection() {
 
             <div className="space-y-4 text-muted-foreground">
               <p>📍 123 Đường ABC, Quận XYZ, TP.HCM</p>
-              <p>📞 Hotline: 1900 1234</p>
+              <p>📞 Hotline: {import.meta.env.VITE_HOTLINE}</p>
               <p>✉️ Email: contact@educenter.vn</p>
               <p>🕐 Giờ làm việc: 8h - 21h (T2 - CN)</p>
             </div>

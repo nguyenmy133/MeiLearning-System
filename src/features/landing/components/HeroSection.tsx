@@ -148,7 +148,7 @@ export function HeroSection() {
               <div style={{ transform: "translateZ(30px) scale(1.05)" }} className="absolute inset-0 w-full h-full transition-transform duration-300">
                 <img
                   src={heroImage}
-                  alt="Lớp học tại EduTrack"
+                  alt="Lớp học tại MeiLearn"
                   className="w-full h-full object-cover"
                 />
               </div>

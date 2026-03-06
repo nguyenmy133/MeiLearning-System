@@ -1,94 +1,63 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { 
-  BookOpen, 
-  Clock, 
-  FileText, 
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  BookOpen,
+  Clock,
+  FileText,
   CheckCircle,
   XCircle,
   AlertCircle,
   Play,
   Trophy,
-  Calendar
+  Calendar,
+  Eye,
 } from "lucide-react";
-
-// Mock data
-const exams = [
-  {
-    id: 1,
-    title: "Kiểm tra giữa kỳ - Toán 10A",
-    subject: "Toán",
-    class: "Toán 10A",
-    duration: 60, // minutes
-    totalQuestions: 20,
-    passingScore: 70,
-    startTime: "2024-01-20 14:00",
-    endTime: "2024-01-20 15:30",
-    status: "available", // available, in-progress, completed, missed
-    attempts: 0,
-    maxAttempts: 1,
-  },
-  {
-    id: 2,
-    title: "Bài tập tuần 3 - Tiếng Anh",
-    subject: "Tiếng Anh",
-    class: "IELTS-01",
-    duration: 30,
-    totalQuestions: 15,
-    passingScore: 60,
-    startTime: "2024-01-15 10:00",
-    endTime: "2024-01-22 23:59",
-    status: "completed",
-    attempts: 1,
-    maxAttempts: 2,
-    score: 85,
-    correctAnswers: 13,
-  },
-  {
-    id: 3,
-    title: "Ôn tập chương 1 - Vật Lý",
-    subject: "Vật Lý",
-    class: "Lý 10-B",
-    duration: 45,
-    totalQuestions: 25,
-    passingScore: 65,
-    startTime: "2024-01-10 08:00",
-    endTime: "2024-01-17 23:59",
-    status: "missed",
-    attempts: 0,
-    maxAttempts: 1,
-  },
-];
+import { useMyExams, useSubmitExam } from "@/features/user/exam/hooks";
+import type { ExamDetail } from "@/features/user/exam/types";
 
 export function ExamList() {
   const navigate = useNavigate();
+  const { data: exams = [], isLoading } = useMyExams();
 
-  const getStatusBadge = (exam: typeof exams[0]) => {
+  const availableExams = exams.filter((e) => e.status === "upcoming");
+  const completedExams = exams.filter((e) => e.status === "completed");
+  const missedExams = exams.filter((e) => e.status === "missed");
+
+  const getStatusBadge = (exam: ExamDetail) => {
     switch (exam.status) {
-      case "available":
+      case "upcoming":
         return <Badge className="bg-primary">Sẵn sàng</Badge>;
-      case "in-progress":
+      case "ongoing":
         return <Badge className="bg-warning">Đang làm</Badge>;
       case "completed":
         return <Badge className="bg-success">Hoàn thành</Badge>;
       case "missed":
         return <Badge variant="destructive">Đã quá hạn</Badge>;
-      default:
-        return null;
     }
   };
 
-  const handleStartExam = (examId: number) => {
+  const handleStartExam = (examId: string) => {
     navigate(`/user/exam-taking?id=${examId}`);
   };
 
-  const availableExams = exams.filter(e => e.status === "available");
-  const completedExams = exams.filter(e => e.status === "completed");
-  const missedExams = exams.filter(e => e.status === "missed");
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">Bài thi trực tuyến</h1>
+          <p className="text-muted-foreground mt-1">Danh sách bài thi và kết quả</p>
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -97,9 +66,7 @@ export function ExamList() {
         <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
           Bài thi trực tuyến
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Danh sách bài thi và kết quả
-        </p>
+        <p className="text-muted-foreground mt-1">Danh sách bài thi và kết quả</p>
       </div>
 
       {/* Stats */}
@@ -117,7 +84,6 @@ export function ExamList() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -131,7 +97,6 @@ export function ExamList() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -145,7 +110,6 @@ export function ExamList() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -175,43 +139,32 @@ export function ExamList() {
                         <div>
                           <h3 className="font-semibold text-lg text-foreground">{exam.title}</h3>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="secondary">{exam.subject}</Badge>
-                            <Badge variant="outline">{exam.class}</Badge>
+                            <Badge variant="secondary">{exam.className}</Badge>
                             {getStatusBadge(exam)}
                           </div>
+                          {exam.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{exam.description}</p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="w-4 h-4" />
-                          <span>{exam.duration} phút</span>
+                          <span>{exam.durationMinutes} phút</span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <FileText className="w-4 h-4" />
                           <span>{exam.totalQuestions} câu</span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <Trophy className="w-4 h-4" />
-                          <span>Đạt: {exam.passingScore}%</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
                           <Calendar className="w-4 h-4" />
-                          <span>Hạn: {exam.endTime}</span>
+                          <span>{new Date(exam.startAt).toLocaleDateString("vi-VN")}</span>
                         </div>
                       </div>
-
-                      {exam.attempts < exam.maxAttempts && (
-                        <p className="text-xs text-muted-foreground">
-                          Còn {exam.maxAttempts - exam.attempts} lượt làm bài
-                        </p>
-                      )}
                     </div>
 
-                    <Button 
-                      className="gap-2"
-                      onClick={() => handleStartExam(exam.id)}
-                    >
+                    <Button className="gap-2" onClick={() => handleStartExam(exam.id)}>
                       <Play className="w-4 h-4" />
                       Bắt đầu làm bài
                     </Button>
@@ -236,8 +189,7 @@ export function ExamList() {
                       <div>
                         <h3 className="font-semibold text-lg text-foreground">{exam.title}</h3>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <Badge variant="secondary">{exam.subject}</Badge>
-                          <Badge variant="outline">{exam.class}</Badge>
+                          <Badge variant="secondary">{exam.className}</Badge>
                           {getStatusBadge(exam)}
                         </div>
                       </div>
@@ -245,29 +197,29 @@ export function ExamList() {
                       <div className="flex items-center gap-6">
                         <div>
                           <p className="text-sm text-muted-foreground">Điểm số</p>
-                          <p className={`text-2xl font-bold ${exam.score! >= exam.passingScore ? 'text-success' : 'text-destructive'}`}>
-                            {exam.score}/100
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Số câu đúng</p>
-                          <p className="text-lg font-semibold text-foreground">
-                            {exam.correctAnswers}/{exam.totalQuestions}
+                          <p className={`text-2xl font-bold ${exam.passed ? "text-success" : "text-destructive"}`}>
+                            {exam.score?.toFixed(1)}/10
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Kết quả</p>
-                          <Badge className={exam.score! >= exam.passingScore ? 'bg-success' : 'bg-destructive'}>
-                            {exam.score! >= exam.passingScore ? 'Đạt' : 'Chưa đạt'}
+                          <Badge className={exam.passed ? "bg-success" : "bg-destructive"}>
+                            {exam.passed ? "Đạt" : "Chưa đạt"}
                           </Badge>
                         </div>
+                        {exam.submittedAt && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Nộp lúc</p>
+                            <p className="text-sm font-medium text-foreground">
+                              {new Date(exam.submittedAt).toLocaleDateString("vi-VN")}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <Button 
-                      variant="outline"
-                      onClick={() => navigate(`/user/exam-result?id=${exam.id}`)}
-                    >
+                    <Button variant="outline" onClick={() => navigate(`/user/exam-result?id=${exam.id}`)}>
+                      <Eye className="w-4 h-4 mr-2" />
                       Xem chi tiết
                     </Button>
                   </div>
@@ -291,7 +243,7 @@ export function ExamList() {
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">{exam.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Hạn nộp: {exam.endTime}
+                        Ngày thi: {new Date(exam.startAt).toLocaleDateString("vi-VN")}
                       </p>
                     </div>
                     {getStatusBadge(exam)}
@@ -300,6 +252,13 @@ export function ExamList() {
               </Card>
             ))}
           </div>
+        </div>
+      )}
+
+      {exams.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
+          <p>Chưa có bài thi nào.</p>
         </div>
       )}
     </div>

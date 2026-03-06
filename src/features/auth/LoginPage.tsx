@@ -194,9 +194,9 @@ export function LoginPage() {
           <div className="pointer-events-auto w-fit">
             <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-105 origin-left group">
               <div className="w-14 h-14 rounded-2xl bg-white/10 p-2.5 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:bg-white/20 transition-all duration-300">
-                <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
+                <img src="/Logo.png" alt="MeiLearn Logo" className="w-full h-full object-contain" />
               </div>
-              <span className="font-display font-semibold text-3xl tracking-tight text-white drop-shadow-md">EduTrack</span>
+              <span className="font-display font-semibold text-3xl tracking-tight text-white drop-shadow-md">MeiLearn</span>
             </Link>
           </div>
           
@@ -210,7 +210,7 @@ export function LoginPage() {
           </div>
 
           <div className="text-sm text-slate-400 font-medium tracking-wide" style={{ textShadow: '0 2px 5px rgba(0,0,0,0.8)' }}>
-            © {new Date().getFullYear()} EduTrack OS. Tất cả quyền được bảo lưu.
+            © {new Date().getFullYear()} MeiLearn OS. Tất cả quyền được bảo lưu.
           </div>
         </motion.div>
       </div>
@@ -231,9 +231,9 @@ export function LoginPage() {
           <div className="lg:hidden mb-8">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-primary/5">
-                <img src="/Logo.png" alt="EduTrack Logo" className="w-12 h-12 object-contain" />
+                <img src="/Logo.png" alt="MeiLearn Logo" className="w-12 h-12 object-contain" />
               </div>
-              <span className="font-display font-semibold text-2xl text-foreground">EduTrack</span>
+              <span className="font-display font-semibold text-2xl text-foreground">MeiLearn</span>
             </Link>
           </div>
 

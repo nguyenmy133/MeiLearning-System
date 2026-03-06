@@ -38,7 +38,7 @@ export function ContactPage() {
                 {
                   icon: Phone,
                   title: "Hotline",
-                  content: "1900 1234"
+                  content: import.meta.env.VITE_HOTLINE 
                 },
                 {
                   icon: Mail,

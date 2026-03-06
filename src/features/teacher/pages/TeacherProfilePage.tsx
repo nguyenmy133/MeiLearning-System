@@ -59,16 +59,21 @@ const stats = {
 
 export function TeacherProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Khởi tạo state toàn diện cho phép sửa tất cả
   const [formData, setFormData] = useState({
     name: teacherData.name,
     email: teacherData.email,
     phone: teacherData.phone,
     address: teacherData.address,
-    bio: teacherData.bio
+    birthday: teacherData.birthday,
+    bio: teacherData.bio,
+    education: [...teacherData.education],
+    certifications: [...teacherData.certifications]
   });
 
   const handleSave = () => {
-    toast.success("Đã cập nhật thông tin thành công!");
+    toast.success("Đã cập nhật tất cả thông tin thành công!");
     setIsEditing(false);
   };
 
@@ -77,7 +82,7 @@ export function TeacherProfilePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-foreground">Hồ sơ giáo viên</h1>
-          <p className="text-muted-foreground">Quản lý thông tin cá nhân của bạn</p>
+          <p className="text-muted-foreground">Xem và cập nhật thông tin liên hệ, giới thiệu</p>
         </div>
         {isEditing ? (
           <div className="flex gap-2">
@@ -90,7 +95,7 @@ export function TeacherProfilePage() {
         ) : (
           <Button variant="outline" onClick={() => setIsEditing(true)}>
             <Edit className="w-4 h-4 mr-2" />
-            Chỉnh sửa
+            Cập nhật hồ sơ
           </Button>
         )}
       </div>
@@ -107,7 +112,7 @@ export function TeacherProfilePage() {
               {isEditing && (
                 <Button 
                   size="icon" 
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full border-2 border-background"
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
@@ -122,7 +127,7 @@ export function TeacherProfilePage() {
               </div>
               <p className="text-muted-foreground mb-4">{teacherData.department}</p>
               
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="text-center p-3 bg-accent rounded-lg">
                   <BookOpen className="w-5 h-5 mx-auto text-primary mb-1" />
                   <p className="text-xl font-bold">{stats.totalClasses}</p>
@@ -137,11 +142,6 @@ export function TeacherProfilePage() {
                   <Clock className="w-5 h-5 mx-auto text-primary mb-1" />
                   <p className="text-xl font-bold">{stats.totalHours}</p>
                   <p className="text-xs text-muted-foreground">Giờ dạy</p>
-                </div>
-                <div className="text-center p-3 bg-accent rounded-lg">
-                  <Star className="w-5 h-5 mx-auto text-warning mb-1" />
-                  <p className="text-xl font-bold">{stats.avgRating}</p>
-                  <p className="text-xs text-muted-foreground">Đánh giá</p>
                 </div>
               </div>
             </div>
@@ -168,8 +168,8 @@ export function TeacherProfilePage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <User className="w-4 h-4" /> Họ và tên
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <User className="w-4 h-4 text-primary" /> Họ và tên
                   </label>
                   {isEditing ? (
                     <Input
@@ -177,13 +177,13 @@ export function TeacherProfilePage() {
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
                   ) : (
-                    <p className="text-foreground">{teacherData.name}</p>
+                    <p className="text-foreground">{formData.name}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Mail className="w-4 h-4" /> Email
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-primary" /> Email
                   </label>
                   {isEditing ? (
                     <Input
@@ -192,34 +192,43 @@ export function TeacherProfilePage() {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
                   ) : (
-                    <p className="text-foreground">{teacherData.email}</p>
+                    <p className="text-foreground">{formData.email}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Phone className="w-4 h-4" /> Số điện thoại
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" /> Ngày sinh
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={formData.birthday}
+                      onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
+                    />
+                  ) : (
+                    <p className="text-foreground">{new Date(formData.birthday).toLocaleDateString("vi-VN")}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-primary" /> Số điện thoại
                   </label>
                   {isEditing ? (
                     <Input
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      autoFocus
                     />
                   ) : (
                     <p className="text-foreground">{teacherData.phone}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4" /> Ngày sinh
-                  </label>
-                  <p className="text-foreground">{new Date(teacherData.birthday).toLocaleDateString("vi-VN")}</p>
-                </div>
-
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <MapPin className="w-4 h-4" /> Địa chỉ
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" /> Địa chỉ
                   </label>
                   {isEditing ? (
                     <Input
@@ -232,7 +241,7 @@ export function TeacherProfilePage() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-muted-foreground">Giới thiệu bản thân</label>
+                  <label className="text-sm font-medium text-foreground">Giới thiệu bản thân</label>
                   {isEditing ? (
                     <Textarea
                       value={formData.bio}
@@ -282,19 +291,70 @@ export function TeacherProfilePage() {
               <Separator />
 
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                  <Award className="w-4 h-4" /> Chứng chỉ
+                <h4 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-primary" /> Chứng chỉ {isEditing && <span className="text-xs font-normal text-muted-foreground ml-2">(Có thể chỉnh sửa)</span>}
                 </h4>
                 <div className="space-y-3">
-                  {teacherData.certifications.map((cert, index) => (
-                    <div key={index} className="flex items-center gap-4 p-3 bg-accent rounded-lg">
-                      <Award className="w-8 h-8 text-warning" />
-                      <div>
-                        <p className="font-medium text-foreground">{cert.name}</p>
-                        <p className="text-sm text-muted-foreground">{cert.issuer} • {cert.year}</p>
+                  {formData.certifications.map((cert, index) => (
+                    <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-accent rounded-lg">
+                      <Award className="w-8 h-8 text-warning hidden sm:block" />
+                      <div className="flex-1 w-full space-y-2">
+                        {isEditing ? (
+                          <>
+                            <Input 
+                              placeholder="Tên chứng chỉ"
+                              value={cert.name} 
+                              onChange={(e) => {
+                                const newCerts = [...formData.certifications];
+                                newCerts[index].name = e.target.value;
+                                setFormData({...formData, certifications: newCerts});
+                              }}
+                            />
+                            <div className="flex gap-2">
+                              {/* TODO: Khi ghép API có thể cung cấp nút Xóa */}
+                              <Input 
+                                placeholder="Nơi cấp"
+                                value={cert.issuer} 
+                                onChange={(e) => {
+                                  const newCerts = [...formData.certifications];
+                                  newCerts[index].issuer = e.target.value;
+                                  setFormData({...formData, certifications: newCerts});
+                                }}
+                              />
+                              <Input 
+                                placeholder="Năm cấp"
+                                className="w-24"
+                                value={cert.year} 
+                                onChange={(e) => {
+                                  const newCerts = [...formData.certifications];
+                                  newCerts[index].year = e.target.value;
+                                  setFormData({...formData, certifications: newCerts});
+                                }}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-medium text-foreground">{cert.name}</p>
+                            <p className="text-sm text-muted-foreground">{cert.issuer} • {cert.year}</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
+                  {isEditing && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full mt-2 border-dashed"
+                      onClick={() => setFormData({
+                        ...formData, 
+                        certifications: [...formData.certifications, { name: "", issuer: "", year: "2024" }]
+                      })}
+                    >
+                      + Thêm chứng chỉ
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -311,16 +371,69 @@ export function TeacherProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {teacherData.education.map((edu, index) => (
+                {formData.education.map((edu, index) => (
                   <div key={index} className="relative pl-6 pb-4 border-l-2 border-primary/30 last:pb-0">
                     <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-primary" />
-                    <div className="bg-accent p-4 rounded-lg">
-                      <p className="font-semibold text-foreground">{edu.degree}</p>
-                      <p className="text-sm text-muted-foreground">{edu.school}</p>
-                      <Badge variant="outline" className="mt-2">{edu.year}</Badge>
+                    <div className="bg-accent p-4 rounded-lg space-y-2">
+                      {isEditing ? (
+                        <>
+                          <Input 
+                            placeholder="Bằng cấp"
+                            value={edu.degree} 
+                            onChange={(e) => {
+                              const newEdus = [...formData.education];
+                              newEdus[index].degree = e.target.value;
+                              setFormData({...formData, education: newEdus});
+                            }}
+                          />
+                          <div className="flex gap-2">
+                            <Input 
+                              placeholder="Trường"
+                              value={edu.school} 
+                              onChange={(e) => {
+                                const newEdus = [...formData.education];
+                                newEdus[index].school = e.target.value;
+                                setFormData({...formData, education: newEdus});
+                              }}
+                            />
+                            <Input 
+                              placeholder="Năm TN"
+                              className="w-24"
+                              value={edu.year} 
+                              onChange={(e) => {
+                                const newEdus = [...formData.education];
+                                newEdus[index].year = e.target.value;
+                                setFormData({...formData, education: newEdus});
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-semibold text-foreground">{edu.degree}</p>
+                          <p className="text-sm text-muted-foreground">{edu.school}</p>
+                          <Badge variant="outline" className="mt-2">{edu.year}</Badge>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
+                
+                {isEditing && (
+                  <div className="pl-6">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full border-dashed"
+                      onClick={() => setFormData({
+                        ...formData, 
+                        education: [...formData.education, { degree: "", school: "", year: "2024" }]
+                      })}
+                    >
+                      + Thêm quá trình học tập
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -39,10 +39,10 @@ export function Header() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
           <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
-            <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
+            <img src="/Logo.png" alt="MeiLearn Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-display font-semibold text-xl text-foreground">
-            EduTrack
+          <span className="font-display font-semibold text-xl tracking-tight text-foreground hidden sm:block">
+            MeiLearn
           </span>
         </Link>
 

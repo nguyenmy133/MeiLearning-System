@@ -28,6 +28,7 @@ import { TuitionPage } from "./features/user/pages/TuitionPage";
 import { LeavePage } from "./features/user/pages/LeavePage";
 import { UserGradesPage } from "./features/user/pages/UserGradesPage";
 import { ProfilePage } from "./features/user/pages/ProfilePage";
+import { GamesPage } from "./features/user/pages/GamesPage";
 
 // Teacher portal
 import { TeacherLayout } from "./features/teacher/TeacherLayout";
@@ -94,8 +95,9 @@ const App = () => (
             <Route path="tuition" element={<TuitionPage />} />
             <Route path="leave" element={<LeavePage />} />
             <Route path="grades" element={<UserGradesPage />} />
-
+            <Route path="games" element={<GamesPage />} />
             <Route path="profile" element={<ProfilePage />} />
+          
           </Route>
 
           {/* Teacher portal */}

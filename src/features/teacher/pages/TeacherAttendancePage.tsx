@@ -314,16 +314,16 @@ export function TeacherAttendancePage() {
                 {present} <UserCheck className="w-5 h-5 mb-1 opacity-70" />
               </div>
             </div>
-            <div className="bg-secondary/10 border border-secondary/20 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-              <span className="text-sm text-secondary-foreground font-medium mb-1">Đi muộn</span>
-              <div className="flex items-end gap-2 text-2xl font-bold text-secondary-foreground">
-                {late} <Clock className="w-5 h-5 mb-1 opacity-70" />
+            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4 shadow-sm flex flex-col justify-center">
+              <span className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">Có phép</span>
+              <div className="flex items-end gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {absentExcused} <UserCheck className="w-5 h-5 mb-1 opacity-70" />
               </div>
             </div>
             <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-4 shadow-sm flex flex-col justify-center">
               <span className="text-sm text-destructive font-medium mb-1">Vắng / Chưa tới</span>
               <div className="flex items-end gap-2 text-2xl font-bold text-destructive">
-                {absent + absentExcused + pending} <UserX className="w-5 h-5 mb-1 opacity-70" />
+                {absent + pending} <UserX className="w-5 h-5 mb-1 opacity-70" />
               </div>
             </div>
           </div>

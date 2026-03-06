@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,24 +9,45 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, CreditCard, BookOpen, ChevronRight, CheckCircle2, QrCode, Camera, AlertCircle, Loader2 } from "lucide-react";
+import { Calendar, CreditCard, BookOpen, CheckCircle2, QrCode, Camera, AlertCircle, Loader2 } from "lucide-react";
 import { SchedulePage } from "./SchedulePage";
 import { AttendancePage } from "./AttendancePage";
+import { useTodaySessions, useMyClasses } from "@/features/user/schedule/hooks";
+import { useMyInvoices } from "@/features/user/tuition/hooks";
+import { useCheckIn } from "@/features/user/attendance/hooks";
 
-const upcomingClasses = [
-  { id: 1, subject: "Toán", teacher: "Nguyễn Văn Toán", time: "14:00 - 16:00", room: "P.101" },
-  { id: 2, subject: "Tiếng Anh", teacher: "Trần Thị Anh", time: "16:30 - 18:30", room: "P.205" },
-];
-
-function QRCheckInSheet({ open, onClose, className }: { open: boolean, onClose: () => void, className?: string }) {
+function QRCheckInSheet({
+  open,
+  onClose,
+  className,
+  sessionId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  className?: string;
+  sessionId?: string;
+}) {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<"success" | "error" | null>(null);
+  const checkIn = useCheckIn();
 
   const handleScan = () => {
     setScanning(true);
     setTimeout(() => {
       setScanning(false);
-      setResult(Math.random() > 0.3 ? "success" : "error");
+      // Wire to real service
+      if (sessionId) {
+        checkIn.mutate(
+          { qrCode: `mock-qr-${sessionId}`, sessionId },
+          {
+            onSuccess: () => setResult("success"),
+            onError: () => setResult("error"),
+          }
+        );
+      } else {
+        // Fallback demo
+        setResult(Math.random() > 0.3 ? "success" : "error");
+      }
     }, 2000);
   };
 
@@ -100,13 +121,33 @@ function QRCheckInSheet({ open, onClose, className }: { open: boolean, onClose: 
 export function UserDashboard() {
   const [qrOpen, setQrOpen] = useState(false);
   const [activeClass, setActiveClass] = useState("");
+  const [activeSessionId, setActiveSessionId] = useState("");
+
+  // ── Real data from services ─────────────────────────────────────────
+  const { data: todaySessions = [] } = useTodaySessions();
+  const { data: classes = [] } = useMyClasses();
+  const { data: invoices = [] } = useMyInvoices();
+
+  const activeClasses = classes.filter((c) => c.status === "ACTIVE");
+  const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
+  const totalDebt = pendingInvoices.reduce((s, i) => s + i.totalAmount, 0);
+
+  const handleCheckIn = (className: string, sessionId: string) => {
+    setActiveClass(className);
+    setActiveSessionId(sessionId);
+    setQrOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       {/* Welcome */}
       <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground">
-        <h2 className="text-2xl font-display font-bold mb-2">Chào mừng trở lại, Nguyễn Văn A!</h2>
-        <p className="opacity-90">Hôm nay bạn có {upcomingClasses.length} buổi học. Chúc bạn học tập hiệu quả!</p>
+        <h2 className="text-2xl font-display font-bold mb-2">Chào mừng trở lại!</h2>
+        <p className="opacity-90">
+          {todaySessions.length > 0
+            ? `Hôm nay bạn có ${todaySessions.length} buổi học. Chúc bạn học tập hiệu quả!`
+            : "Hôm nay bạn không có buổi học nào. Nghỉ ngơi thật tốt!"}
+        </p>
       </div>
 
       {/* Stats cards */}
@@ -118,7 +159,7 @@ export function UserDashboard() {
                 <Calendar className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{upcomingClasses.length}</p>
+                <p className="text-2xl font-bold">{todaySessions.length}</p>
                 <p className="text-xs text-muted-foreground">Buổi học hôm nay</p>
               </div>
             </div>
@@ -132,8 +173,12 @@ export function UserDashboard() {
                 <CreditCard className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-destructive">1.5M</p>
-                <p className="text-xs text-muted-foreground">Công nợ</p>
+                <p className={`text-2xl font-bold ${totalDebt > 0 ? "text-destructive" : "text-success"}`}>
+                  {totalDebt > 0
+                    ? `${(totalDebt / 1_000_000).toFixed(1)}M`
+                    : "0"}
+                </p>
+                <p className="text-xs text-muted-foreground">{totalDebt > 0 ? "Công nợ học phí" : "Đã thanh toán"}</p>
               </div>
             </div>
           </CardContent>
@@ -146,7 +191,7 @@ export function UserDashboard() {
                 <BookOpen className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">3</p>
+                <p className="text-2xl font-bold">{activeClasses.length}</p>
                 <p className="text-xs text-muted-foreground">Lớp đang học</p>
               </div>
             </div>
@@ -154,7 +199,12 @@ export function UserDashboard() {
         </Card>
       </div>
 
-      <QRCheckInSheet open={qrOpen} onClose={() => setQrOpen(false)} className={activeClass} />
+      <QRCheckInSheet
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        className={activeClass}
+        sessionId={activeSessionId}
+      />
 
       {/* Main Tabs blending Dashboard, Schedule, Attendance */}
       <Tabs defaultValue="schedule" className="w-full">
@@ -164,20 +214,19 @@ export function UserDashboard() {
         </TabsList>
         <TabsContent value="schedule" className="mt-0">
           <div className="bg-card border rounded-xl overflow-hidden p-0 relative">
-             <div className="px-4 py-2 pt-0 [&>div>div:first-child>h1]:hidden [&>div>div:first-child>p]:hidden">
-                <SchedulePage onCheckIn={(subject) => { setActiveClass(subject); setQrOpen(true); }} />
-             </div>
+            <div className="px-4 py-2 pt-0">
+              <SchedulePage onCheckIn={handleCheckIn} />
+            </div>
           </div>
         </TabsContent>
         <TabsContent value="attendance" className="mt-0">
           <div className="bg-card border rounded-xl overflow-hidden p-0 relative">
-             <div className="px-4 py-2 pt-0 [&>div>div:first-child>h1]:hidden [&>div>div:first-child>p]:hidden">
-                <AttendancePage />
-             </div>
+            <div className="px-4 py-2 pt-0">
+              <AttendancePage />
+            </div>
           </div>
         </TabsContent>
       </Tabs>
-      
     </div>
   );
 }

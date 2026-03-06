@@ -1,45 +1,39 @@
 import { useState } from "react";
-import { CreditCard, Receipt, Clock, CheckCircle, AlertCircle, ChevronRight, Download, Copy, QrCode } from "lucide-react";
+import { CreditCard, Receipt, CheckCircle, AlertCircle, QrCode, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
+import { useMyInvoices, useInitiatePayment } from "@/features/user/tuition/hooks";
+import { INVOICE_STATUS_LABELS, type InvoiceStatus } from "@/features/user/tuition/types";
 
-const currentInvoice = {
-  id: "INV_092024_001",
-  month: "09/2024",
-  totalAmount: 3000000,
-  dueDate: "05/10/2024",
-  status: "pending",
-  details: [
-    { className: "Toán 10A", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 },
-    { className: "Lý 10-B", billableSessions: 10, pricePerSession: 150000, subTotal: 1500000 }
-  ]
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+
+const getStatusColor = (status: InvoiceStatus) => {
+  switch (status) {
+    case "pending": return "bg-warning/10 text-warning border-warning/30";
+    case "overdue": return "bg-destructive/10 text-destructive border-destructive/30";
+    case "reviewing": return "bg-blue-100 text-blue-600 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300";
+    case "paid": return "bg-success/10 text-success border-success/30";
+  }
 };
 
-const paymentHistory = [
-  { id: 1, date: "15/11/2024", amount: 5000000, method: "Chuyển khoản", status: "completed", receipt: "INV-2024-001" },
-  { id: 2, date: "01/11/2024", amount: 5000000, method: "Tiền mặt", status: "completed", receipt: "INV-2024-002" },
-  { id: 3, date: "15/10/2024", amount: 2500000, method: "Chuyển khoản", status: "completed", receipt: "INV-2024-003" },
-];
-
 export function TuitionPage() {
-  const { toast } = useToast();
   const [qrPaymentOpen, setQrPaymentOpen] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<"pending" | "reviewing" | "paid">("pending");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
+  const { data: invoices = [], isLoading } = useMyInvoices();
+  const initPayment = useInitiatePayment();
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Đã sao chép",
-      description: `${label} đã được sao chép vào clipboard`,
-    });
+  const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
+  const paidInvoices = invoices.filter((i) => i.status === "paid");
+  const selectedInvoice = invoices.find((i) => i.id === selectedInvoiceId);
+
+  const handlePayClick = (invoiceId: string) => {
+    setSelectedInvoiceId(invoiceId);
+    setQrPaymentOpen(true);
   };
 
   return (
@@ -47,134 +41,187 @@ export function TuitionPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
-          Thanh toán Học phí
+          Học phí
         </h1>
         <p className="text-muted-foreground mt-1">
-          Kỳ cước Tháng {currentInvoice.month}
+          Quản lý và thanh toán học phí của bạn
         </p>
       </div>
 
-      {/* Payment Summary */}
-      <Card className="border-warning/30 bg-gradient-to-r from-warning/5 to-transparent">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-xl ${paymentStatus === 'reviewing' ? 'bg-blue-500/20' : 'bg-warning/20'}`}>
-                {paymentStatus === 'reviewing' ? (
-                  <CheckCircle className="h-6 w-6 text-blue-500" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-warning" />
-                )}
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  {paymentStatus === 'reviewing' ? 'Đang chờ Admin xác nhận' : 'Phí học tháng trước (Dự kiến)'}
-                </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <p className="text-2xl font-bold text-warning">{formatCurrency(currentInvoice.totalAmount)}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">Hạn thanh toán: {currentInvoice.dueDate}</p>
-              </div>
-            </div>
-            {paymentStatus === 'pending' ? (
-              <Button 
-                className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
-                onClick={() => setQrPaymentOpen(true)}
-              >
-                <QrCode className="h-4 w-4" />
-                Thanh toán QR
-              </Button>
-            ) : paymentStatus === 'reviewing' ? (
-              <Button disabled className="bg-blue-600 text-white gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Chờ đối soát
-              </Button>
-            ) : null}
+      {/* Billing rule info banner */}
+      <Card className="border-blue-200/50 bg-blue-50/50 dark:border-blue-800/50 dark:bg-blue-950/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3 text-sm">
+            <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-blue-700 dark:text-blue-300">
+              <span className="font-medium">Cách tính học phí:</span>{" "}
+              Học phí chỉ tính cho các buổi{" "}
+              <span className="font-semibold">có mặt</span>,{" "}
+              <span className="font-semibold">đi muộn</span> và{" "}
+              <span className="font-semibold">vắng không phép</span>.
+              Buổi vắng <span className="font-semibold text-blue-800 dark:text-blue-200">có phép được giáo viên duyệt</span>{" "}
+              sẽ không tính vào học phí.
+            </p>
           </div>
         </CardContent>
       </Card>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-36 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* Pending / Overdue invoices */}
+          {pendingInvoices.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-warning" />
+                Cần thanh toán ({pendingInvoices.length})
+              </h2>
+              {pendingInvoices.map((invoice) => (
+                <Card key={invoice.id} className="border-warning/30 bg-gradient-to-r from-warning/5 to-transparent">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="font-semibold text-foreground text-lg">{invoice.className}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Tháng {invoice.month.split("-").reverse().join("/")}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={`text-xs ${getStatusColor(invoice.status)}`}>
+                            {INVOICE_STATUS_LABELS[invoice.status]}
+                          </Badge>
+                        </div>
+
+                        {/* Breakdown */}
+                        <div className="p-3 bg-muted/30 rounded-lg space-y-1 text-sm">
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Có mặt / Đi muộn / Vắng không phép</span>
+                            <span className="font-medium text-foreground">
+                              {invoice.presentSessions + invoice.lateSessions + invoice.absentUnexcusedSessions} buổi
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Vắng có phép (miễn phí)</span>
+                            <span className="font-medium text-blue-600">
+                              {invoice.absentExcusedSessions} buổi
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground border-t pt-1 mt-1">
+                            <span>Buổi tính phí × {formatCurrency(invoice.pricePerSession)}</span>
+                            <span className="font-medium text-foreground">
+                              {invoice.billableSessions} buổi
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-3xl font-bold text-warning">
+                            {formatCurrency(invoice.totalAmount)}
+                          </p>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Hạn thanh toán: {new Date(invoice.dueDate).toLocaleDateString("vi-VN")}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        {invoice.status === "reviewing" ? (
+                          <Button disabled className="bg-blue-600 text-white gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Chờ đối soát
+                          </Button>
+                        ) : (
+                          <Button
+                            className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
+                            onClick={() => handlePayClick(invoice.id)}
+                          >
+                            <QrCode className="h-4 w-4" />
+                            Thanh toán QR
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Paid invoices */}
+          {paidInvoices.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-success" />
+                Đã thanh toán
+              </h2>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border">
+                    {paidInvoices.map((invoice) => (
+                      <div key={invoice.id} className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-success/10 rounded-lg">
+                            <CheckCircle className="h-4 w-4 text-success" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{invoice.className}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Tháng {invoice.month.split("-").reverse().join("/")}
+                              {invoice.paidAt && ` • Thanh toán ${new Date(invoice.paidAt).toLocaleDateString("vi-VN")}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-foreground">{formatCurrency(invoice.totalAmount)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {invoice.billableSessions} buổi × {formatCurrency(invoice.pricePerSession)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {invoices.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>Chưa có hóa đơn nào.</p>
+            </div>
+          )}
+        </>
+      )}
 
       {/* QR Payment Modal */}
-      <QRPaymentModal
-        open={qrPaymentOpen}
-        onOpenChange={setQrPaymentOpen}
-        paymentInfo={{
-          invoiceId: currentInvoice.id,
-          studentId: "001", // Ví dụ mã HS
-          studentName: "Nguyễn Văn An", // Có thể truyền từ Store/Session
-          amount: currentInvoice.totalAmount,
-          description: `Học phí tháng ${currentInvoice.month}`,
-          dueDate: currentInvoice.dueDate,
-        }}
-        onPaid={() => setPaymentStatus("reviewing")}
-      />
-
-      {/* Bill Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" />
-            Chi tiết Bảng tính Học phí (Dựa trên số buổi học điểm danh)
-          </CardTitle>
-          <CardDescription>Mã hóa đơn: {currentInvoice.id}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Course breakdown */}
-          <div className="space-y-3">
-            {currentInvoice.details.map((course, index) => (
-              <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-secondary/20 rounded-lg gap-2 border border-border/50">
-                <div>
-                  <p className="font-semibold text-foreground text-base">{course.className}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Số buổi tính phí: <span className="font-medium text-foreground">{course.billableSessions}</span> x {formatCurrency(course.pricePerSession)}/buổi
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg text-primary">{formatCurrency(course.subTotal)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6 pt-4 border-t flex justify-between items-center px-2">
-            <p className="font-medium text-muted-foreground">Tổng cộng (Tháng {currentInvoice.month})</p>
-            <p className="text-xl font-bold text-warning">{formatCurrency(currentInvoice.totalAmount)}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" />
-            Lịch sử thanh toán
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {paymentHistory.map((payment) => (
-              <div
-                key={payment.id}
-                className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-success/10 rounded-lg">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{formatCurrency(payment.amount)}</p>
-                    <p className="text-xs text-muted-foreground">{payment.date} • {payment.method}</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {selectedInvoice && (
+        <QRPaymentModal
+          open={qrPaymentOpen}
+          onOpenChange={setQrPaymentOpen}
+          paymentInfo={{
+            invoiceId: selectedInvoice.id,
+            studentId: "current-user",
+            studentName: "Học viên",
+            amount: selectedInvoice.totalAmount,
+            description: `Học phí tháng ${selectedInvoice.month} — ${selectedInvoice.className}`,
+            dueDate: selectedInvoice.dueDate,
+          }}
+          onPaid={() => {
+            initPayment.mutate({
+              invoiceId: selectedInvoice.id,
+              amount: selectedInvoice.totalAmount,
+            });
+            setQrPaymentOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

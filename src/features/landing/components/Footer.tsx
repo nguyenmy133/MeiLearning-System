@@ -29,9 +29,9 @@ export function Footer() {
           <div className="lg:col-span-4 lg:pr-8">
             <Link to="/" className="flex items-center gap-3 mb-6 group inline-flex">
               <div className="w-14 h-14 rounded-2xl bg-white/5 p-2.5 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:bg-white/10 group-hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]">
-                <img src="/Logo.png" alt="EduTrack Logo" className="w-full h-full object-contain" />
+                <img src="/Logo.png" alt="MeiLearn Logo" className="w-full h-full object-contain" />
               </div>
-              <span className="font-display font-semibold text-3xl text-white tracking-tight">EduTrack</span>
+              <span className="font-display font-semibold text-3xl text-white tracking-tight">MeiLearn</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-8 pr-4">
               Hệ thống theo dõi tiến trình và quản lý học tập toàn diện. Kiến tạo trải nghiệm giáo dục chuẩn mực, tối ưu hóa năng lực của mọi học viên.
@@ -110,7 +110,7 @@ export function Footer() {
                 </div>
                 <div>
                   <p className="text-white font-medium text-sm mb-1">Hotline tư vấn</p>
-                  <p className="text-slate-400 text-sm">1900 1234 <span className="text-slate-500 text-xs ml-1">(8h - 21h)</span></p>
+                  <p className="text-slate-400 text-sm">{import.meta.env.VITE_HOTLINE } <span className="text-slate-500 text-xs ml-1">(8h - 21h)</span></p>
                 </div>
               </li>
 
@@ -120,7 +120,7 @@ export function Footer() {
                 </div>
                 <div>
                   <p className="text-white font-medium text-sm mb-1">Email hỗ trợ</p>
-                  <p className="text-slate-400 text-sm">contact@edutrack.vn</p>
+                  <p className="text-slate-400 text-sm">contact@meilearn.vn</p>
                 </div>
               </li>
             </ul>
@@ -130,7 +130,7 @@ export function Footer() {
         {/* Footer Bottom Setup */}
         <div className="flex flex-col md:flex-row items-center justify-between border-t border-white/10 pt-8 mt-4">
           <p className="text-sm font-medium text-slate-500 mb-4 md:mb-0">
-            © {new Date().getFullYear()} EduTrack. Thiết kế và phát triển với tâm huyết.
+            © {new Date().getFullYear()} MeiLearn. Thiết kế và phát triển với tâm huyết.
           </p>
           <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
             <span className="hover:text-white cursor-pointer transition-colors">Tiếng Việt</span>
