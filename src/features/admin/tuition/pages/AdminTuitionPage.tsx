@@ -52,6 +52,8 @@ import {
   QrCode,
   BookOpen,
   Loader2,
+  FileText,
+  MessageCircle,
 } from "lucide-react";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 import { toast } from "sonner";
@@ -251,22 +253,48 @@ export function AdminTuitionPage() {
           <CardTitle className="text-lg font-display">
             Quản lý hóa đơn học phí
           </CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-1" />
-              Xuất PDF / Zalo
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                toast.info(
+                  `Đang xuất PDF tổng hợp cho ${invoices.length} hóa đơn...`
+                )
+              }
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Xuất PDF tổng hợp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-green-500/40 text-green-600 hover:bg-green-50 hover:text-green-700"
+              onClick={() => {
+                const count = invoices.filter(
+                  (p) => p.status === "pending" || p.status === "overdue"
+                ).length;
+                toast.info(`Đang gửi Zalo nhắc nợ hàng loạt tới ${count} phụ huynh...`);
+              }}
+            >
+              <MessageCircle className="w-4 h-4 mr-1" />
+              Gửi Zalo hàng loạt
             </Button>
             <Button
               size="sm"
               disabled={generateMutation.isPending}
-              onClick={() => generateMutation.mutate(filterMonth !== "all" ? filterMonth : "09/2024")}
+              onClick={() =>
+                generateMutation.mutate(
+                  filterMonth !== "all" ? filterMonth : "09/2024"
+                )
+              }
             >
               {generateMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (
                 <TrendingUp className="w-4 h-4 mr-1" />
               )}
-              Chốt công &amp; Tạo Bill
+              Chốt công & Tạo Bill
             </Button>
           </div>
         </CardHeader>
