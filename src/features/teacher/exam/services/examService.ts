@@ -79,8 +79,11 @@ export async function createExam(teacherId: number, dto: CreateExamDTO): Promise
         id: nextId++,
         teacherId,
         ...dto,
+        startTime: dto.startTime || "",
+        endTime: dto.endTime || "",
         classNames: [], // populated by BE join
         status: "draft",
+        totalQuestions: 0,
         totalStudents: 0,
         completedStudents: 0,
         averageScore: 0,
@@ -145,4 +148,34 @@ export async function archiveExam(id: number, teacherId: number): Promise<Teache
 export function resetExamData(): void {
     db = clone(mockExams);
     nextId = Math.max(...db.map((e) => e.id)) + 1;
+}
+
+// ── Exam Results Methods ──────────────────────────────────────────────────────────
+
+import { mockExamInfo, mockStatistics, mockStudentResults, mockQuestionAnalysis, mockStudentExamResult } from "../data/mockData";
+import type { ExamInfo, ExamStatistics, StudentResult, QuestionAnalysis } from "../types";
+
+export async function getExamInfo(id: number): Promise<ExamInfo> {
+    await randomDelay();
+    return clone(mockExamInfo);
+}
+
+export async function getExamStatistics(id: number): Promise<ExamStatistics> {
+    await randomDelay();
+    return clone(mockStatistics);
+}
+
+export async function getStudentResults(examId: number): Promise<StudentResult[]> {
+    await randomDelay();
+    return clone(mockStudentResults);
+}
+
+export async function getQuestionAnalysis(examId: number): Promise<QuestionAnalysis[]> {
+    await randomDelay();
+    return clone(mockQuestionAnalysis);
+}
+
+export async function getStudentExamResult(examId: number, studentId: string): Promise<any> {
+    await randomDelay();
+    return clone(mockStudentExamResult);
 }

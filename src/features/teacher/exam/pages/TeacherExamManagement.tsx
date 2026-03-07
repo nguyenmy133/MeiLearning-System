@@ -1,0 +1,328 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { 
+  FileCheck, 
+  Plus, 
+  Search, 
+  Filter,
+  MoreVertical,
+  Edit,
+  Eye,
+  Copy,
+  Trash2,
+  Archive,
+  Clock,
+  CheckCircle,
+  TrendingUp
+} from "lucide-react";
+import { useTeacherExams, useExamStats, useDeleteExam, useArchiveExam } from "../hooks";
+import { EXAM_STATUS_LABELS } from "../types";
+
+
+export function TeacherExamManagement() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [examToDelete, setExamToDelete] = useState<number | null>(null);
+
+  // ── Service layer hooks (replaces inline mock data) ────────────────────────
+  const { data: exams = [], isLoading } = useTeacherExams({
+    search: searchQuery || undefined,
+    status: statusFilter !== "all" ? (statusFilter as any) : undefined,
+  });
+  const { data: statsData } = useExamStats();
+  const deleteExam = useDeleteExam();
+  const archiveExam = useArchiveExam();
+
+  const stats = statsData ?? { total: 0, ongoing: 0, ended: 0, averagePassRate: 0, draft: 0 };
+
+  const getStatusBadge = (status: string) => {
+    const labels: Record<string, JSX.Element> = {
+      draft: <Badge variant="secondary">Nháp</Badge>,
+      published: <Badge className="bg-primary">Đã xuất bản</Badge>,
+      ongoing: <Badge className="bg-warning">Đang diễn ra</Badge>,
+      ended: <Badge className="bg-muted text-muted-foreground">Đã kết thúc</Badge>,
+      archived: <Badge variant="outline">Đã lưu trữ</Badge>,
+    };
+    return labels[status] ?? null;
+  };
+
+  const handleDelete = (id: number) => { setExamToDelete(id); setDeleteDialogOpen(true); };
+
+  const confirmDelete = () => {
+    if (examToDelete !== null) {
+      deleteExam.mutate(examToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setExamToDelete(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
+            Quản lý bài thi
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Tạo và quản lý bài kiểm tra cho học viên
+          </p>
+        </div>
+        <Button onClick={() => navigate("/teacher/exams/create")} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Tạo bài thi mới
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileCheck className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs text-muted-foreground">Tổng bài thi</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.ongoing}</p>
+                <p className="text-xs text-muted-foreground">Đang diễn ra</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.ended}</p>
+                <p className="text-xs text-muted-foreground">Đã kết thúc</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.averagePassRate}%</p>
+                <p className="text-xs text-muted-foreground">Tỷ lệ đạt TB</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm bài thi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="draft">Nháp</SelectItem>
+                <SelectItem value="published">Đã xuất bản</SelectItem>
+                <SelectItem value="ongoing">Đang diễn ra</SelectItem>
+                <SelectItem value="ended">Đã kết thúc</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Exam List */}
+      <div className="space-y-4">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)
+        ) : exams.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <FileCheck className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Không tìm thấy bài thi nào</p>
+            </CardContent>
+          </Card>
+        ) : (
+          exams.map((exam) => (
+            <Card key={exam.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  {/* Info */}
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-semibold text-lg text-foreground">{exam.title}</h3>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <Badge variant="secondary">{exam.subject}</Badge>
+                          {exam.classNames.map((cls, idx) => (
+                            <Badge key={idx} variant="outline">{cls}</Badge>
+                          ))}
+                          {getStatusBadge(exam.status)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Số câu hỏi</p>
+                        <p className="font-semibold text-foreground">{exam.totalQuestions} câu</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Thời gian</p>
+                        <p className="font-semibold text-foreground">{exam.duration} phút</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Học viên</p>
+                        <p className="font-semibold text-foreground">
+                          {exam.completedStudents}/{exam.totalStudents}
+                        </p>
+                      </div>
+                      {exam.status !== "draft" && exam.completedStudents > 0 && (
+                        <div>
+                          <p className="text-muted-foreground">Điểm TB</p>
+                          <p className="font-semibold text-primary">{exam.averageScore}/100</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {exam.startTime && (
+                      <p className="text-xs text-muted-foreground">
+                        Thời gian: {exam.startTime} - {exam.endTime}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {exam.status !== "draft" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/teacher/exams/results/${exam.id}`)}
+                        className="gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Xem kết quả
+                      </Button>
+                    )}
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {exam.status === "draft" && (
+                          <DropdownMenuItem onClick={() => navigate(`/teacher/exams/edit/${exam.id}`)}>
+                            <Edit className="w-4 h-4 mr-2" />Chỉnh sửa
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => navigate(`/teacher/exams/create?duplicate=${exam.id}`)}>
+                          <Copy className="w-4 h-4 mr-2" />Nhân bản
+                        </DropdownMenuItem>
+                        {exam.status === "ended" && (
+                          <DropdownMenuItem onClick={() => archiveExam.mutate(exam.id)}>
+                            <Archive className="w-4 h-4 mr-2" />Lưu trữ
+                          </DropdownMenuItem>
+                        )}
+                        {exam.status === "draft" && (
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(exam.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />Xóa
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa bài thi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa bài thi này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

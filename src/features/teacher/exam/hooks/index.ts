@@ -7,4 +7,9 @@ export {
     useUpdateExam,
     useDeleteExam,
     useArchiveExam,
+    useExamInfo,
+    useExamStatistics,
+    useStudentResults,
+    useQuestionAnalysis,
+    useStudentExamResult,
 } from "./useExam";

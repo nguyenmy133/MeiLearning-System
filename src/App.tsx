@@ -16,35 +16,37 @@ import { LoginPage } from "./features/auth/LoginPage";
 
 // User portal
 import { UserLayout } from "./features/user/UserLayout";
-import { UserDashboard } from "./features/user/pages/UserDashboard";
-import { CheckInPage } from "./features/user/pages/CheckInPage";
-import { SchedulePage } from "./features/user/pages/SchedulePage";
-import { AttendancePage } from "./features/user/pages/AttendancePage";
-import { DocumentsPage } from "./features/user/pages/DocumentsPage";
-import { ExamList } from "./features/user/pages/ExamList";
-import { ExamTaking } from "./features/user/pages/ExamTaking";
-import { ExamResult } from "./features/user/pages/ExamResult";
-import { TuitionPage } from "./features/user/pages/TuitionPage";
-import { LeavePage } from "./features/user/pages/LeavePage";
-import { UserGradesPage } from "./features/user/pages/UserGradesPage";
-import { ProfilePage } from "./features/user/pages/ProfilePage";
-import { GamesPage } from "./features/user/pages/GamesPage";
+import { UserDashboard } from "./features/user/dashboard/pages/UserDashboard";
+import { CheckInPage } from "./features/user/attendance/pages/CheckInPage";
+import { SchedulePage } from "./features/user/schedule/pages/SchedulePage";
+import { AttendancePage } from "./features/user/attendance/pages/AttendancePage";
+import { DocumentsPage } from "./features/user/documents/pages/DocumentsPage";
+import { ExamList } from "./features/user/exam/pages/ExamList";
+import { ExamTaking } from "./features/user/exam/pages/ExamTaking";
+import { ExamResult } from "./features/user/exam/pages/ExamResult";
+import { TuitionPage } from "./features/user/tuition/pages/TuitionPage";
+import { LeavePage } from "./features/user/leave/pages/LeavePage";
+import { UserGradesPage } from "./features/user/grade/pages/UserGradesPage";
+import { ProfilePage } from "./features/user/profile/pages/ProfilePage";
+import { GamesPage } from "./features/user/games/pages/GamesPage";
+import { NotificationsPage } from "./features/user/notifications/pages/NotificationsPage";
 
 // Teacher portal
 import { TeacherLayout } from "./features/teacher/TeacherLayout";
-import { TeacherDashboard } from "./features/teacher/pages/TeacherDashboard";
-import { TeacherAttendancePage } from "./features/teacher/pages/TeacherAttendancePage";
-import { TeacherSchedulePage } from "./features/teacher/pages/TeacherSchedulePage";
-import { TeacherClassesPage } from "./features/teacher/pages/TeacherClassesPage";
-import { TeacherGradesPage } from "./features/teacher/pages/TeacherGradesPage";
-import { TeacherReschedulePage } from "./features/teacher/pages/TeacherReschedulePage";
-import { TeacherProfilePage } from "./features/teacher/pages/TeacherProfilePage";
-import { TeacherDocumentsPage } from "./features/teacher/pages/TeacherDocumentsPage";
-import { TeacherExamManagement } from "./features/teacher/pages/TeacherExamManagement";
-import { CreateExamPage } from "./features/teacher/pages/CreateExamPage";
-import { TeacherExamResults } from "./features/teacher/pages/TeacherExamResults";
-import { TeacherStudentExamResult } from "./features/teacher/pages/TeacherStudentExamResult";
-import { TeacherLeaveApprovalPage } from "./features/teacher/pages/TeacherLeaveApprovalPage";
+import { TeacherDashboard } from "./features/teacher/dashboard/pages/TeacherDashboard";
+import { TeacherAttendancePage } from "./features/teacher/attendance/pages/TeacherAttendancePage";
+import { TeacherSchedulePage } from "./features/teacher/schedule/pages/TeacherSchedulePage";
+import { TeacherClassesPage } from "./features/teacher/classes/pages/TeacherClassesPage";
+import { TeacherGradesPage } from "./features/teacher/grade/pages/TeacherGradesPage";
+import { TeacherReschedulePage } from "./features/teacher/reschedule/pages/TeacherReschedulePage";
+import { TeacherProfilePage } from "./features/teacher/profile/pages/TeacherProfilePage";
+import { TeacherDocumentsPage } from "./features/teacher/documents/pages/TeacherDocumentsPage";
+import { TeacherExamManagement } from "./features/teacher/exam/pages/TeacherExamManagement";
+import { CreateExamPage } from "./features/teacher/exam/pages/CreateExamPage";
+import { TeacherExamResults } from "./features/teacher/exam/pages/TeacherExamResults";
+import { TeacherStudentExamResult } from "./features/teacher/exam/pages/TeacherStudentExamResult";
+import { TeacherLeaveApprovalPage } from "./features/teacher/leave/pages/TeacherLeaveApprovalPage";
+import { TeacherNotificationsPage } from "./features/teacher/notifications/pages/TeacherNotificationsPage";
 
 // Admin portal
 import { AdminLayout } from "./features/admin/AdminLayout";
@@ -96,6 +98,7 @@ const App = () => (
             <Route path="leave" element={<LeavePage />} />
             <Route path="grades" element={<UserGradesPage />} />
             <Route path="games" element={<GamesPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="profile" element={<ProfilePage />} />
           
           </Route>
@@ -115,6 +118,7 @@ const App = () => (
             <Route path="grades" element={<TeacherGradesPage />} />
             <Route path="reschedule" element={<TeacherReschedulePage />} />
             <Route path="leave-approval" element={<TeacherLeaveApprovalPage />} />
+            <Route path="notifications" element={<TeacherNotificationsPage />} />
             <Route path="profile" element={<TeacherProfilePage />} />
           </Route>
 

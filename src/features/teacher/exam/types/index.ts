@@ -66,3 +66,42 @@ export const EXAM_STATUS_LABELS: Record<ExamStatus, string> = {
 export const EXAM_IMMUTABLE_STATUSES: ExamStatus[] = ["ended", "archived"];
 /** Only draft can be deleted */
 export const EXAM_DELETABLE_STATUSES: ExamStatus[] = ["draft"];
+
+export interface ExamInfo {
+    id: number;
+    title: string;
+    subject: string;
+    classes: string[];
+    totalQuestions: number;
+    totalPoints: number;
+    passingScore: number;
+}
+
+export interface ExamStatistics {
+    totalStudents: number;
+    completedStudents: number;
+    averageScore: number;
+    highestScore: number;
+    lowestScore: number;
+    passRate: number;
+    averageTime: number; // minutes
+}
+
+export interface StudentResult {
+    id: number;
+    studentId: string;
+    studentName: string;
+    class: string;
+    score: number;
+    correctAnswers: number;
+    timeSpent: number;
+    submittedAt: string;
+    passed: boolean;
+}
+
+export interface QuestionAnalysis {
+    questionNumber: number;
+    question: string;
+    correctRate: number;
+    answerDistribution: Record<string, number>;
+}

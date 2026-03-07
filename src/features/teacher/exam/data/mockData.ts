@@ -78,3 +78,63 @@ export const mockExams: TeacherExam[] = [
         updatedAt: "2024-01-21T08:00:00",
     },
 ];
+
+export const mockExamInfo = {
+    id: 1,
+    title: "Kiểm tra giữa kỳ - Toán 12",
+    subject: "Toán",
+    classes: ["Toán 10A", "Lý 10-B"],
+    totalQuestions: 20,
+    totalPoints: 100,
+    passingScore: 70,
+};
+
+export const mockStatistics = {
+    totalStudents: 45,
+    completedStudents: 42,
+    averageScore: 76,
+    highestScore: 95,
+    lowestScore: 45,
+    passRate: 85,
+    averageTime: 52, // minutes
+};
+
+export const mockStudentResults = [
+    { id: 1, studentId: "HV001", studentName: "Nguyễn Văn A", class: "Toán 10A", score: 85, correctAnswers: 17, timeSpent: 48, submittedAt: "2024-01-20 14:48:30", passed: true, },
+    { id: 2, studentId: "HV002", studentName: "Trần Thị B", class: "Toán 10A", score: 92, correctAnswers: 18, timeSpent: 55, submittedAt: "2024-01-20 14:55:12", passed: true, },
+    { id: 3, studentId: "HV003", studentName: "Lê Văn C", class: "Lý 10-B", score: 65, correctAnswers: 13, timeSpent: 50, submittedAt: "2024-01-20 14:50:45", passed: false, },
+    { id: 4, studentId: "HV004", studentName: "Phạm Thị D", class: "Lý 10-B", score: 78, correctAnswers: 15, timeSpent: 45, submittedAt: "2024-01-20 14:45:20", passed: true, },
+];
+
+export const mockQuestionAnalysis = [
+    { questionNumber: 1, question: "Đạo hàm của hàm số y = x² + 3x - 5 là:", correctRate: 95, answerDistribution: { a: 40, b: 1, c: 1, d: 0, }, },
+    { questionNumber: 2, question: "Tích phân ∫(2x + 1)dx từ 0 đến 1 bằng:", correctRate: 65, answerDistribution: { a: 10, b: 27, c: 3, d: 2, }, },
+];
+
+export const mockStudentExamResult = {
+    examId: 1,
+    examTitle: "Kiểm tra giữa kỳ - Toán 10A",
+    subject: "Toán",
+    class: "Toán 10A",
+    studentName: "Nguyễn Văn A",
+    studentId: "HV001",
+    submittedAt: "2024-01-20 15:25:30",
+    duration: 60,
+    timeSpent: 55,
+    totalQuestions: 20,
+    correctAnswers: 15,
+    wrongAnswers: 4,
+    skippedAnswers: 1,
+    score: 75,
+    passingScore: 70,
+    maxScore: 100,
+    rank: 5,
+    totalStudents: 25,
+    questions: [
+        { id: 1, question: "Đạo hàm của hàm số y = x² + 3x - 5 là:", type: "multiple-choice", yourAnswer: "a", correctAnswer: "a", isCorrect: true, options: [{ id: "a", text: "y' = 2x + 3" }, { id: "b", text: "y' = x + 3" }, { id: "c", text: "y' = 2x - 3" }, { id: "d", text: "y' = 2x² + 3" },], explanation: "Áp dụng công thức đạo hàm cơ bản: (x^n)' = n*x^(n-1) và (c)' = 0", },
+        { id: 2, question: "Tích phân ∫(2x + 1)dx từ 0 đến 1 bằng:", type: "multiple-choice", yourAnswer: "a", correctAnswer: "b", isCorrect: false, options: [{ id: "a", text: "1" }, { id: "b", text: "2" }, { id: "c", text: "3" }, { id: "d", text: "4" },], explanation: "∫(2x + 1)dx = x² + x. Thay cận: (1² + 1) - (0² + 0) = 2", },
+        { id: 3, question: "Giới hạn lim(x→0) (sin x)/x bằng:", type: "multiple-choice", yourAnswer: "b", correctAnswer: "b", isCorrect: true, options: [{ id: "a", text: "0" }, { id: "b", text: "1" }, { id: "c", text: "∞" }, { id: "d", text: "Không tồn tại" },], explanation: "Đây là giới hạn đặc biệt cơ bản: lim(x→0) (sin x)/x = 1", },
+        { id: 4, question: "Giải phương trình: x² - 5x + 6 = 0", type: "essay", yourAnswer: "x₁ = 2, x₂ = 3", correctAnswer: "x = 2 hoặc x = 3", isCorrect: true, teacherComment: "Bài làm đúng, trình bày rõ ràng. Điểm: 10/10", },
+        { id: 5, question: "Hàm số y = x³ - 3x + 1 đồng biến trên khoảng nào?", type: "multiple-choice", yourAnswer: "", correctAnswer: "a", isCorrect: false, options: [{ id: "a", text: "(-∞, -1) và (1, +∞)" }, { id: "b", text: "(-1, 1)" }, { id: "c", text: "(-∞, +∞)" }, { id: "d", text: "(0, +∞)" },], explanation: "Tính y' = 3x² - 3. Hàm đồng biến khi y' > 0 ⟺ x² > 1 ⟺ x < -1 hoặc x > 1", },
+    ],
+};

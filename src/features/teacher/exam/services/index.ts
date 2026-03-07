@@ -7,4 +7,9 @@ export {
     deleteExam,
     archiveExam,
     resetExamData,
+    getExamInfo,
+    getExamStatistics,
+    getStudentResults,
+    getQuestionAnalysis,
+    getStudentExamResult,
 } from "./examService";

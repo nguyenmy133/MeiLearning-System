@@ -95,3 +95,53 @@ export function useArchiveExam() {
         onError: (err: Error) => toast.error(err.message),
     });
 }
+
+// ── Exam Results Hooks ────────────────────────────────────────────────────────
+
+import {
+    getExamInfo,
+    getExamStatistics,
+    getStudentResults,
+    getQuestionAnalysis,
+    getStudentExamResult,
+} from "../services";
+
+export function useExamInfo(id: number) {
+    return useQuery({
+        queryKey: [...examKeys.all, "info", id],
+        queryFn: () => getExamInfo(id),
+        enabled: id > 0,
+    });
+}
+
+export function useExamStatistics(id: number) {
+    return useQuery({
+        queryKey: [...examKeys.all, "statistics", id],
+        queryFn: () => getExamStatistics(id),
+        enabled: id > 0,
+    });
+}
+
+export function useStudentResults(examId: number) {
+    return useQuery({
+        queryKey: [...examKeys.all, "student-results", examId],
+        queryFn: () => getStudentResults(examId),
+        enabled: examId > 0,
+    });
+}
+
+export function useQuestionAnalysis(examId: number) {
+    return useQuery({
+        queryKey: [...examKeys.all, "question-analysis", examId],
+        queryFn: () => getQuestionAnalysis(examId),
+        enabled: examId > 0,
+    });
+}
+
+export function useStudentExamResult(examId: number, studentId: string) {
+    return useQuery({
+        queryKey: [...examKeys.all, "student-result", examId, studentId],
+        queryFn: () => getStudentExamResult(examId, studentId),
+        enabled: examId > 0 && !!studentId,
+    });
+}
