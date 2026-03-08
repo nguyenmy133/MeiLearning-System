@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AppErrorBoundary } from "@/components/shared/error-boundary";
+import { PublicOnlyRoute, RoleRoute } from "./features/shared/auth/guards";
 
 // Landing pages
 import { LandingPage } from "./features/landing/LandingPage";
@@ -71,6 +72,7 @@ import { AdminProfilePage } from "./features/admin/profile/pages/AdminProfilePag
 
 
 import NotFound from "./pages/NotFound";
+import ForbiddenPage from "./pages/Forbidden";
 
 const queryClient = new QueryClient();
 
@@ -88,10 +90,24 @@ const App = () => (
             <Route path="/about" element={<AboutPage />} />
             <Route path="/teachers" element={<TeachersPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/login"
+              element={
+                <PublicOnlyRoute>
+                  <LoginPage />
+                </PublicOnlyRoute>
+              }
+            />
 
             {/* User portal */}
-            <Route path="/user" element={<UserLayout />}>
+            <Route
+              path="/user"
+              element={
+                <RoleRoute allowRoles={["student"]}>
+                  <UserLayout />
+                </RoleRoute>
+              }
+            >
               <Route path="dashboard" element={<UserDashboard />} />
               <Route path="check-in" element={<CheckInPage />} />
               <Route path="documents" element={<DocumentsPage />} />
@@ -108,7 +124,14 @@ const App = () => (
             </Route>
 
             {/* Teacher portal */}
-            <Route path="/teacher" element={<TeacherLayout />}>
+            <Route
+              path="/teacher"
+              element={
+                <RoleRoute allowRoles={["teacher"]}>
+                  <TeacherLayout />
+                </RoleRoute>
+              }
+            >
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="attendance" element={<TeacherAttendancePage />} />
               <Route path="schedule" element={<TeacherSchedulePage />} />
@@ -127,7 +150,14 @@ const App = () => (
             </Route>
 
             {/* Admin portal */}
-            <Route path="/admin" element={<AdminLayout />}>
+            <Route
+              path="/admin"
+              element={
+                <RoleRoute allowRoles={["admin"]}>
+                  <AdminLayout />
+                </RoleRoute>
+              }
+            >
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="qr-settings" element={<QRSettingsPage />} />
               <Route path="teachers" element={<AdminTeachersPage />} />
@@ -144,6 +174,7 @@ const App = () => (
               <Route path="profile" element={<AdminProfilePage />} />
 
             </Route>
+            <Route path="/403" element={<ForbiddenPage />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

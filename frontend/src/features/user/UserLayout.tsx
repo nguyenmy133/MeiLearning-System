@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/features/shared/auth/auth-context";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/user/dashboard" },
@@ -67,11 +68,13 @@ function getPageTitle(pathname: string): string {
 export function UserLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    navigate("/login");
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (

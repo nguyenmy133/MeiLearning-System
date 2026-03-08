@@ -7,10 +7,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap, Users, ShieldCheck } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useAuth } from "@/features/shared/auth/auth-context";
+import { getRoleHomePath } from "@/features/shared/auth/role-utils";
+import type { UserRole } from "@/features/shared/auth/types";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,31 +67,50 @@ export function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const getRoleFromEmail = (email: string): UserRole => {
+    if (email.includes("admin")) return "admin";
+    if (email.includes("teacher")) return "teacher";
+    return "student";
+  };
+
+  const getDisplayNameByRole = (role: UserRole): string => {
+    if (role === "admin") return "Admin";
+    if (role === "teacher") return "Teacher";
+    return "Student";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validate()) return;
 
     setIsLoading(true);
-    
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Demo: check role based on email
-    if (formData.email.includes("admin")) {
-      navigate("/admin/dashboard");
-    } else if (formData.email.includes("teacher")) {
-      navigate("/teacher/dashboard");
-    } else {
-      navigate("/user/dashboard");
-    }
-    
-    toast({
-      title: "Đăng nhập thành công!",
-      description: "Chào mừng bạn quay trở lại.",
-    });
 
-    setIsLoading(false);
+    try {
+      // Simulate login
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const role = getRoleFromEmail(formData.email.toLowerCase());
+
+      login(
+        {
+          id: role === "admin" ? 1 : role === "teacher" ? 2 : 3,
+          name: getDisplayNameByRole(role),
+          role,
+          email: formData.email,
+        },
+        `mock-token-${role}`
+      );
+
+      navigate(getRoleHomePath(role), { replace: true });
+
+      toast({
+        title: "Đăng nhập thành công!",
+        description: "Chào mừng bạn quay trở lại.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -333,3 +356,4 @@ export function LoginPage() {
     </div>
   );
 }
+

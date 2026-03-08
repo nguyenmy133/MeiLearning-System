@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/features/shared/auth/auth-context";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
@@ -51,6 +52,7 @@ const menuItems = [
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const unreadNotifications = 5;
@@ -71,7 +73,8 @@ export function AdminLayout() {
   };
 
   const handleLogout = () => {
-    navigate("/login");
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (
