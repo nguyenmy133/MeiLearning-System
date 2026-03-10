@@ -14,6 +14,16 @@
  * ============================================================================
  */
 
+import type { Gender, PaginatedResponse } from "@/types";
+import { APP_CONFIG, type SubjectType } from "@/config";
+
+// Re-export shared types for backward compatibility
+export type { Gender, PaginatedResponse };
+
+/** @deprecated Import SUBJECT_OPTIONS from "@/config" instead */
+export const SUBJECT_OPTIONS = APP_CONFIG.SUBJECT_OPTIONS;
+export type { SubjectType };
+
 // ==================== ENUMS ====================
 
 export const TeacherStatus = {
@@ -26,8 +36,6 @@ export type TeacherStatusType =
   (typeof TeacherStatus)[keyof typeof TeacherStatus];
 
 // ==================== ENTITY ====================
-
-export type Gender = "male" | "female" | "other";
 
 export interface Teacher {
   id: number;
@@ -87,14 +95,7 @@ export interface TeacherQueryParams {
 }
 
 // ==================== API RESPONSE ====================
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// PaginatedResponse is re-exported from @/types (see top of file)
 
 export interface TeacherStats {
   totalTeachers: number;
@@ -111,17 +112,4 @@ export const TEACHER_STATUS_LABELS: Record<TeacherStatusType, string> = {
   locked: "Bị khóa",
 };
 
-/** Phải khớp với danh sách môn học (Subject.name) đang active.
- *  Khi BE xong → thay bằng API call lấy từ GET /subjects?status=active */
-export const SUBJECT_OPTIONS = [
-  "Toán",
-  "Vật Lý",
-  "Hóa Học",
-  "Sinh Học",
-  "Tiếng Anh",
-  "Văn",
-  "Tin Học",
-  "Địa Lý",
-] as const;
-
-export type SubjectType = (typeof SUBJECT_OPTIONS)[number];
+// SUBJECT_OPTIONS & SubjectType are re-exported from @/config (see top of file)

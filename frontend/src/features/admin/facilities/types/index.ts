@@ -14,6 +14,11 @@
  * ============================================================================
  */
 
+import type { PaginatedResponse } from "@/types";
+
+// Re-export for backward compatibility
+export type { PaginatedResponse };
+
 // ==================== ENUMS ====================
 
 /** Trạng thái cơ sở */
@@ -116,15 +121,7 @@ export interface RoomQueryParams {
 }
 
 // ==================== API RESPONSE ====================
-
-/** Response chuẩn cho list (có phân trang) */
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// PaginatedResponse is re-exported from @/types (see top of file)
 
 /** Response cho thống kê Cơ sở vật chất */
 export interface FacilityStats {

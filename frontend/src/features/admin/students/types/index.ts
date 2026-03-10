@@ -15,6 +15,11 @@
  * ============================================================================
  */
 
+import type { Gender, PaginatedResponse } from "@/types";
+
+// Re-export shared types for backward compatibility
+export type { Gender, PaginatedResponse };
+
 // ==================== ENUMS ====================
 
 export const StudentStatus = {
@@ -35,8 +40,6 @@ export type TuitionStatusType =
   (typeof TuitionStatus)[keyof typeof TuitionStatus];
 
 // ==================== ENTITY ====================
-
-export type Gender = "male" | "female" | "other";
 
 // ==================== CLASS ENROLLMENT ====================
 
@@ -118,14 +121,7 @@ export interface StudentQueryParams {
 }
 
 // ==================== API RESPONSE ====================
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// PaginatedResponse is re-exported from @/types (see top of file)
 
 export interface StudentStats {
   totalStudents: number;
@@ -152,14 +148,14 @@ export const TUITION_STATUS_LABELS: Record<TuitionStatusType, string> = {
 /** Phải khớp với các lớp trong Class mock data (classes/data/mockData.ts).
  *  Khi BE xong → thay bằng API call lấy từ GET /classes?status=active,upcoming */
 export const CLASS_OPTIONS: { id: number; name: string }[] = [
-  { id: 1,  name: "Toán 10A" },
-  { id: 2,  name: "IELTS-01" },
-  { id: 3,  name: "Hóa 11-A" },
-  { id: 4,  name: "Văn 12 - Luyện thi" },
-  { id: 5,  name: "Lý 10-B" },
-  { id: 6,  name: "TOEIC-A1" },
-  { id: 7,  name: "Sinh Học 12" },
-  { id: 8,  name: "Tin Học Cơ Bản" },
+  { id: 1, name: "Toán 10A" },
+  { id: 2, name: "IELTS-01" },
+  { id: 3, name: "Hóa 11-A" },
+  { id: 4, name: "Văn 12 - Luyện thi" },
+  { id: 5, name: "Lý 10-B" },
+  { id: 6, name: "TOEIC-A1" },
+  { id: 7, name: "Sinh Học 12" },
+  { id: 8, name: "Tin Học Cơ Bản" },
 ];
 
 export const DROP_REASONS = [

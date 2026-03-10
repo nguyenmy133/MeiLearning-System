@@ -14,6 +14,23 @@
  * ============================================================================
  */
 
+import type { PaginatedResponse } from "@/types";
+import { APP_CONFIG, type SubjectType, type FacilityType } from "@/config";
+
+// Re-export shared types for backward compatibility
+export type { PaginatedResponse };
+
+/** @deprecated Import from "@/config" instead */
+export const SUBJECT_OPTIONS = APP_CONFIG.SUBJECT_OPTIONS;
+export type { SubjectType };
+
+/** @deprecated Import from "@/config" instead */
+export const FACILITY_OPTIONS = APP_CONFIG.FACILITY_OPTIONS;
+export type { FacilityType };
+
+/** @deprecated Import from "@/config" instead */
+export const WEEKDAYS = APP_CONFIG.WEEKDAYS;
+
 // ==================== ENUMS ====================
 
 export const ClassStatus = {
@@ -106,14 +123,7 @@ export interface ClassQueryParams {
 }
 
 // ==================== API RESPONSE ====================
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+// PaginatedResponse is re-exported from @/types (see top of file)
 
 export interface ClassStats {
   totalClasses: number;
@@ -130,41 +140,7 @@ export const CLASS_STATUS_LABELS: Record<ClassStatusType, string> = {
   completed: "Đã kết thúc",
 };
 
-// ==================== CONSTANTS ====================
-
-/** Phải khớp với danh sách môn học (Subject.name) đang active.
- *  Khi BE xong → thay bằng API call lấy từ GET /subjects?status=active */
-export const SUBJECT_OPTIONS = [
-  "Toán",
-  "Vật Lý",
-  "Hóa Học",
-  "Sinh Học",
-  "Tiếng Anh",
-  "Văn",
-  "Tin Học",
-  "Địa Lý",
-] as const;
-
-export type SubjectType = (typeof SUBJECT_OPTIONS)[number];
-
-export const FACILITY_OPTIONS = [
-  "Cơ sở Quận 1",
-  "Cơ sở Quận 3",
-  "Cơ sở Thủ Đức",
-] as const;
-
-export type FacilityType = (typeof FACILITY_OPTIONS)[number];
-
-/** value: 0=CN, 1=T2, ..., 6=T7 — khớp với JS Date.getDay() */
-export const WEEKDAYS = [
-  { value: 1, label: "T2" },
-  { value: 2, label: "T3" },
-  { value: 3, label: "T4" },
-  { value: 4, label: "T5" },
-  { value: 5, label: "T6" },
-  { value: 6, label: "T7" },
-  { value: 0, label: "CN" },
-] as const;
+// SUBJECT_OPTIONS, FACILITY_OPTIONS, WEEKDAYS are re-exported from @/config (see top of file)
 
 /** Chuyển SessionSlot[] → chuỗi hiển thị ngắn gọn, ví dụ "T2 18:00–20:00 | T4 18:00–20:00" */
 export function formatSchedule(slots: SessionSlot[]): string {
