@@ -27,4 +27,6 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
 
     @Query("SELECT COALESCE(SUM(r.capacity), 0) FROM Room r WHERE r.facility.id = :facilityId")
     long sumCapacityByFacilityId(Long facilityId);
+
+    java.util.Optional<Room> findByName(String name);
 }

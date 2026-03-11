@@ -45,6 +45,10 @@ public class Subject extends BaseEntity {
     @Builder.Default
     private Long basePricePerSession = 0L;
 
+    /** Danh sách tên cơ sở có dạy môn này, lưu dạng JSON: ["Cơ sở Q1", "Cơ sở Q3"] */
+    @Column(columnDefinition = "TEXT")
+    private String facilitiesJson;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

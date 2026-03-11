@@ -24,5 +24,7 @@ public interface SubjectRepository extends JpaRepository<Subject, Long>, JpaSpec
 
     List<Subject> findByNameContainingIgnoreCase(String name);
 
+    Optional<Subject> findByNameIgnoreCase(String name);
+
     long countByStatus(SubjectStatus status);
 }
