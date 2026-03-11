@@ -1,0 +1,37 @@
+package meilearning.com.backend.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+import meilearning.com.backend.entity.ClassSession;
+import meilearning.com.backend.entity.enums.SessionStatus;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Repository
+public interface ClassSessionRepository
+        extends JpaRepository<ClassSession, Long>, JpaSpecificationExecutor<ClassSession> {
+
+    List<ClassSession> findByClassEntityId(Long classId);
+
+    List<ClassSession> findByDate(LocalDate date);
+
+    List<ClassSession> findByDateBetween(LocalDate startDate, LocalDate endDate);
+
+    List<ClassSession> findByClassEntityIdAndDate(Long classId, LocalDate date);
+
+    List<ClassSession> findByClassEntityIdAndDateBetween(Long classId, LocalDate startDate, LocalDate endDate);
+
+    List<ClassSession> findByStatus(SessionStatus status);
+
+    long countByClassEntityId(Long classId);
+
+    long countByClassEntityIdAndStatus(Long classId, SessionStatus status);
+
+    /** Lấy sessions của 1 teacher theo ngày (thông qua Class → Teacher) */
+    List<ClassSession> findByClassEntityTeacherIdAndDate(Long teacherId, LocalDate date);
+
+    /** Lấy sessions của 1 teacher trong tuần */
+    List<ClassSession> findByClassEntityTeacherIdAndDateBetween(Long teacherId, LocalDate startDate, LocalDate endDate);
+}
