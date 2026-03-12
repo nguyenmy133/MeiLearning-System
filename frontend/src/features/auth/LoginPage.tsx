@@ -9,7 +9,7 @@ import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap, Users, ShieldCheck } fr
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import { getRoleHomePath } from "@/features/shared/auth/role-utils";
-import type { UserRole } from "@/features/shared/auth/types";
+import { apiClient } from "@/lib/api-client";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
     remember: false
   });
@@ -51,10 +51,8 @@ export function LoginPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email không hợp lệ";
+    if (!formData.username.trim()) {
+      newErrors.username = "Vui lòng nhập tên đăng nhập";
     }
     
     if (!formData.password.trim()) {
@@ -67,18 +65,6 @@ export function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const getRoleFromEmail = (email: string): UserRole => {
-    if (email.includes("admin")) return "admin";
-    if (email.includes("teacher")) return "teacher";
-    return "student";
-  };
-
-  const getDisplayNameByRole = (role: UserRole): string => {
-    if (role === "admin") return "Admin";
-    if (role === "teacher") return "Teacher";
-    return "Student";
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,27 +73,36 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Simulate login
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Gọi API login thật
+      const response = await apiClient.post("/auth/login", {
+        username: formData.username.trim(),
+        password: formData.password,
+      }) as any;
 
-      const role = getRoleFromEmail(formData.email.toLowerCase());
+      // response = { data: { user, accessToken }, message } (do interceptor trả response.data)
+      const { user, accessToken } = response.data;
 
       login(
         {
-          id: role === "admin" ? 1 : role === "teacher" ? 2 : 3,
-          name: getDisplayNameByRole(role),
-          role,
-          email: formData.email,
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          email: user.email,
         },
-        `mock-token-${role}`
+        accessToken
       );
 
-      navigate(getRoleHomePath(role), { replace: true });
+      navigate(getRoleHomePath(user.role), { replace: true });
 
       toast({
         title: "Đăng nhập thành công!",
-        description: "Chào mừng bạn quay trở lại.",
+        description: `Chào mừng ${user.name} quay trở lại.`,
       });
+    } catch (err: any) {
+      // Error đã được toast bởi interceptor nếu là 422/401
+      // Nhưng cho trường hợp khác, hiển thị error cụ thể
+      const message = err?.message || "Đăng nhập thất bại";
+      setErrors({ username: message });
     } finally {
       setIsLoading(false);
     }
@@ -266,20 +261,20 @@ export function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
+            {/* Username */}
             <div>
-              <Label htmlFor="email" className="text-foreground font-medium">
-                Email
+              <Label htmlFor="username" className="text-foreground font-medium">
+                Tên đăng nhập
               </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={`mt-1.5 ${errors.email ? 'border-destructive' : ''}`}
+                id="username"
+                type="text"
+                placeholder="Nhập username hoặc số điện thoại"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                className={`mt-1.5 ${errors.username ? 'border-destructive' : ''}`}
               />
-              {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
+              {errors.username && <p className="text-destructive text-sm mt-1">{errors.username}</p>}
             </div>
 
             {/* Password */}
@@ -341,14 +336,14 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo accounts info */}
+          {/* Login info */}
           <div className="mt-8 p-4 rounded-lg bg-accent/50 border border-border">
-            <p className="text-sm font-medium text-foreground mb-2">Demo accounts:</p>
+            <p className="text-sm font-medium text-foreground mb-2">Thông tin đăng nhập:</p>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• <code>user@test.com</code> - Học viên</li>
-              <li>• <code>teacher@test.com</code> - Giáo viên</li>
-              <li>• <code>admin@test.com</code> - Admin</li>
-              <li className="text-muted-foreground/70">(Mật khẩu bất kỳ từ 6 ký tự)</li>
+              <li>• <strong>Admin:</strong> username do hệ thống cấp</li>
+              <li>• <strong>Giáo viên:</strong> số điện thoại được cấp khi tạo tài khoản</li>
+              <li>• <strong>Học viên:</strong> số điện thoại được cấp khi tạo tài khoản</li>
+              <li className="text-muted-foreground/70">Mật khẩu mặc định do Admin cung cấp</li>
             </ul>
           </div>
         </div>

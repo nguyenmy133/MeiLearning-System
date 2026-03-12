@@ -1,161 +1,107 @@
+import { apiClient } from "@/lib/api-client";
 import type {
   ScheduledSession,
   ClassRef,
-  AddSessionDTO,
   ScheduleStats,
   ConflictCheckResult,
+  AddSessionDTO,
 } from "../types";
-import { FACILITIES } from "../types";
 import { mockSessions, mockClassRefs } from "../data/mockData";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const randomDelay = () =>
-  new Promise((res) => setTimeout(res, 300 + Math.random() * 400));
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
-/** Convert "HH:mm" to minutes for arithmetic comparison */
-const toMinutes = (time: string): number => {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-};
-
-/** True when [aStart,aEnd) overlaps [bStart,bEnd) */
-const timesOverlap = (
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string
-): boolean =>
-  toMinutes(aStart) < toMinutes(bEnd) && toMinutes(bStart) < toMinutes(aEnd);
-
-// ── In-memory DB ──────────────────────────────────────────────────────────────
+// ── In-memory fallback (used while BE schedule is not fully wired) ─────────
 let db: ScheduledSession[] = clone(mockSessions);
 let nextId = Math.max(...db.map((s) => s.id)) + 1;
 
-// ── Service ───────────────────────────────────────────────────────────────────
-
-/**
- * Return all sessions, optionally filtered by facilityId.
- * Note: mock data is fixed to the demo week (2024-12-16 to 22). The weekStart
- * parameter is kept for API-compatibility but is currently ignored in mock mode.
- */
+/** Fetch sessions for the current week (with optional facility/teacher filter) */
 export async function getWeekSessions(
   facilityId?: string,
   teacherId?: number
 ): Promise<ScheduledSession[]> {
-  await randomDelay();
-  let result = clone(db).filter((s: ScheduledSession) => s.status !== "cancelled");
-  if (facilityId && facilityId !== "all") {
-    result = result.filter((s: ScheduledSession) => s.facilityId === facilityId);
+  try {
+    const { data } = await apiClient.get("/schedule", {
+      params: { view: "week", facilityId, teacherId },
+    });
+    if (Array.isArray(data) && data.length > 0) return data;
+  } catch {
+    // fallback below
   }
-  if (teacherId) {
-    result = result.filter((s: ScheduledSession) => s.teacherId === teacherId);
-  }
-  return result.sort((a: ScheduledSession, b: ScheduledSession) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return toMinutes(a.startTime) - toMinutes(b.startTime);
-  });
+
+  // Fallback to mock
+  let result = clone(db);
+  if (facilityId) result = result.filter((s) => s.facilityId === facilityId);
+  if (teacherId) result = result.filter((s) => s.teacherId === teacherId);
+  return result;
 }
 
-/** Aggregate stats for the current week */
+/** Get schedule summary stats */
 export async function getScheduleStats(): Promise<ScheduleStats> {
-  await randomDelay();
-  const active = db.filter((s) => s.status !== "cancelled");
   return {
-    totalSessions: active.length,
-    activeClasses: new Set(active.map((s) => s.classId)).size,
-    completedSessions: active.filter((s) => s.status === "completed").length,
-    activeTeachers: new Set(active.map((s) => s.teacherName)).size,
+    totalSessions: db.length,
+    activeClasses: new Set(db.map((s) => s.classId)).size,
+    completedSessions: db.filter((s) => s.status === "completed").length,
+    activeTeachers: new Set(db.map((s) => s.teacherId)).size,
   };
 }
 
-/** Active class references for the "Add session" dropdown */
+/** Get class references for the "add session" dialog */
 export async function getClassRefs(): Promise<ClassRef[]> {
-  await randomDelay();
+  try {
+    const { data } = await apiClient.get("/classes");
+    if (Array.isArray(data) && data.length > 0) return data;
+  } catch {
+    // fallback below
+  }
   return clone(mockClassRefs);
 }
 
-/**
- * Synchronous conflict check — usable from UI without a query.
- * Checks teacher schedule and room occupancy.
- */
-export function checkConflict(
+/** Check for scheduling conflicts */
+export async function checkConflict(
   date: string,
   startTime: string,
   endTime: string,
-  teacherName: string,
   facilityId: string,
   room: string,
   excludeId?: number
-): ConflictCheckResult {
-  const sameDaySessions = db.filter(
-    (s) => s.date === date && s.status !== "cancelled" && s.id !== (excludeId ?? -1)
+): Promise<ConflictCheckResult> {
+  const conflict = db.find(
+    (s) =>
+      s.id !== excludeId &&
+      s.date === date &&
+      s.facilityId === facilityId &&
+      s.room === room &&
+      s.status !== "cancelled" &&
+      s.startTime < endTime &&
+      s.endTime > startTime
   );
-
-  for (const s of sameDaySessions) {
-    if (!timesOverlap(startTime, endTime, s.startTime, s.endTime)) continue;
-
-    if (s.teacherName === teacherName) {
-      return {
-        hasConflict: true,
-        message: `Trùng lịch giáo viên: ${teacherName} đang dạy lớp ${s.className} vào thời gian này.`,
-      };
-    }
-    if (s.facilityId === facilityId && s.room === room) {
-      return {
-        hasConflict: true,
-        message: `Trùng phòng: ${room} đang được lớp ${s.className} sử dụng vào thời gian này.`,
-      };
-    }
+  if (conflict) {
+    return {
+      hasConflict: true,
+      message: `Trùng lịch với ${conflict.className} (${conflict.startTime}–${conflict.endTime})`,
+    };
   }
-
   return { hasConflict: false };
 }
 
-/** Add a makeup / extra session. Throws on conflict. */
+/** Add a new make-up / extra session */
 export async function addSession(dto: AddSessionDTO): Promise<ScheduledSession> {
-  await randomDelay();
-
-  // Validate class exists
   const classRef = mockClassRefs.find((c) => c.id === dto.classId);
-  if (!classRef) throw new Error("Không tìm thấy lớp học");
-
-  // Validate facility
-  const facility = FACILITIES.find((f) => f.id === dto.facilityId);
-  if (!facility) throw new Error("Không tìm thấy cơ sở");
-
-  // Validate time
-  if (toMinutes(dto.startTime) >= toMinutes(dto.endTime)) {
-    throw new Error("Giờ bắt đầu phải trước giờ kết thúc");
-  }
-
-  // Conflict check
-  const conflict = checkConflict(
-    dto.date,
-    dto.startTime,
-    dto.endTime,
-    dto.teacherName,
-    dto.facilityId,
-    dto.room
-  );
-  if (conflict.hasConflict) throw new Error(conflict.message);
-
   const now = new Date().toISOString();
   const session: ScheduledSession = {
     id: nextId++,
     classId: dto.classId,
-    className: classRef.name,
+    className: classRef?.name ?? `Lớp #${dto.classId}`,
     teacherId: dto.teacherId,
     teacherName: dto.teacherName,
     facilityId: dto.facilityId,
-    facilityName: facility.name,
-    facilityShort: facility.short,
+    facilityName: "",
+    facilityShort: dto.facilityId.toUpperCase(),
     room: dto.room,
     date: dto.date,
     startTime: dto.startTime,
     endTime: dto.endTime,
-    students: classRef.students,
+    students: classRef?.students ?? 0,
     status: "upcoming",
     type: dto.type,
     notes: dto.notes,
@@ -166,15 +112,16 @@ export async function addSession(dto: AddSessionDTO): Promise<ScheduledSession> 
   return clone(session);
 }
 
-/** Mark a session as cancelled */
+/** Cancel a session by id */
 export async function cancelSession(id: number): Promise<void> {
-  await randomDelay();
-  const idx = db.findIndex((s) => s.id === id);
-  if (idx === -1) throw new Error("Không tìm thấy buổi học");
-  db[idx] = { ...db[idx], status: "cancelled", updatedAt: new Date().toISOString() };
+  const session = db.find((s) => s.id === id);
+  if (!session) throw new Error("Không tìm thấy buổi học");
+  if (session.status === "completed") throw new Error("Không thể hủy buổi đã hoàn thành");
+  session.status = "cancelled";
+  session.updatedAt = new Date().toISOString();
 }
 
-/** Reset in-memory DB (dev utility) */
+/** Reset mock data */
 export function resetScheduleData(): void {
   db = clone(mockSessions);
   nextId = Math.max(...db.map((s) => s.id)) + 1;

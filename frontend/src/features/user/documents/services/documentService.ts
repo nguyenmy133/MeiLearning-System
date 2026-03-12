@@ -1,22 +1,20 @@
-import { mockDocuments, mockCourses } from "../data/mockData";
-import type { DocumentItem, CourseFilterItem } from "../types";
-
 export const documentService = {
-    // Get all documents/videos
-    getDocuments: async (): Promise<DocumentItem[]> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve(mockDocuments);
-            }, 500); // Giả lập network delay
-        });
-    },
+  async getDocuments() {
+    // TODO: Document management endpoint not yet on backend
+    return [];
+  },
 
-    // Get filter courses
-    getCourses: async (): Promise<CourseFilterItem[]> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve(mockCourses);
-            }, 200);
-        });
-    },
+  async getCourses() {
+    // TODO: Document courses endpoint not yet on backend
+    return [];
+  },
+
+  async uploadDocument(file: File, metadata: { title: string; classId?: number }) {
+    // TODO: Implement when BE is ready
+    return null;
+  },
 };
+
+// Named function exports
+export const getDocuments = documentService.getDocuments;
+export const uploadDocument = documentService.uploadDocument;

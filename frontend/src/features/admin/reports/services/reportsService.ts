@@ -1,37 +1,39 @@
-import { FinancialReport, AcademicReport } from "../types";
-import {
-  mockRevenueByMonth,
-  mockRevenueBySubject,
-  mockAttendanceByClass,
-  mockStudentsBySubject,
-  mockEnrollmentTrend,
-  mockTuitionSummary,
-} from "../data/mockData";
+import { apiClient } from "@/lib/api-client";
 
-function clone<T>(data: T): T {
-  return JSON.parse(JSON.stringify(data));
-}
+export async function getReportsOverview() {
+  const [students, teachers, classes, tuition] = await Promise.all([
+    apiClient.get("/students/stats"),
+    apiClient.get("/teachers/stats"),
+    apiClient.get("/classes/stats"),
+    apiClient.get("/tuition/stats"),
+  ]);
 
-function randomDelay(min = 300, max = 700): Promise<void> {
-  return new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min)
-  );
-}
-
-export async function getFinancialReport(): Promise<FinancialReport> {
-  await randomDelay();
   return {
-    revenueByMonth: clone(mockRevenueByMonth),
-    revenueBySubject: clone(mockRevenueBySubject),
-    tuitionSummary: clone(mockTuitionSummary),
+    students: students.data,
+    teachers: teachers.data,
+    classes: classes.data,
+    tuition: tuition.data,
   };
 }
 
-export async function getAcademicReport(): Promise<AcademicReport> {
-  await randomDelay();
-  return {
-    attendanceByClass: clone(mockAttendanceByClass),
-    studentsBySubject: clone(mockStudentsBySubject),
-    enrollmentTrend: clone(mockEnrollmentTrend),
-  };
+export async function getAttendanceReport(params?: { classId?: number; month?: string }) {
+  const { data } = await apiClient.get("/attendance/stats", { params });
+  return data;
+}
+
+export async function getTuitionReport(params?: { month?: string }) {
+  const { data } = await apiClient.get("/tuition/stats", { params });
+  return data;
+}
+
+// ── Functions expected by hooks ───────────────────────────────────────────────
+
+export async function getFinancialReport() {
+  const { data } = await apiClient.get("/reports/tuition");
+  return data;
+}
+
+export async function getAcademicReport() {
+  const { data } = await apiClient.get("/reports/attendance");
+  return data;
 }

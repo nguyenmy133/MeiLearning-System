@@ -1,61 +1,66 @@
-import { RescheduleRequest, RescheduleStats } from "../types";
-import { mockRequests } from "../data/mockData";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 
-// ─── In-memory DB ────────────────────────────────────────────────────────────
-
-function clone<T>(data: T): T {
-  return JSON.parse(JSON.stringify(data));
+export async function getRescheduleRequests(params?: { status?: string }) {
+  const { data } = await apiClient.get(API.RESCHEDULE.LIST, { params });
+  return data;
 }
 
-function randomDelay(min = 300, max = 700): Promise<void> {
-  return new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min)
-  );
+export async function getRescheduleByTeacher(teacherId: number) {
+  const { data } = await apiClient.get(`/reschedule/teacher/${teacherId}`);
+  return data;
 }
 
-let db: RescheduleRequest[] = clone(mockRequests);
-
-// ─── Service functions ────────────────────────────────────────────────────────
-
-export async function getRequests(): Promise<RescheduleRequest[]> {
-  await randomDelay();
-  return clone(db);
+export async function createRescheduleRequest(dto: {
+  teacherId: number;
+  classId: number;
+  sessionId?: number;
+  type: string;
+  originalDate: string;
+  originalTime?: string;
+  requestedDate?: string;
+  requestedTime?: string;
+  reason: string;
+}) {
+  const { data } = await apiClient.post(API.RESCHEDULE.CREATE, dto);
+  return data;
 }
 
-export async function getStats(): Promise<RescheduleStats> {
-  await randomDelay(200, 400);
-  const data = clone(db);
+export async function approveReschedule(id: number, reviewedBy: string) {
+  const { data } = await apiClient.patch(API.RESCHEDULE.APPROVE(id), null, {
+    params: { reviewedBy },
+  });
+  return data;
+}
+
+export async function rejectReschedule(id: number, reviewedBy: string, reason: string) {
+  const { data } = await apiClient.patch(API.RESCHEDULE.REJECT(id), null, {
+    params: { reviewedBy, reason },
+  });
+  return data;
+}
+
+// ── Aliased exports expected by hooks ─────────────────────────────────────────
+
+export const getRequests = getRescheduleRequests;
+
+export async function getStats() {
+  const requests = await getRescheduleRequests();
+  if (!Array.isArray(requests)) return { total: 0, pending: 0, approved: 0, rejected: 0 };
   return {
-    total: data.length,
-    pending: data.filter((r) => r.status === "pending").length,
-    approved: data.filter((r) => r.status === "approved").length,
-    rejected: data.filter((r) => r.status === "rejected").length,
+    total: requests.length,
+    pending: requests.filter((r: any) => r.status === "pending").length,
+    approved: requests.filter((r: any) => r.status === "approved").length,
+    rejected: requests.filter((r: any) => r.status === "rejected").length,
   };
 }
 
-export async function approveRequest(id: string): Promise<RescheduleRequest> {
-  await randomDelay();
-  const req = db.find((r) => r.id === id);
-  if (!req) throw new Error("Không tìm thấy yêu cầu");
-  if (req.status !== "pending")
-    throw new Error("Yêu cầu không ở trạng thái chờ duyệt");
-  req.status = "approved";
-  req.reviewedAt = new Date().toLocaleDateString("vi-VN");
-  req.reviewedBy = "Admin";
-  return clone(req);
+export async function approveRequest(id: string) {
+  const { data } = await apiClient.patch(API.RESCHEDULE.APPROVE(Number(id)));
+  return data;
 }
 
-export async function rejectRequest(
-  id: string,
-  reason: string
-): Promise<void> {
-  await randomDelay();
-  const req = db.find((r) => r.id === id);
-  if (!req) throw new Error("Không tìm thấy yêu cầu");
-  if (req.status !== "pending")
-    throw new Error("Yêu cầu không ở trạng thái chờ duyệt");
-  if (!reason.trim()) throw new Error("Vui lòng nhập lý do từ chối");
-  req.status = "rejected";
-  req.reviewedAt = new Date().toLocaleDateString("vi-VN");
-  req.rejectReason = reason.trim();
+export async function rejectRequest(id: string, reason: string) {
+  const { data } = await apiClient.patch(API.RESCHEDULE.REJECT(Number(id)), { reason });
+  return data;
 }

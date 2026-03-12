@@ -53,6 +53,7 @@ function getTimeStatus(startTime: string, endTime: string, nowMin: number): Sess
 export function TeacherDashboard() {
   const navigate = useNavigate();
   const TEACHER_ID = authService.getCurrentTeacherId();
+  const user = authService.getCurrentUser();
   const { data: sessions = [], isLoading } = useWeekSessions(undefined, TEACHER_ID);
   
   const { data: pendingTasks = [], isLoading: isTasksLoading } = usePendingTasks();
@@ -86,7 +87,7 @@ export function TeacherDashboard() {
     <div className="space-y-6">
       {/* ── Greeting banner ── */}
       <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground">
-        <h2 className="text-2xl font-display font-bold mb-1">Chào mừng, Thầy An!</h2>
+        <h2 className="text-2xl font-display font-bold mb-1">Chào mừng, {user?.name ?? "Giáo viên"}!</h2>
         <p className="opacity-90">
           {isLoading
             ? "Đang tải lịch dạy..."

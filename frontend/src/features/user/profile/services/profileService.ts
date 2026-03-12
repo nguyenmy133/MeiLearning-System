@@ -1,21 +1,28 @@
-import { MOCK_USER_PROFILE } from "../data/mockData";
+import { apiClient } from "@/lib/api-client";
 import type { UserProfileInfo } from "../types";
 
 export const profileService = {
-    getProfile: async (): Promise<UserProfileInfo> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({ ...MOCK_USER_PROFILE });
-            }, 500);
-        });
-    },
+  async getProfile(): Promise<UserProfileInfo> {
+    const { data } = await apiClient.get("/profile/me");
+    return data;
+  },
 
-    updateProfile: async (data: Partial<UserProfileInfo>): Promise<UserProfileInfo> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Mock update
-                resolve({ ...MOCK_USER_PROFILE, ...data });
-            }, 500);
-        });
-    }
+  async updateProfile(dto: Partial<UserProfileInfo>): Promise<UserProfileInfo> {
+    const { data } = await apiClient.put("/profile/me", dto);
+    return data;
+  },
+
+  async uploadAvatar(file: File) {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    const { data } = await apiClient.post("/profile/avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
 };
+
+// Named function exports for direct use
+export const getProfile = profileService.getProfile;
+export const updateProfile = profileService.updateProfile;
+export const uploadAvatar = profileService.uploadAvatar;

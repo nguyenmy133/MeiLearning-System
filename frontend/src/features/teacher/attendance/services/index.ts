@@ -1,7 +1,1 @@
-export {
-    getTeacherSessions,
-    getSessionAttendance,
-    saveAttendance,
-    getAttendanceStats,
-    resetAttendanceData,
-} from "./attendanceService";
+export * from "./attendanceService";

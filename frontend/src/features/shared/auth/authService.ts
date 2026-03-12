@@ -3,32 +3,47 @@ import type { AuthUser } from "./types";
 
 export interface CurrentUser extends AuthUser {}
 
-const FALLBACK_TEACHER_USER: CurrentUser = {
-  id: 1,
-  name: "Teacher Demo",
-  role: "teacher",
-  email: "teacher@meilearning.vn",
-};
-
-function getEffectiveUser(): CurrentUser {
-  return readStoredUser() ?? FALLBACK_TEACHER_USER;
-}
-
+/**
+ * Auth service — đọc thông tin user đã login từ localStorage.
+ * Không có fallback user giả — nếu chưa login thì trả null.
+ */
 export const authService = {
-  getCurrentUser(): CurrentUser {
-    return getEffectiveUser();
+  getCurrentUser(): CurrentUser | null {
+    return readStoredUser();
   },
 
+  /**
+   * Lấy teacherId từ user đang đăng nhập.
+   * Trả về user.id nếu role = teacher, throw error nếu không phải teacher.
+   */
   getCurrentTeacherId(): number {
     const user = this.getCurrentUser();
-    return user.role === "teacher" ? user.id : FALLBACK_TEACHER_USER.id;
+    if (!user) {
+      throw new Error("Chưa đăng nhập. Vui lòng đăng nhập lại.");
+    }
+    if (user.role !== "teacher") {
+      throw new Error("Chỉ giáo viên mới có quyền thực hiện thao tác này.");
+    }
+    return user.id;
   },
 
-  getCurrentRole(): CurrentUser["role"] {
-    return this.getCurrentUser().role;
+  getCurrentRole(): CurrentUser["role"] | null {
+    return this.getCurrentUser()?.role ?? null;
+  },
+
+  isAuthenticated(): boolean {
+    return this.getCurrentUser() !== null;
   },
 
   isTeacher(): boolean {
     return this.getCurrentRole() === "teacher";
+  },
+
+  isAdmin(): boolean {
+    return this.getCurrentRole() === "admin";
+  },
+
+  isStudent(): boolean {
+    return this.getCurrentRole() === "student";
   },
 };

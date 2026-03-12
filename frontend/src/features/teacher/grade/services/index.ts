@@ -1,6 +1,1 @@
-export {
-    getClassGrades,
-    getGradeStats,
-    updateComment,
-    resetGradeData,
-} from "./gradeService";
+export * from "./gradeService";

@@ -1,165 +1,56 @@
-import type {
-  AttendanceSession,
-  LiveSession,
-  AbsentAlert,
-  AttendanceStats,
-  AttendanceQueryParams,
-  AttendanceRecord,
-  AttendanceRecordStatus,
-} from "../types";
-import {
-  mockAttendanceSessions,
-  mockLiveSessions,
-  mockAbsentAlerts,
-  mockAttendanceRecords,
-} from "../data/mockData";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const randomDelay = () =>
-  new Promise((res) => setTimeout(res, 300 + Math.random() * 400));
-
-const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
-
-// ── In-memory DB ──────────────────────────────────────────────────────────────
-let sessionDb: AttendanceSession[] = clone(mockAttendanceSessions);
-let liveDb: LiveSession[] = clone(mockLiveSessions);
-const alertDb: AbsentAlert[] = clone(mockAbsentAlerts);let recordDb: AttendanceRecord[] = clone(mockAttendanceRecords);
-let nextRecordId = Math.max(...recordDb.map((r) => r.id), 0) + 1;
-// ── Service ───────────────────────────────────────────────────────────────────
-
-export async function getAttendanceSessions(
-  params?: AttendanceQueryParams
-): Promise<AttendanceSession[]> {
-  await randomDelay();
-  let result = clone(sessionDb);
-
-  if (params?.teacherId) {
-    result = result.filter((s: AttendanceSession) => s.teacherId === params.teacherId);
-  }
-
-  if (params?.search) {
-    const q = params.search.toLowerCase();
-    result = result.filter(
-      (s: AttendanceSession) =>
-        s.className.toLowerCase().includes(q) ||
-        s.teacherName.toLowerCase().includes(q)
-    );
-  }
-  if (params?.classId && params.classId !== "all") {
-    const filterClassId = typeof params.classId === "string" ? Number(params.classId) : params.classId;
-    result = result.filter((s: AttendanceSession) => s.classId === filterClassId);
-  }
-  if (params?.date) {
-    result = result.filter((s: AttendanceSession) => s.date === params.date);
-  }
-
-  return result.sort(
-    (a: AttendanceSession, b: AttendanceSession) =>
-      b.date.localeCompare(a.date)
-  );
+export async function getAttendanceBySession(sessionId: number) {
+  const { data } = await apiClient.get(API.ATTENDANCE.LIST, { params: { sessionId } });
+  return data;
 }
 
-export async function getAttendanceStats(): Promise<AttendanceStats> {
-  await randomDelay();
-  const totalStudents = sessionDb.reduce((acc, s) => acc + s.total, 0);
-  const averageRate =
-    sessionDb.length > 0
-      ? Math.round(
-          sessionDb.reduce((acc, s) => acc + s.rate, 0) / sessionDb.length
-        )
-      : 0;
-  const totalLate = sessionDb.reduce((acc, s) => acc + s.late, 0);
-  return {
-    totalStudents,
-    averageRate,
-    totalLate,
-    alertCount: alertDb.length,
-  };
+export async function bulkAttendance(sessionId: number, attendances: Array<{ studentId: number; status: string; note?: string }>) {
+  const { data } = await apiClient.post("/attendance/bulk", { sessionId, attendances });
+  return data;
 }
 
-export async function getLiveSessions(): Promise<LiveSession[]> {
-  await randomDelay();
-  return clone(liveDb);
+export async function getAttendanceStats(params?: { classId?: number; month?: string }) {
+  const { data } = await apiClient.get("/attendance/stats", { params });
+  return data;
 }
 
-export async function getAbsentAlerts(): Promise<AbsentAlert[]> {
-  await randomDelay();
-  return clone(alertDb);
+export async function qrCheckIn(sessionId: number, studentId: number) {
+  const { data } = await apiClient.post(API.ATTENDANCE.CHECK_IN, null, {
+    params: { sessionId, studentId },
+  });
+  return data;
 }
 
-/** Toggle QR code on/off for a live session.
- *  activatedBy: cần truyền vào khi Bật — dùng "admin" khi Admin override, "teacher" khi giáo viên tự bật.
- */
-export async function toggleQR(
-  sessionId: number,
-  activatedBy: import("../types").QrActivatedBy = "admin"
-): Promise<LiveSession> {
-  await randomDelay();
-  const idx = liveDb.findIndex((s) => s.id === sessionId);
-  if (idx === -1) throw new Error("Không tìm thấy buổi học");
-  const nextActive = !liveDb[idx].qrActive;
-  liveDb[idx] = {
-    ...liveDb[idx],
-    qrActive: nextActive,
-    activeBy: nextActive ? activatedBy : null,
-  };
-  return clone(liveDb[idx]);
+// ── Functions expected by hooks ───────────────────────────────────────────────
+
+export async function getAttendanceSessions(params?: any) {
+  const { data } = await apiClient.get("/attendance/sessions", { params });
+  return data;
 }
 
-/**
- * [GET] /api/attendance/sessions/:id/records
- * Danh sách điểm danh từng học viên trong 1 buổi học
- */
-export async function getSessionRecords(
-  sessionId: number
-): Promise<AttendanceRecord[]> {
-  await randomDelay();
-  return clone(recordDb.filter((r) => r.sessionId === sessionId));
+export async function getLiveSessions() {
+  const { data } = await apiClient.get("/attendance/sessions", { params: { status: "live" } });
+  return data;
 }
 
-/**
- * [PATCH] /api/attendance/records/:id
- * Admin sửa thủ công trạng thái điểm danh của 1 học viên
- */
-export async function updateAttendanceRecord(
-  recordId: number,
-  status: AttendanceRecordStatus,
-  note?: string
-): Promise<AttendanceRecord> {
-  await randomDelay();
-  const idx = recordDb.findIndex((r) => r.id === recordId);
-  if (idx === -1) throw new Error("Không tìm thấy bản ghi điểm danh");
-  recordDb[idx] = {
-    ...recordDb[idx],
-    status,
-    checkInTime: status === "absent" ? null : recordDb[idx].checkInTime ?? new Date().toTimeString().slice(0, 5),
-    method: status === "absent" ? null : (recordDb[idx].method ?? "manual"),
-    note: note !== undefined ? note : recordDb[idx].note,
-  };
-  // Recalculate aggregate on parent session
-  const sessionRecords = recordDb.filter((r) => r.sessionId === recordDb[idx].sessionId);
-  const sessIdx = sessionDb.findIndex((s) => s.id === recordDb[idx].sessionId);
-  if (sessIdx !== -1) {
-    const present = sessionRecords.filter((r) => r.status === "present").length;
-    const late = sessionRecords.filter((r) => r.status === "late").length;
-    const absent = sessionRecords.filter((r) => r.status === "absent").length;
-    const total = sessionRecords.length;
-    sessionDb[sessIdx] = {
-      ...sessionDb[sessIdx],
-      present,
-      late,
-      absent,
-      rate: total > 0 ? Math.round(((present + late) / total) * 100) : 0,
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  return clone(recordDb[idx]);
+export async function getAbsentAlerts() {
+  const { data } = await apiClient.get("/attendance/alerts");
+  return data;
 }
 
-/** Reset in-memory DB (dev utility) */
-export function resetAttendanceData(): void {
-  sessionDb = clone(mockAttendanceSessions);
-  liveDb = clone(mockLiveSessions);
-  recordDb = clone(mockAttendanceRecords);
-  nextRecordId = Math.max(...recordDb.map((r) => r.id), 0) + 1;
+export async function toggleQR(sessionId: number, activatedBy: string) {
+  const { data } = await apiClient.post(`/attendance/sessions/${sessionId}/toggle-qr`, { activatedBy });
+  return data;
+}
+
+export async function getSessionRecords(sessionId: number) {
+  const { data } = await apiClient.get(`/attendance/sessions/${sessionId}/records`);
+  return data;
+}
+
+export async function updateAttendanceRecord(recordId: number, status: string, note?: string) {
+  const { data } = await apiClient.patch(`/attendance/records/${recordId}`, { status, note });
+  return data;
 }

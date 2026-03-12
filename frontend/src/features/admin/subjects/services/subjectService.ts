@@ -1,3 +1,5 @@
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 import type {
   Subject,
   CreateSubjectDTO,
@@ -5,139 +7,40 @@ import type {
   SubjectQueryParams,
   SubjectStats,
 } from "../types";
-import { mockSubjects } from "../data/mockData";
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-const randomDelay = () =>
-  new Promise((res) => setTimeout(res, 300 + Math.random() * 400));
-
-const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
-
-// ── In-memory DB ──────────────────────────────────────────────────────────────
-let db: Subject[] = clone(mockSubjects);
-let nextId = Math.max(...db.map((s) => s.id)) + 1;
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
 /** Fetch subject list with optional filters */
 export async function getSubjects(params?: SubjectQueryParams): Promise<Subject[]> {
-  await randomDelay();
-  let result = clone(db);
-
-  if (params?.search) {
-    const q = params.search.toLowerCase();
-    result = result.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.code.toLowerCase().includes(q)
-    );
-  }
-  if (params?.category && params.category !== "all") {
-    result = result.filter((s) => s.category === params.category);
-  }
-  if (params?.status && params.status !== "all") {
-    result = result.filter((s) => s.status === params.status);
-  }
-
-  return result;
+  const { data } = await apiClient.get(API.SUBJECTS.LIST, { params });
+  return data;
 }
 
 /** Fetch a single subject by id */
 export async function getSubjectById(id: number): Promise<Subject> {
-  await randomDelay();
-  const subject = db.find((s) => s.id === id);
-  if (!subject) throw new Error("Không tìm thấy môn học");
-  return clone(subject);
+  const { data } = await apiClient.get(API.SUBJECTS.DETAIL(id));
+  return data;
 }
 
 /** Compute aggregate stats */
 export async function getSubjectStats(): Promise<SubjectStats> {
-  await randomDelay();
-  return {
-    total: db.length,
-    active: db.filter((s) => s.status === "active").length,
-    inactive: db.filter((s) => s.status === "inactive").length,
-    totalTeachers: db.reduce((acc, s) => acc + s.teachers, 0),
-    totalClasses: db.reduce((acc, s) => acc + s.classes, 0),
-  };
+  const { data } = await apiClient.get(`${API.SUBJECTS.LIST}/stats`);
+  return data;
 }
 
 /** Create a new subject */
 export async function createSubject(dto: CreateSubjectDTO): Promise<Subject> {
-  await randomDelay();
-
-  // Validate unique code (case-insensitive)
-  if (db.some((s) => s.code.toLowerCase() === dto.code.toLowerCase())) {
-    throw new Error(`Mã môn "${dto.code}" đã tồn tại`);
-  }
-  // Validate unique name
-  if (db.some((s) => s.name.toLowerCase() === dto.name.toLowerCase())) {
-    throw new Error(`Môn học "${dto.name}" đã tồn tại`);
-  }
-  // At least one facility
-  if (!dto.facilities || dto.facilities.length === 0) {
-    throw new Error("Phải chọn ít nhất một cơ sở giảng dạy");
-  }
-  // Validate price
-  if (dto.basePricePerSession < 0) {
-    throw new Error("Giá mỗi buổi học không được âm");
-  }
-
-  const now = new Date().toISOString();
-  const subject: Subject = {
-    id: nextId++,
-    ...dto,
-    teachers: 0,
-    classes: 0,
-    status: "active",
-    createdAt: now,
-    updatedAt: now,
-  };
-  db.push(subject);
-  return clone(subject);
+  const { data } = await apiClient.post(API.SUBJECTS.CREATE, dto);
+  return data;
 }
 
 /** Update an existing subject */
 export async function updateSubject(id: number, dto: UpdateSubjectDTO): Promise<Subject> {
-  await randomDelay();
-
-  const idx = db.findIndex((s) => s.id === id);
-  if (idx === -1) throw new Error("Không tìm thấy môn học");
-
-  // Validate unique code (exclude self)
-  if (dto.code && db.some((s) => s.id !== id && s.code.toLowerCase() === dto.code!.toLowerCase())) {
-    throw new Error(`Mã môn "${dto.code}" đã tồn tại`);
-  }
-  // Validate unique name (exclude self)
-  if (dto.name && db.some((s) => s.id !== id && s.name.toLowerCase() === dto.name!.toLowerCase())) {
-    throw new Error(`Môn học "${dto.name}" đã tồn tại`);
-  }
-  // At least one facility if provided
-  if (dto.facilities !== undefined && dto.facilities.length === 0) {
-    throw new Error("Phải chọn ít nhất một cơ sở giảng dạy");
-  }
-
-  db[idx] = { ...db[idx], ...dto, updatedAt: new Date().toISOString() };
-  return clone(db[idx]);
+  const { data } = await apiClient.put(API.SUBJECTS.UPDATE(id), dto);
+  return data;
 }
 
-/** Delete a subject — blocked if it has classes */
+/** Delete a subject */
 export async function deleteSubject(id: number): Promise<void> {
-  await randomDelay();
-
-  const subject = db.find((s) => s.id === id);
-  if (!subject) throw new Error("Không tìm thấy môn học");
-  if (subject.classes > 0) {
-    throw new Error(
-      `Không thể xóa môn học đang có ${subject.classes} lớp học. Hãy kết thúc hoặc chuyển các lớp trước.`
-    );
-  }
-
-  db = db.filter((s) => s.id !== id);
-}
-
-/** Reset in-memory DB to initial mock data (dev/test utility) */
-export function resetSubjectData(): void {
-  db = clone(mockSubjects);
-  nextId = Math.max(...db.map((s) => s.id)) + 1;
+  await apiClient.delete(API.SUBJECTS.DELETE(id));
 }

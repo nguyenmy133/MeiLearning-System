@@ -1,15 +1,1 @@
-export {
-    getTeacherExams,
-    getExamById,
-    getExamStats,
-    createExam,
-    updateExam,
-    deleteExam,
-    archiveExam,
-    resetExamData,
-    getExamInfo,
-    getExamStatistics,
-    getStudentResults,
-    getQuestionAnalysis,
-    getStudentExamResult,
-} from "./examService";
+export * from "./examService";
