@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
+import { FeatureErrorBoundary } from "@/components/shared/feature-error-boundary";
 
 /**
  * Loading fallback shown while a lazy-loaded page chunk is being downloaded.
@@ -41,9 +42,11 @@ export function lazyNamed<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function SuspenseWrapper(props: any) {
     return (
-      <Suspense fallback={<PageLoadingFallback />}>
-        <LazyComponent {...props} />
-      </Suspense>
+      <FeatureErrorBoundary>
+        <Suspense fallback={<PageLoadingFallback />}>
+          <LazyComponent {...props} />
+        </Suspense>
+      </FeatureErrorBoundary>
     );
   }
 
@@ -66,9 +69,11 @@ export function lazyDefault(
 
   function SuspenseWrapper(props: Record<string, unknown>) {
     return (
-      <Suspense fallback={<PageLoadingFallback />}>
-        <LazyComponent {...props} />
-      </Suspense>
+      <FeatureErrorBoundary>
+        <Suspense fallback={<PageLoadingFallback />}>
+          <LazyComponent {...props} />
+        </Suspense>
+      </FeatureErrorBoundary>
     );
   }
 

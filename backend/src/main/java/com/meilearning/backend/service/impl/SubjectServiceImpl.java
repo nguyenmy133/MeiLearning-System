@@ -14,6 +14,7 @@ import com.meilearning.backend.dto.request.UpdateSubjectRequest;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.SubjectResponse;
 import com.meilearning.backend.dto.response.SubjectStatsResponse;
+import com.meilearning.backend.util.SpecHelper;
 import com.meilearning.backend.entity.Subject;
 import com.meilearning.backend.entity.enums.SubjectStatus;
 import com.meilearning.backend.exception.DuplicateResourceException;
@@ -34,9 +35,10 @@ public class SubjectServiceImpl implements SubjectService {
     @Transactional(readOnly = true)
     public PageResponse<SubjectResponse> getAll(String search, String category, String status,
                                                  int page, int limit) {
+        if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
 
-        Specification<Subject> spec = Specification.where((Specification<Subject>) null);
+        Specification<Subject> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";

@@ -12,6 +12,7 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.GradeService;
+import com.meilearning.backend.service.NotificationDispatcher;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,6 +26,7 @@ public class GradeServiceImpl implements GradeService {
     private final StudentRepository studentRepository;
     private final ClassRepository classRepository;
     private final AcademicMapper mapper;
+    private final NotificationDispatcher notificationDispatcher;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,6 +63,20 @@ public class GradeServiceImpl implements GradeService {
         }
 
         grade = gradeRepository.save(grade);
+
+        // Gửi thông báo cập nhật điểm (MEDIUM: In-App + Email)
+        if (grade.getStudent() != null && grade.getStudent().getUser() != null) {
+            String className = grade.getClassEntity() != null
+                    ? grade.getClassEntity().getName() : "";
+            notificationDispatcher.notifyWithEmail(
+                    grade.getStudent().getUser(),
+                    "grade",
+                    "Cập nhật điểm",
+                    "Điểm của bạn trong lớp " + className + " đã được cập nhật."
+                            + (grade.getAvgScore() != null ? " Điểm TB: " + grade.getAvgScore() : "")
+            );
+        }
+
         return mapper.toGradeResponse(grade);
     }
 }

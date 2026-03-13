@@ -14,6 +14,7 @@ import com.meilearning.backend.dto.request.UpdateFacilityRequest;
 import com.meilearning.backend.dto.response.FacilityResponse;
 import com.meilearning.backend.dto.response.FacilityStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
 import com.meilearning.backend.entity.Facility;
 import com.meilearning.backend.entity.enums.FacilityStatus;
 import com.meilearning.backend.entity.enums.RoomStatus;
@@ -36,8 +37,9 @@ public class FacilityServiceImpl implements FacilityService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<FacilityResponse> getAll(String search, String status, int page, int limit) {
+        if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-        Specification<Facility> spec = Specification.where((Specification<Facility>) null);
+        Specification<Facility> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";

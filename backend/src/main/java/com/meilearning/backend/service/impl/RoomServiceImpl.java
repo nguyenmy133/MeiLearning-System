@@ -14,6 +14,7 @@ import com.meilearning.backend.dto.request.UpdateRoomRequest;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.RoomResponse;
 import com.meilearning.backend.entity.Facility;
+import com.meilearning.backend.util.SpecHelper;
 import com.meilearning.backend.entity.Room;
 import com.meilearning.backend.entity.enums.RoomStatus;
 import com.meilearning.backend.exception.ResourceNotFoundException;
@@ -35,8 +36,9 @@ public class RoomServiceImpl implements RoomService {
     @Transactional(readOnly = true)
     public PageResponse<RoomResponse> getAll(String search, Long facilityId, String status,
                                               int page, int limit) {
+        if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-        Specification<Room> spec = Specification.where((Specification<Room>) null);
+        Specification<Room> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";

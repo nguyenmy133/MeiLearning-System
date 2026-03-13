@@ -20,6 +20,7 @@ import com.meilearning.backend.repository.AttendanceRecordRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.service.AttendanceService;
+import com.meilearning.backend.service.NotificationDispatcher;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -36,6 +37,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final ClassSessionRepository sessionRepository;
     private final StudentRepository studentRepository;
     private final SessionMapper sessionMapper;
+    private final NotificationDispatcher notificationDispatcher;
 
     @Override
     @Transactional(readOnly = true)
@@ -72,6 +74,20 @@ public class AttendanceServiceImpl implements AttendanceService {
             record.setNote(entry.getNote());
 
             saved.add(attendanceRepository.save(record));
+
+            // Gửi thông báo khẩn cấp nếu vắng học
+            if (status == AttendanceStatus.absent && student.getUser() != null) {
+                String className = session.getClassEntity() != null
+                        ? session.getClassEntity().getName() : "";
+                notificationDispatcher.notifyUrgent(
+                        student.getUser(),
+                        "absence",
+                        "Thông báo vắng học",
+                        "Học viên " + student.getUser().getName()
+                                + " vắng buổi học ngày "
+                                + session.getDate() + " - Lớp " + className
+                );
+            }
         }
 
         // ÄĂ¡nh dáº¥u session Ä‘Ă£ hoĂ n thĂ nh

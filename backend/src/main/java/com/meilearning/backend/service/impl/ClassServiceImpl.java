@@ -14,6 +14,7 @@ import com.meilearning.backend.dto.request.UpdateClassRequest;
 import com.meilearning.backend.dto.response.ClassResponse;
 import com.meilearning.backend.dto.response.ClassStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
 import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.Room;
 import com.meilearning.backend.entity.Subject;
@@ -45,8 +46,9 @@ public class ClassServiceImpl implements ClassService {
     @Transactional(readOnly = true)
     public PageResponse<ClassResponse> getAll(String search, String subject, String facility,
                                                String status, Long teacherId, int page, int limit) {
+        if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-        Specification<ClassEntity> spec = Specification.where((Specification<ClassEntity>) null);
+        Specification<ClassEntity> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";

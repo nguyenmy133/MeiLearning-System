@@ -8,7 +8,18 @@ import { AppErrorBoundary } from "@/components/shared/error-boundary";
 
 import { publicRoutes, userRoutes, teacherRoutes, adminRoutes } from "./routes";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,       // 5 phút — tránh refetch liên tục
+      retry: 1,                         // Chỉ retry 1 lần
+      refetchOnWindowFocus: false,      // Không refetch khi focus lại tab
+    },
+    mutations: {
+      retry: 0,                         // Mutations không nên auto-retry
+    },
+  },
+});
 
 const App = () => (
   <AppErrorBoundary>

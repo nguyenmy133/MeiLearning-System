@@ -1,6 +1,6 @@
 /**
- * Base entity vá»›i cĂ¡c trÆ°á»ng chung cho táº¥t cáº£ entities.
- * Tá»± Ä‘á»™ng set createdAt vĂ  updatedAt.
+ * Base entity với các trường chung cho tất cả entities.
+ * Tự động set createdAt, updatedAt, createdBy, updatedBy.
  */
 package com.meilearning.backend.entity;
 
@@ -15,6 +15,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
 import lombok.Setter;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Getter
 @Setter
@@ -31,14 +34,35 @@ public abstract class BaseEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "created_by", updatable = false, length = 100)
+    private String createdBy;
+
+    @Column(name = "updated_by", length = 100)
+    private String updatedBy;
+
     @PrePersist
     protected void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = Instant.now();
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+        String currentUser = getCurrentUsername();
+        createdBy = currentUser;
+        updatedBy = currentUser;
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now();
+        updatedBy = getCurrentUsername();
+    }
+
+    private String getCurrentUsername() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+                return auth.getName();
+            }
+        } catch (Exception ignored) {}
+        return "system";
     }
 }

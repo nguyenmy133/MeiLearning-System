@@ -18,6 +18,7 @@ import com.meilearning.backend.dto.response.StudentResponse;
 import com.meilearning.backend.dto.response.StudentStatsResponse;
 import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassEntity;
+import com.meilearning.backend.util.SpecHelper;
 import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.entity.User;
 import com.meilearning.backend.entity.enums.StudentStatus;
@@ -51,8 +52,9 @@ public class StudentServiceImpl implements StudentService {
     @Transactional(readOnly = true)
     public PageResponse<StudentResponse> getAll(String search, Long classId, String status,
                                                  String tuitionStatus, int page, int limit) {
+        if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-        Specification<Student> spec = Specification.where((Specification<Student>) null);
+        Specification<Student> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";

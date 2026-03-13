@@ -1,10 +1,13 @@
 /**
- * Entity: ThĂ´ng bĂ¡o â€” gá»­i Ä‘áº¿n tá»«ng user.
+ * Entity: Thông báo – gửi đến từng user.
  */
 package com.meilearning.backend.entity;
 
+import com.meilearning.backend.entity.enums.NotificationSeverity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -40,7 +43,20 @@ public class Notification extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private NotificationSeverity severity = NotificationSeverity.LOW;
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;
+
+    @Column(name = "email_sent", nullable = false)
+    @Builder.Default
+    private Boolean emailSent = false;
+
+    @Column(name = "sms_sent", nullable = false)
+    @Builder.Default
+    private Boolean smsSent = false;
 }

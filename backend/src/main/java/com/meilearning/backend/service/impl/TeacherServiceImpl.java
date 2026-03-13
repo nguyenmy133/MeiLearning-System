@@ -16,6 +16,7 @@ import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TeacherResponse;
 import com.meilearning.backend.dto.response.TeacherStatsResponse;
 import com.meilearning.backend.entity.Subject;
+import com.meilearning.backend.util.SpecHelper;
 import com.meilearning.backend.entity.Teacher;
 import com.meilearning.backend.entity.User;
 import com.meilearning.backend.entity.enums.TeacherStatus;
@@ -49,8 +50,9 @@ public class TeacherServiceImpl implements TeacherService {
     @Transactional(readOnly = true)
     public PageResponse<TeacherResponse> getAll(String search, String subject, String status,
                                                  int page, int limit) {
+        if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-        Specification<Teacher> spec = Specification.where((Specification<Teacher>) null);
+        Specification<Teacher> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";
@@ -167,13 +169,15 @@ public class TeacherServiceImpl implements TeacherService {
     @Override
     public void delete(Long id) {
         Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y giĂ¡o viĂªn vá»›i id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giáo viên với id: " + id));
 
         if (teacher.getClasses() != null && !teacher.getClasses().isEmpty()) {
-            throw new BusinessException("KhĂ´ng thá»ƒ xĂ³a giĂ¡o viĂªn Ä‘ang phá»¥ trĂ¡ch lá»›p. HĂ£y chuyá»ƒn lá»›p trÆ°á»›c.");
+            throw new BusinessException("Không thể xóa giáo viên đang phụ trách lớp. Hãy chuyển lớp trước.");
         }
 
+        User user = teacher.getUser();
         teacherRepository.delete(teacher);
+        userRepository.delete(user);
     }
 
     @Override

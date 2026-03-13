@@ -13,6 +13,7 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.RescheduleService;
+import com.meilearning.backend.service.NotificationDispatcher;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,6 +29,7 @@ public class RescheduleServiceImpl implements RescheduleService {
     private final ClassRepository classRepository;
     private final ClassSessionRepository sessionRepository;
     private final AcademicMapper mapper;
+    private final NotificationDispatcher notificationDispatcher;
 
     @Override
     public RescheduleRequestResponse create(CreateRescheduleRequest req) {
@@ -90,6 +92,20 @@ public class RescheduleServiceImpl implements RescheduleService {
         }
 
         rr = rescheduleRepository.save(rr);
+
+        // Gửi thông báo cho teacher (MEDIUM: In-App + Email)
+        if (rr.getTeacher() != null && rr.getTeacher().getUser() != null) {
+            String className = rr.getClassEntity() != null
+                    ? rr.getClassEntity().getName() : "";
+            notificationDispatcher.notifyWithEmail(
+                    rr.getTeacher().getUser(),
+                    "schedule_change",
+                    "Yêu cầu dạy bù được duyệt",
+                    "Yêu cầu " + rr.getType() + " cho lớp " + className
+                            + " ngày " + rr.getOriginalDate() + " đã được duyệt."
+            );
+        }
+
         return mapper.toRescheduleResponse(rr);
     }
 
