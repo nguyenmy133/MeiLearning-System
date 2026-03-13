@@ -14,11 +14,13 @@ import com.meilearning.backend.dto.response.ClassResponse;
 import com.meilearning.backend.dto.response.ClassStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.ClassService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/classes")
 @RequiredArgsConstructor
 @Tag(name = "Class", description = "Quản lý lớp học")
+@PreAuthorize("hasAnyRole('admin', 'teacher')")
 public class ClassController {
 
     private final ClassService classService;

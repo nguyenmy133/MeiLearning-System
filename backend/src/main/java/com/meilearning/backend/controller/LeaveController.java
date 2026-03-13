@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.meilearning.backend.dto.request.CreateLeaveRequest;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/api/v1/leave")
 @RequiredArgsConstructor
 @Tag(name = "Leave", description = "Quản lý nghỉ phép")
+@PreAuthorize("hasAnyRole('admin', 'teacher', 'student')")
 public class LeaveController {
 
     private final LeaveService leaveService;

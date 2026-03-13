@@ -14,11 +14,13 @@ import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TeacherResponse;
 import com.meilearning.backend.dto.response.TeacherStatsResponse;
 import com.meilearning.backend.service.TeacherService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/teachers")
 @RequiredArgsConstructor
 @Tag(name = "Teacher", description = "Quản lý giáo viên")
+@PreAuthorize("hasRole('admin')")
 public class TeacherController {
 
     private final TeacherService teacherService;
@@ -62,9 +64,9 @@ public class TeacherController {
 
     @PostMapping("/{id}/reset-password")
     @Operation(summary = "Reset mật khẩu giáo viên")
-    public ResponseEntity<Void> resetPassword(@PathVariable Long id) {
-        teacherService.resetPassword(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<java.util.Map<String, String>> resetPassword(@PathVariable Long id) {
+        String newPassword = teacherService.resetPassword(id);
+        return ResponseEntity.ok(java.util.Map.of("newPassword", newPassword));
     }
 
     @PatchMapping("/{id}/lock")

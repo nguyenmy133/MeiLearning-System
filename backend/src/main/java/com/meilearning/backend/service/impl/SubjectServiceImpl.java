@@ -131,14 +131,15 @@ public class SubjectServiceImpl implements SubjectService {
         long total = subjectRepository.count();
         long active = subjectRepository.countByStatus(SubjectStatus.active);
         long inactive = subjectRepository.countByStatus(SubjectStatus.inactive);
+        long totalTeachers = subjectRepository.countDistinctTeachers();
+        long totalClasses = subjectRepository.countTotalClasses();
 
-        // TODO: TĂ­nh totalTeachers vĂ  totalClasses khi cĂ³ data relationships
         return SubjectStatsResponse.builder()
                 .total(total)
                 .active(active)
                 .inactive(inactive)
-                .totalTeachers(0)
-                .totalClasses(0)
+                .totalTeachers(totalTeachers)
+                .totalClasses(totalClasses)
                 .build();
     }
 }

@@ -1,8 +1,15 @@
 import { apiClient } from "@/lib/api-client";
+import { authService } from "@/features/shared/auth/authService";
 import type { ClassInfo, ClassSession } from "../types";
 import { MOCK_CLASSES, MOCK_SESSIONS } from "../data/mockData";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+
+function getCurrentStudentId(): number {
+  const user = authService.getCurrentUser();
+  if (!user) throw new Error("Chưa đăng nhập");
+  return user.id;
+}
 
 /** Get student's enrolled classes */
 export async function getMyClasses(): Promise<ClassInfo[]> {
@@ -16,9 +23,12 @@ export async function getMyClasses(): Promise<ClassInfo[]> {
 /** Get schedule sessions for a date range */
 export async function getMySchedule(startDate?: string, endDate?: string): Promise<ClassSession[]> {
   try {
-    const { data } = await apiClient.get("/schedule", {
-      params: { view: "week", startDate, endDate },
+    const studentId = getCurrentStudentId();
+    const { data } = await apiClient.get(`/schedule/student/${studentId}`, {
+      params: { view: "week", date: startDate },
     });
+    // Handle ScheduleResponse — may contain sessions array
+    if (data?.sessions && Array.isArray(data.sessions)) return data.sessions;
     if (Array.isArray(data) && data.length > 0) return data;
   } catch { /* fallback */ }
   let sessions = clone(MOCK_SESSIONS);
@@ -31,9 +41,11 @@ export async function getMySchedule(startDate?: string, endDate?: string): Promi
 export async function getTodaySessions(): Promise<ClassSession[]> {
   const today = new Date().toISOString().split("T")[0];
   try {
-    const { data } = await apiClient.get("/schedule", {
+    const studentId = getCurrentStudentId();
+    const { data } = await apiClient.get(`/schedule/student/${studentId}`, {
       params: { view: "day", date: today },
     });
+    if (data?.sessions && Array.isArray(data.sessions)) return data.sessions;
     if (Array.isArray(data) && data.length > 0) return data;
   } catch { /* fallback */ }
   return clone(MOCK_SESSIONS).filter((s) => s.date === today);

@@ -23,6 +23,7 @@ import com.meilearning.backend.exception.BusinessException;
 import com.meilearning.backend.exception.DuplicateResourceException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.TeacherMapper;
+import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.SubjectRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.repository.UserRepository;
@@ -40,6 +41,7 @@ public class TeacherServiceImpl implements TeacherService {
     private final TeacherRepository teacherRepository;
     private final UserRepository userRepository;
     private final SubjectRepository subjectRepository;
+    private final ClassRepository classRepository;
     private final TeacherMapper teacherMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -175,7 +177,7 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
-    public void resetPassword(Long id) {
+    public String resetPassword(Long id) {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y giĂ¡o viĂªn vá»›i id: " + id));
 
@@ -183,7 +185,7 @@ public class TeacherServiceImpl implements TeacherService {
         String newPassword = UUID.randomUUID().toString().substring(0, 8);
         teacher.getUser().setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(teacher.getUser());
-        // TODO: Send new password via email/SMS
+        return newPassword;
     }
 
     @Override
@@ -212,7 +214,7 @@ public class TeacherServiceImpl implements TeacherService {
         return TeacherStatsResponse.builder()
                 .totalTeachers(teacherRepository.count())
                 .activeTeachers(teacherRepository.countByStatus(TeacherStatus.active))
-                .totalClasses(0) // TODO: aggregate from ClassEntity
+                .totalClasses(classRepository.count())
                 .totalSubjects(subjectRepository.count())
                 .build();
     }

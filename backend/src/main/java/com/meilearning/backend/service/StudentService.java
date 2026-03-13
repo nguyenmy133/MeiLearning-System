@@ -16,6 +16,6 @@ public interface StudentService {
     void delete(Long id);
     void dropStudent(Long id, DropStudentRequest request);
     void reactivateStudent(Long id);
-    void resetPassword(Long id);
+    String resetPassword(Long id);
     StudentStatsResponse getStats();
 }

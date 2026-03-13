@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.meilearning.backend.dto.response.ClassSessionResponse;
@@ -16,6 +17,7 @@ import java.util.List;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Tag(name = "Schedule", description = "Quản lý lịch học")
+@PreAuthorize("hasAnyRole('admin', 'teacher', 'student')")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;

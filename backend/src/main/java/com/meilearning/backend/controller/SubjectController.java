@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.meilearning.backend.dto.request.CreateSubjectRequest;
 import com.meilearning.backend.dto.request.UpdateSubjectRequest;
 import com.meilearning.backend.dto.response.PageResponse;
@@ -19,6 +21,7 @@ import com.meilearning.backend.service.SubjectService;
 @RequestMapping("/api/v1/subjects")
 @RequiredArgsConstructor
 @Tag(name = "Subject", description = "Quản lý môn học")
+@PreAuthorize("hasRole('admin')")
 public class SubjectController {
 
     private final SubjectService subjectService;

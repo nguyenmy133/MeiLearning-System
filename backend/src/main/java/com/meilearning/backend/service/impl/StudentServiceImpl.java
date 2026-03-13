@@ -217,13 +217,14 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public void resetPassword(Long id) {
+    public String resetPassword(Long id) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y há»c viĂªn vá»›i id: " + id));
 
         String newPassword = UUID.randomUUID().toString().substring(0, 8);
         student.getUser().setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(student.getUser());
+        return newPassword;
     }
 
     @Override

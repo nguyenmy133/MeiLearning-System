@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { DashboardData } from "../types";
+import type { DashboardData, DashboardStatData } from "../types";
 import {
   mockStats,
   mockRevenueData,
@@ -11,40 +11,71 @@ import {
 
 /**
  * Dashboard data — hybrid approach:
- * Thử gọi API trước, nếu lỗi thì fallback về mock data.
- * Khi BE có dedicated dashboard endpoint, sẽ chuyển hoàn toàn sang API.
+ * Gọi tất cả BE stats APIs, merge vào dashboard.
+ * Fallback mock data cho các phần BE chưa hỗ trợ (schedule, alerts).
  */
 export async function getDashboardData(): Promise<DashboardData> {
   try {
     // Gọi nhiều API song song
-    const [studentsRes, tuitionRes] = await Promise.allSettled([
-      apiClient.get("/students/stats"),
-      apiClient.get("/tuition/stats"),
-    ]);
+    const [studentsRes, teachersRes, classesRes, tuitionRes, attendanceRes] =
+      await Promise.allSettled([
+        apiClient.get("/students/stats"),
+        apiClient.get("/teachers/stats"),
+        apiClient.get("/classes/stats"),
+        apiClient.get("/tuition/stats"),
+        apiClient.get("/attendance/stats"),
+      ]);
 
-    // Merge real stats vào mock nếu API trả về thành công
-    const stats = [...mockStats];
-    if (studentsRes.status === "fulfilled" && studentsRes.value) {
-      const s = studentsRes.value as any;
-      if (s.total !== undefined) {
+    // Build stats từ real data, fallback mock nếu API lỗi
+    const stats: DashboardStatData[] = [...mockStats];
+
+    if (studentsRes.status === "fulfilled") {
+      const s = studentsRes.value.data;
+      if (s?.total !== undefined) {
         stats[0] = { ...stats[0], value: String(s.total) };
       }
     }
-    if (tuitionRes.status === "fulfilled" && tuitionRes.value) {
-      const t = tuitionRes.value as any;
-      if (t.totalRevenue !== undefined) {
+    if (teachersRes.status === "fulfilled") {
+      const t = teachersRes.value.data;
+      if (t?.totalTeachers !== undefined) {
+        stats[1] = { ...stats[1], value: String(t.totalTeachers) };
+      }
+    }
+    if (classesRes.status === "fulfilled") {
+      const c = classesRes.value.data;
+      if (c?.activeClasses !== undefined) {
+        stats[2] = { ...stats[2], value: String(c.activeClasses) };
+      }
+    }
+    if (tuitionRes.status === "fulfilled") {
+      const t = tuitionRes.value.data;
+      if (t?.totalRevenue !== undefined) {
         const revenueM = Math.round(t.totalRevenue / 1_000_000);
         stats[3] = { ...stats[3], value: `${revenueM}M` };
       }
     }
 
+    // Attendance — map to TodayAttendance if API returns data
+    let todayAttendance = mockTodayAttendance;
+    if (attendanceRes.status === "fulfilled") {
+      const a = attendanceRes.value.data;
+      if (a?.totalPresent !== undefined) {
+        todayAttendance = {
+          total: a.totalRecords ?? mockTodayAttendance.total,
+          present: a.totalPresent ?? mockTodayAttendance.present,
+          absent: a.totalAbsent ?? mockTodayAttendance.absent,
+          late: a.totalLate ?? mockTodayAttendance.late,
+        };
+      }
+    }
+
     return {
       stats,
-      revenueData: mockRevenueData,
-      todaySchedule: mockTodaySchedule,
-      todayAttendance: mockTodayAttendance,
-      alerts: mockAlerts,
-      overdueStudents: mockOverdueStudents,
+      revenueData: mockRevenueData,     // TODO: add revenue chart API
+      todaySchedule: mockTodaySchedule,  // TODO: add today schedule API
+      todayAttendance,
+      alerts: mockAlerts,                // TODO: add alerts API
+      overdueStudents: mockOverdueStudents, // TODO: add overdue tuition API
     };
   } catch {
     // Fallback hoàn toàn về mock data

@@ -13,11 +13,13 @@ import com.meilearning.backend.dto.request.UpdateRoomRequest;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.RoomResponse;
 import com.meilearning.backend.service.RoomService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
 @RequiredArgsConstructor
 @Tag(name = "Room", description = "Quản lý phòng học")
+@PreAuthorize("hasRole('admin')")
 public class RoomController {
 
     private final RoomService roomService;

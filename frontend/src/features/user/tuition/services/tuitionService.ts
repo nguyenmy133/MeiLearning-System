@@ -1,12 +1,20 @@
 import { apiClient } from "@/lib/api-client";
+import { authService } from "@/features/shared/auth/authService";
 import type { TuitionInvoice } from "../types";
 import { MOCK_INVOICES } from "../data/mockData";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
+function getCurrentStudentId(): number {
+  const user = authService.getCurrentUser();
+  if (!user) throw new Error("Chưa đăng nhập");
+  return user.id;
+}
+
 export async function getMyInvoices(): Promise<TuitionInvoice[]> {
   try {
-    const { data } = await apiClient.get("/tuition");
+    const studentId = getCurrentStudentId();
+    const { data } = await apiClient.get(`/tuition/student/${studentId}`);
     if (Array.isArray(data) && data.length > 0) return data;
   } catch { /* fallback */ }
   return clone(MOCK_INVOICES);

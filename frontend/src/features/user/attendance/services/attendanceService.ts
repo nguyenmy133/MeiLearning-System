@@ -1,12 +1,22 @@
 import { apiClient } from "@/lib/api-client";
+import { authService } from "@/features/shared/auth/authService";
 import type { AttendanceRecord } from "../types";
 import { MOCK_ATTENDANCE } from "../data/mockData";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
+function getCurrentStudentId(): number {
+  const user = authService.getCurrentUser();
+  if (!user) throw new Error("Chưa đăng nhập");
+  return user.id;
+}
+
 export async function getMyAttendance(): Promise<AttendanceRecord[]> {
   try {
-    const { data } = await apiClient.get("/attendance/stats");
+    const studentId = getCurrentStudentId();
+    const { data } = await apiClient.get("/attendance/stats", {
+      params: { studentId },
+    });
     if (Array.isArray(data) && data.length > 0) return data;
   } catch { /* fallback */ }
   return clone(MOCK_ATTENDANCE);
@@ -23,8 +33,9 @@ export async function getAttendanceSummary(): Promise<{
   return { total, present, absent, late, rate: total > 0 ? Math.round((present / total) * 100) : 0 };
 }
 
-export async function checkIn(sessionId: string, studentId: number): Promise<void> {
+export async function checkIn(sessionId: string, studentId?: number): Promise<void> {
+  const sid = studentId ?? getCurrentStudentId();
   await apiClient.post("/attendance/check-in", null, {
-    params: { sessionId, studentId },
+    params: { sessionId, studentId: sid },
   });
 }

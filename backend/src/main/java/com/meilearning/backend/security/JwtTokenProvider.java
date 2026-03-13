@@ -24,10 +24,34 @@ public class JwtTokenProvider {
     private final SecretKey signingKey;
     private final long expirationMs;
 
+    private static final String DEV_SECRET_FALLBACK =
+            "dGhpcyBpcyBhIHNhbXBsZSBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5IQ==";
+
     public JwtTokenProvider(
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiration-ms:86400000}") long expirationMs) {
-        this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+            @Value("${app.jwt.expiration-ms:86400000}") long expirationMs,
+            @Value("${spring.profiles.active:dev}") String activeProfile) {
+
+        // ── Security validation ──────────────────────────────────────
+        if (DEV_SECRET_FALLBACK.equals(secret)) {
+            if (!"dev".equalsIgnoreCase(activeProfile)) {
+                log.error("⚠️  FATAL: Using default JWT secret in '{}' profile! "
+                        + "Set JWT_SECRET environment variable for production.", activeProfile);
+                throw new IllegalStateException(
+                        "JWT_SECRET must be set for non-dev profiles. "
+                        + "Generate one with: openssl rand -base64 64");
+            }
+            log.warn("⚠️  Using default JWT secret — ONLY safe for local development!");
+        }
+
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        if (keyBytes.length < 32) { // 256-bit minimum for HS256
+            throw new IllegalStateException(
+                    "JWT secret too short (" + keyBytes.length * 8 + " bits). "
+                    + "Minimum is 256 bits (32 bytes). Generate with: openssl rand -base64 64");
+        }
+
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMs = expirationMs;
     }
 

@@ -1,8 +1,15 @@
 import { apiClient } from "@/lib/api-client";
+import { authService } from "@/features/shared/auth/authService";
 import type { ExamDetail, ExamResult } from "../types";
 import { MOCK_EXAMS, MOCK_RESULTS } from "../data/mockData";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+
+function getCurrentStudentId(): number {
+  const user = authService.getCurrentUser();
+  if (!user) throw new Error("Chưa đăng nhập");
+  return user.id;
+}
 
 export async function getMyExams(): Promise<ExamDetail[]> {
   try {
@@ -13,6 +20,10 @@ export async function getMyExams(): Promise<ExamDetail[]> {
 }
 
 export async function startExam(examId: string): Promise<ExamDetail> {
+  try {
+    const { data } = await apiClient.get(`/exams/${examId}`);
+    return data;
+  } catch { /* fallback */ }
   const exam = MOCK_EXAMS.find((e) => e.id === examId);
   if (!exam) throw new Error("Không tìm thấy bài kiểm tra");
   return clone(exam);
@@ -20,9 +31,10 @@ export async function startExam(examId: string): Promise<ExamDetail> {
 
 export async function submitExam(examId: string, answers: Record<number, number>): Promise<ExamResult> {
   try {
+    const studentId = getCurrentStudentId();
     const { data } = await apiClient.post(`/exams/${examId}/submit`, {
-      studentId: 0, // TODO: use actual studentId
-      score: 80,
+      studentId,
+      score: 0, // Let BE calculate
       correctAnswers: Object.keys(answers).length,
     });
     return data;
@@ -37,7 +49,8 @@ export async function submitExam(examId: string, answers: Record<number, number>
 
 export async function getExamResult(examId: string): Promise<ExamResult> {
   try {
-    const { data } = await apiClient.get(`/exams/${examId}/results/0`); // TODO: use actual studentId
+    const studentId = getCurrentStudentId();
+    const { data } = await apiClient.get(`/exams/${examId}/results/${studentId}`);
     return data;
   } catch { /* fallback */ }
   const result = MOCK_RESULTS[examId];

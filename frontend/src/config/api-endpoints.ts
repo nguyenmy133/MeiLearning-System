@@ -47,6 +47,8 @@ export const API = {
         UPDATE: (id: number | string) => `/teachers/${id}`,
         DELETE: (id: number | string) => `/teachers/${id}`,
         RESET_PASSWORD: (id: number | string) => `/teachers/${id}/reset-password`,
+        LOCK: (id: number | string) => `/teachers/${id}/lock`,
+        UNLOCK: (id: number | string) => `/teachers/${id}/unlock`,
         STATS: "/teachers/stats",
     },
 
@@ -68,6 +70,7 @@ export const API = {
         CREATE: "/subjects",
         UPDATE: (id: number | string) => `/subjects/${id}`,
         DELETE: (id: number | string) => `/subjects/${id}`,
+        STATS: "/subjects/stats",
     },
 
     // ── Facilities & Rooms ──────────────────────────────────────
@@ -163,5 +166,13 @@ export const API = {
     QR_SETTINGS: {
         GET: "/qr-settings",
         UPDATE: "/qr-settings",
+    },
+
+    // ── Documents ───────────────────────────────────────────────
+    DOCUMENTS: {
+        LIST: "/documents",
+        DETAIL: (id: number | string) => `/documents/${id}`,
+        UPLOAD: "/documents",
+        DELETE: (id: number | string) => `/documents/${id}`,
     },
 } as const;

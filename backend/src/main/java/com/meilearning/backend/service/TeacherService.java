@@ -12,7 +12,7 @@ public interface TeacherService {
     TeacherResponse create(CreateTeacherRequest request);
     TeacherResponse update(Long id, UpdateTeacherRequest request);
     void delete(Long id);
-    void resetPassword(Long id);
+    String resetPassword(Long id);
     void lockAccount(Long id);
     void unlockAccount(Long id);
     TeacherStatsResponse getStats();

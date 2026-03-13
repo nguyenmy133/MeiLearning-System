@@ -1,17 +1,19 @@
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
+import type { NotificationItem } from "../types";
+
 export const notificationService = {
-  async getNotifications() {
-    // TODO: Backend notification endpoint not yet implemented
-    return [];
+  async getNotifications(): Promise<NotificationItem[]> {
+    const { data } = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS.LIST);
+    return data;
   },
 
-  async markRead(id: number) {
-    // TODO: Backend notification endpoint not yet implemented
-    return;
+  async markRead(id: number): Promise<void> {
+    await apiClient.patch(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
   },
 
-  async markAllRead() {
-    // TODO: Backend notification endpoint not yet implemented
-    return;
+  async markAllRead(): Promise<void> {
+    await apiClient.patch(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ);
   },
 };
 

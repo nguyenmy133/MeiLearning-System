@@ -14,11 +14,13 @@ import com.meilearning.backend.dto.response.FacilityResponse;
 import com.meilearning.backend.dto.response.FacilityStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.FacilityService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/facilities")
 @RequiredArgsConstructor
 @Tag(name = "Facility", description = "Quản lý cơ sở (chi nhánh)")
+@PreAuthorize("hasRole('admin')")
 public class FacilityController {
 
     private final FacilityService facilityService;
