@@ -17,34 +17,34 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/reschedule")
 @RequiredArgsConstructor
-@Tag(name = "Reschedule", description = "Quáº£n lĂ½ dá»i lá»‹ch")
+@Tag(name = "Reschedule", description = "Quản lý dời lịch")
 public class RescheduleController {
 
     private final RescheduleService rescheduleService;
 
     @GetMapping
-    @Operation(summary = "Danh sĂ¡ch yĂªu cáº§u dá»i lá»‹ch")
+    @Operation(summary = "Danh sách yêu cầu dời lịch")
     public ResponseEntity<List<RescheduleRequestResponse>> getAll(
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(rescheduleService.getAll(status));
     }
 
     @GetMapping("/teacher/{teacherId}")
-    @Operation(summary = "YĂªu cáº§u theo giĂ¡o viĂªn")
+    @Operation(summary = "Yêu cầu theo giáo viên")
     public ResponseEntity<List<RescheduleRequestResponse>> getByTeacher(
             @PathVariable Long teacherId) {
         return ResponseEntity.ok(rescheduleService.getByTeacher(teacherId));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o yĂªu cáº§u dá»i lá»‹ch (Teacher)")
+    @Operation(summary = "Tạo yêu cầu dời lịch (Teacher)")
     public ResponseEntity<RescheduleRequestResponse> create(
             @Valid @RequestBody CreateRescheduleRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(rescheduleService.create(request));
     }
 
     @PatchMapping("/{id}/approve")
-    @Operation(summary = "Duyá»‡t yĂªu cáº§u (Admin)")
+    @Operation(summary = "Duyệt yêu cầu (Admin)")
     public ResponseEntity<RescheduleRequestResponse> approve(
             @PathVariable Long id,
             @RequestParam String reviewedBy) {
@@ -52,7 +52,7 @@ public class RescheduleController {
     }
 
     @PatchMapping("/{id}/reject")
-    @Operation(summary = "Tá»« chá»‘i yĂªu cáº§u (Admin)")
+    @Operation(summary = "Từ chối yêu cầu (Admin)")
     public ResponseEntity<RescheduleRequestResponse> reject(
             @PathVariable Long id,
             @RequestParam String reviewedBy,

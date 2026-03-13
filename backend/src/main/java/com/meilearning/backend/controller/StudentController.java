@@ -19,13 +19,13 @@ import com.meilearning.backend.service.StudentService;
 @RestController
 @RequestMapping("/api/v1/students")
 @RequiredArgsConstructor
-@Tag(name = "Student", description = "Quáº£n lĂ½ há»c viĂªn")
+@Tag(name = "Student", description = "Quản lý học viên")
 public class StudentController {
 
     private final StudentService studentService;
 
     @GetMapping
-    @Operation(summary = "Láº¥y danh sĂ¡ch há»c viĂªn")
+    @Operation(summary = "Lấy danh sách học viên")
     public ResponseEntity<PageResponse<StudentResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long classId,
@@ -37,33 +37,33 @@ public class StudentController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Láº¥y chi tiáº¿t há»c viĂªn")
+    @Operation(summary = "Lấy chi tiết học viên")
     public ResponseEntity<StudentResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(studentService.getById(id));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o há»c viĂªn má»›i (auto-create User account)")
+    @Operation(summary = "Tạo học viên mới (auto-create User account)")
     public ResponseEntity<StudentResponse> create(@Valid @RequestBody CreateStudentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cáº­p nháº­t thĂ´ng tin há»c viĂªn")
+    @Operation(summary = "Cập nhật thông tin học viên")
     public ResponseEntity<StudentResponse> update(@PathVariable Long id,
                                                    @Valid @RequestBody UpdateStudentRequest request) {
         return ResponseEntity.ok(studentService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "XĂ³a há»c viĂªn (pháº£i inactive)")
+    @Operation(summary = "Xóa học viên (phải inactive)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         studentService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/drop")
-    @Operation(summary = "Ghi nháº­n nghá»‰ há»c")
+    @Operation(summary = "Ghi nhận nghỉ học")
     public ResponseEntity<Void> dropStudent(@PathVariable Long id,
                                              @Valid @RequestBody DropStudentRequest request) {
         studentService.dropStudent(id, request);
@@ -71,21 +71,21 @@ public class StudentController {
     }
 
     @PatchMapping("/{id}/reactivate")
-    @Operation(summary = "KĂ­ch hoáº¡t láº¡i há»c viĂªn")
+    @Operation(summary = "Kích hoạt lại học viên")
     public ResponseEntity<Void> reactivateStudent(@PathVariable Long id) {
         studentService.reactivateStudent(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/reset-password")
-    @Operation(summary = "Reset máº­t kháº©u há»c viĂªn")
+    @Operation(summary = "Reset mật khẩu học viên")
     public ResponseEntity<Void> resetPassword(@PathVariable Long id) {
         studentService.resetPassword(id);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/stats")
-    @Operation(summary = "Láº¥y thá»‘ng kĂª há»c viĂªn")
+    @Operation(summary = "Lấy thống kê học viên")
     public ResponseEntity<StudentStatsResponse> getStats() {
         return ResponseEntity.ok(studentService.getStats());
     }

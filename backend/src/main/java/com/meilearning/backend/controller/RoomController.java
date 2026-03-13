@@ -17,13 +17,13 @@ import com.meilearning.backend.service.RoomService;
 @RestController
 @RequestMapping("/api/v1/rooms")
 @RequiredArgsConstructor
-@Tag(name = "Room", description = "Quáº£n lĂ½ phĂ²ng há»c")
+@Tag(name = "Room", description = "Quản lý phòng học")
 public class RoomController {
 
     private final RoomService roomService;
 
     @GetMapping
-    @Operation(summary = "Láº¥y danh sĂ¡ch phĂ²ng há»c")
+    @Operation(summary = "Lấy danh sách phòng học")
     public ResponseEntity<PageResponse<RoomResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long facilityId,
@@ -34,26 +34,26 @@ public class RoomController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Láº¥y chi tiáº¿t phĂ²ng há»c")
+    @Operation(summary = "Lấy chi tiết phòng học")
     public ResponseEntity<RoomResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(roomService.getById(id));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o phĂ²ng há»c má»›i")
+    @Operation(summary = "Tạo phòng học mới")
     public ResponseEntity<RoomResponse> create(@Valid @RequestBody CreateRoomRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(roomService.create(request));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cáº­p nháº­t phĂ²ng há»c")
+    @Operation(summary = "Cập nhật phòng học")
     public ResponseEntity<RoomResponse> update(@PathVariable Long id,
                                                 @Valid @RequestBody UpdateRoomRequest request) {
         return ResponseEntity.ok(roomService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "XĂ³a phĂ²ng há»c")
+    @Operation(summary = "Xóa phòng học")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         roomService.delete(id);
         return ResponseEntity.noContent().build();

@@ -18,13 +18,13 @@ import com.meilearning.backend.service.ClassService;
 @RestController
 @RequestMapping("/api/v1/classes")
 @RequiredArgsConstructor
-@Tag(name = "Class", description = "Quáº£n lĂ½ lá»›p há»c")
+@Tag(name = "Class", description = "Quản lý lớp học")
 public class ClassController {
 
     private final ClassService classService;
 
     @GetMapping
-    @Operation(summary = "Láº¥y danh sĂ¡ch lá»›p há»c")
+    @Operation(summary = "Lấy danh sách lớp học")
     public ResponseEntity<PageResponse<ClassResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String subject,
@@ -37,40 +37,40 @@ public class ClassController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Láº¥y chi tiáº¿t lá»›p há»c")
+    @Operation(summary = "Lấy chi tiết lớp học")
     public ResponseEntity<ClassResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(classService.getById(id));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o lá»›p há»c má»›i")
+    @Operation(summary = "Tạo lớp học mới")
     public ResponseEntity<ClassResponse> create(@Valid @RequestBody CreateClassRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(classService.create(request));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cáº­p nháº­t lá»›p há»c")
+    @Operation(summary = "Cập nhật lớp học")
     public ResponseEntity<ClassResponse> update(@PathVariable Long id,
                                                  @Valid @RequestBody UpdateClassRequest request) {
         return ResponseEntity.ok(classService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "XĂ³a lá»›p há»c (pháº£i khĂ´ng active)")
+    @Operation(summary = "Xóa lớp học (phải không active)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         classService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/end")
-    @Operation(summary = "Káº¿t thĂºc lá»›p há»c")
+    @Operation(summary = "Kết thúc lớp học")
     public ResponseEntity<Void> endClass(@PathVariable Long id) {
         classService.endClass(id);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/stats")
-    @Operation(summary = "Láº¥y thá»‘ng kĂª lá»›p há»c")
+    @Operation(summary = "Lấy thống kê lớp học")
     public ResponseEntity<ClassStatsResponse> getStats() {
         return ResponseEntity.ok(classService.getStats());
     }

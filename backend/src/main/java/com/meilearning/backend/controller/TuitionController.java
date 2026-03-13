@@ -19,13 +19,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/tuition")
 @RequiredArgsConstructor
-@Tag(name = "Tuition", description = "Quáº£n lĂ½ há»c phĂ­")
+@Tag(name = "Tuition", description = "Quản lý học phí")
 public class TuitionController {
 
     private final TuitionService tuitionService;
 
     @GetMapping
-    @Operation(summary = "Láº¥y danh sĂ¡ch hĂ³a Ä‘Æ¡n (Admin)")
+    @Operation(summary = "Lấy danh sách hóa đơn (Admin)")
     public ResponseEntity<List<TuitionInvoiceResponse>> getAll(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String month,
@@ -34,20 +34,20 @@ public class TuitionController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Chi tiáº¿t hĂ³a Ä‘Æ¡n")
+    @Operation(summary = "Chi tiết hóa đơn")
     public ResponseEntity<TuitionInvoiceResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(tuitionService.getById(id));
     }
 
     @GetMapping("/student/{studentId}")
-    @Operation(summary = "HĂ³a Ä‘Æ¡n cá»§a há»c viĂªn")
+    @Operation(summary = "Hóa đơn của học viên")
     public ResponseEntity<List<TuitionInvoiceResponse>> getByStudent(
             @PathVariable Long studentId) {
         return ResponseEntity.ok(tuitionService.getByStudent(studentId));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o hĂ³a Ä‘Æ¡n thá»§ cĂ´ng (Admin)")
+    @Operation(summary = "Tạo hóa đơn thủ công (Admin)")
     public ResponseEntity<TuitionInvoiceResponse> create(
             @Valid @RequestBody CreateTuitionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -55,14 +55,14 @@ public class TuitionController {
     }
 
     @PostMapping("/generate")
-    @Operation(summary = "Tá»± Ä‘á»™ng táº¡o hĂ³a Ä‘Æ¡n thĂ¡ng (Admin)")
+    @Operation(summary = "Tự động tạo hóa đơn tháng (Admin)")
     public ResponseEntity<List<TuitionInvoiceResponse>> generateMonthly(
             @RequestParam String month) {
         return ResponseEntity.ok(tuitionService.generateMonthlyInvoices(month));
     }
 
     @PostMapping("/{id}/pay")
-    @Operation(summary = "Ná»™p chá»©ng tá»« thanh toĂ¡n (Student)")
+    @Operation(summary = "Nộp chứng từ thanh toán (Student)")
     public ResponseEntity<TuitionInvoiceResponse> pay(
             @PathVariable Long id,
             @Valid @RequestBody PayTuitionRequest request) {
@@ -70,25 +70,25 @@ public class TuitionController {
     }
 
     @PatchMapping("/{id}/confirm")
-    @Operation(summary = "XĂ¡c nháº­n thanh toĂ¡n (Admin)")
+    @Operation(summary = "Xác nhận thanh toán (Admin)")
     public ResponseEntity<TuitionInvoiceResponse> confirm(@PathVariable Long id) {
         return ResponseEntity.ok(tuitionService.confirm(id));
     }
 
     @PatchMapping("/{id}/reject")
-    @Operation(summary = "Tá»« chá»‘i thanh toĂ¡n (Admin)")
+    @Operation(summary = "Từ chối thanh toán (Admin)")
     public ResponseEntity<TuitionInvoiceResponse> reject(@PathVariable Long id) {
         return ResponseEntity.ok(tuitionService.reject(id));
     }
 
     @GetMapping("/overdue")
-    @Operation(summary = "Danh sĂ¡ch hĂ³a Ä‘Æ¡n quĂ¡ háº¡n")
+    @Operation(summary = "Danh sách hóa đơn quá hạn")
     public ResponseEntity<List<TuitionInvoiceResponse>> getOverdue() {
         return ResponseEntity.ok(tuitionService.getOverdue());
     }
 
     @GetMapping("/stats")
-    @Operation(summary = "Thá»‘ng kĂª há»c phĂ­ + doanh thu")
+    @Operation(summary = "Thống kê học phí + doanh thu")
     public ResponseEntity<TuitionStatsResponse> getStats(
             @RequestParam(required = false) String month) {
         return ResponseEntity.ok(tuitionService.getStats(month));

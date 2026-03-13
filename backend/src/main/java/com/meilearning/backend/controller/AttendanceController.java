@@ -17,20 +17,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/attendance")
 @RequiredArgsConstructor
-@Tag(name = "Attendance", description = "Quáº£n lĂ½ Ä‘iá»ƒm danh")
+@Tag(name = "Attendance", description = "Quản lý điểm danh")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
     @GetMapping
-    @Operation(summary = "Láº¥y danh sĂ¡ch Ä‘iá»ƒm danh theo buá»•i")
+    @Operation(summary = "Lấy danh sách điểm danh theo buổi")
     public ResponseEntity<List<AttendanceResponse>> getBySession(
             @RequestParam Long sessionId) {
         return ResponseEntity.ok(attendanceService.getBySession(sessionId));
     }
 
     @PostMapping("/bulk")
-    @Operation(summary = "Äiá»ƒm danh hĂ ng loáº¡t (teacher)")
+    @Operation(summary = "Điểm danh hàng loạt (teacher)")
     public ResponseEntity<List<AttendanceResponse>> bulkAttendance(
             @Valid @RequestBody BulkAttendanceRequest request) {
         return ResponseEntity.ok(attendanceService.bulkAttendance(request));
@@ -45,7 +45,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/stats")
-    @Operation(summary = "Thá»‘ng kĂª Ä‘iá»ƒm danh")
+    @Operation(summary = "Thống kê điểm danh")
     public ResponseEntity<AttendanceStatsResponse> getStats(
             @RequestParam(required = false) Long classId,
             @RequestParam(required = false) String month) {

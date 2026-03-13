@@ -18,13 +18,13 @@ import com.meilearning.backend.service.SubjectService;
 @RestController
 @RequestMapping("/api/v1/subjects")
 @RequiredArgsConstructor
-@Tag(name = "Subject", description = "Quáº£n lĂ½ mĂ´n há»c")
+@Tag(name = "Subject", description = "Quản lý môn học")
 public class SubjectController {
 
     private final SubjectService subjectService;
 
     @GetMapping
-    @Operation(summary = "Láº¥y danh sĂ¡ch mĂ´n há»c (phĂ¢n trang + filter)")
+    @Operation(summary = "Lấy danh sách môn học (phân trang + filter)")
     public ResponseEntity<PageResponse<SubjectResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
@@ -35,19 +35,19 @@ public class SubjectController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Láº¥y chi tiáº¿t mĂ´n há»c theo ID")
+    @Operation(summary = "Lấy chi tiết môn học theo ID")
     public ResponseEntity<SubjectResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(subjectService.getById(id));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o mĂ´n há»c má»›i")
+    @Operation(summary = "Tạo môn học mới")
     public ResponseEntity<SubjectResponse> create(@Valid @RequestBody CreateSubjectRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(subjectService.create(request));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cáº­p nháº­t mĂ´n há»c")
+    @Operation(summary = "Cập nhật môn học")
     public ResponseEntity<SubjectResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateSubjectRequest request) {
@@ -55,14 +55,14 @@ public class SubjectController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "XĂ³a mĂ´n há»c")
+    @Operation(summary = "Xóa môn học")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         subjectService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/stats")
-    @Operation(summary = "Láº¥y thá»‘ng kĂª mĂ´n há»c")
+    @Operation(summary = "Lấy thống kê môn học")
     public ResponseEntity<SubjectStatsResponse> getStats() {
         return ResponseEntity.ok(subjectService.getStats());
     }

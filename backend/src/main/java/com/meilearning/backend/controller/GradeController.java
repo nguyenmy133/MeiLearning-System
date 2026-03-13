@@ -16,25 +16,25 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/grades")
 @RequiredArgsConstructor
-@Tag(name = "Grade", description = "Quáº£n lĂ½ Ä‘iá»ƒm")
+@Tag(name = "Grade", description = "Quản lý điểm")
 public class GradeController {
 
     private final GradeService gradeService;
 
     @GetMapping
-    @Operation(summary = "Äiá»ƒm theo lá»›p")
+    @Operation(summary = "Điểm theo lớp")
     public ResponseEntity<List<GradeResponse>> getByClass(@RequestParam Long classId) {
         return ResponseEntity.ok(gradeService.getByClass(classId));
     }
 
     @GetMapping("/student/{studentId}")
-    @Operation(summary = "Äiá»ƒm cá»§a há»c viĂªn")
+    @Operation(summary = "Điểm của học viên")
     public ResponseEntity<List<GradeResponse>> getByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(gradeService.getByStudent(studentId));
     }
 
     @PutMapping
-    @Operation(summary = "Cáº­p nháº­t Ä‘iá»ƒm (Teacher)")
+    @Operation(summary = "Cập nhật điểm (Teacher)")
     public ResponseEntity<GradeResponse> update(@Valid @RequestBody UpdateGradeRequest request) {
         return ResponseEntity.ok(gradeService.update(request));
     }

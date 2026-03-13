@@ -17,13 +17,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/leave")
 @RequiredArgsConstructor
-@Tag(name = "Leave", description = "Quáº£n lĂ½ nghá»‰ phĂ©p")
+@Tag(name = "Leave", description = "Quản lý nghỉ phép")
 public class LeaveController {
 
     private final LeaveService leaveService;
 
     @GetMapping
-    @Operation(summary = "Danh sĂ¡ch Ä‘Æ¡n nghá»‰ phĂ©p")
+    @Operation(summary = "Danh sách đơn nghỉ phép")
     public ResponseEntity<List<LeaveRequestResponse>> getAll(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String requesterType) {
@@ -31,21 +31,21 @@ public class LeaveController {
     }
 
     @GetMapping("/requester/{requesterId}")
-    @Operation(summary = "ÄÆ¡n theo ngÆ°á»i gá»­i")
+    @Operation(summary = "Đơn theo người gửi")
     public ResponseEntity<List<LeaveRequestResponse>> getByRequester(
             @PathVariable Long requesterId) {
         return ResponseEntity.ok(leaveService.getByRequester(requesterId));
     }
 
     @PostMapping
-    @Operation(summary = "Táº¡o Ä‘Æ¡n nghá»‰ phĂ©p")
+    @Operation(summary = "Tạo đơn nghỉ phép")
     public ResponseEntity<LeaveRequestResponse> create(
             @Valid @RequestBody CreateLeaveRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(leaveService.create(request));
     }
 
     @PatchMapping("/{id}/approve")
-    @Operation(summary = "Duyá»‡t Ä‘Æ¡n")
+    @Operation(summary = "Duyệt đơn")
     public ResponseEntity<LeaveRequestResponse> approve(
             @PathVariable Long id,
             @RequestParam Long reviewerId) {
@@ -53,7 +53,7 @@ public class LeaveController {
     }
 
     @PatchMapping("/{id}/reject")
-    @Operation(summary = "Tá»« chá»‘i Ä‘Æ¡n")
+    @Operation(summary = "Từ chối đơn")
     public ResponseEntity<LeaveRequestResponse> reject(
             @PathVariable Long id,
             @RequestParam Long reviewerId,

@@ -15,13 +15,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "Schedule", description = "Quáº£n lĂ½ lá»‹ch há»c")
+@Tag(name = "Schedule", description = "Quản lý lịch học")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
     @GetMapping("/schedule")
-    @Operation(summary = "Láº¥y lá»‹ch tá»•ng (admin)")
+    @Operation(summary = "Lấy lịch tổng (admin)")
     public ResponseEntity<ScheduleResponse> getSchedule(
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "week") String view) {
@@ -29,7 +29,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/schedule/teacher/{teacherId}")
-    @Operation(summary = "Láº¥y lá»‹ch giĂ¡o viĂªn")
+    @Operation(summary = "Lấy lịch giáo viên")
     public ResponseEntity<ScheduleResponse> getTeacherSchedule(
             @PathVariable Long teacherId,
             @RequestParam(required = false) String date,
@@ -38,7 +38,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/schedule/student/{studentId}")
-    @Operation(summary = "Láº¥y lá»‹ch há»c viĂªn")
+    @Operation(summary = "Lấy lịch học viên")
     public ResponseEntity<ScheduleResponse> getStudentSchedule(
             @PathVariable Long studentId,
             @RequestParam(required = false) String date,
@@ -47,27 +47,27 @@ public class ScheduleController {
     }
 
     @GetMapping("/sessions")
-    @Operation(summary = "Láº¥y sessions cá»§a 1 class")
+    @Operation(summary = "Lấy sessions của 1 class")
     public ResponseEntity<List<ClassSessionResponse>> getClassSessions(
             @RequestParam Long classId) {
         return ResponseEntity.ok(scheduleService.getClassSessions(classId));
     }
 
     @GetMapping("/sessions/{id}")
-    @Operation(summary = "Chi tiáº¿t 1 buá»•i há»c")
+    @Operation(summary = "Chi tiết 1 buổi học")
     public ResponseEntity<ClassSessionResponse> getSession(@PathVariable Long id) {
         return ResponseEntity.ok(scheduleService.getSessionById(id));
     }
 
     @PostMapping("/sessions/generate/{classId}")
-    @Operation(summary = "Generate sessions cho 1 class tá»« schedule")
+    @Operation(summary = "Generate sessions cho 1 class từ schedule")
     public ResponseEntity<Void> generateSessions(@PathVariable Long classId) {
         scheduleService.generateSessions(classId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/sessions/generate-all")
-    @Operation(summary = "Generate sessions cho táº¥t cáº£ classes active")
+    @Operation(summary = "Generate sessions cho tất cả classes active")
     public ResponseEntity<Void> generateAllSessions() {
         scheduleService.generateAllSessions();
         return ResponseEntity.ok().build();

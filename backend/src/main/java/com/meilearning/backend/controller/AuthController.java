@@ -27,25 +27,25 @@ import com.meilearning.backend.service.AuthService;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Auth", description = "XĂ¡c thá»±c & phĂ¢n quyá»n")
+@Tag(name = "Auth", description = "Xác thực & phân quyền")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/login")
-    @Operation(summary = "ÄÄƒng nháº­p")
+    @Operation(summary = "Đăng nhập")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Láº¥y thĂ´ng tin user hiá»‡n táº¡i")
+    @Operation(summary = "Lấy thông tin user hiện tại")
     public ResponseEntity<UserResponse> me(Principal principal) {
         return ResponseEntity.ok(authService.getCurrentUser(principal.getName()));
     }
 
     @PutMapping("/change-password")
-    @Operation(summary = "Äá»•i máº­t kháº©u")
+    @Operation(summary = "Đổi mật khẩu")
     public ResponseEntity<Void> changePassword(
             Principal principal,
             @Valid @RequestBody ChangePasswordRequest request) {
