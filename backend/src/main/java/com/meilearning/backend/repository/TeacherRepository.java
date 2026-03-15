@@ -6,10 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.Teacher;
 import com.meilearning.backend.entity.enums.TeacherStatus;
-
 import java.util.List;
 import java.util.Optional;
-
 @Repository
 public interface TeacherRepository extends JpaRepository<Teacher, Long>, JpaSpecificationExecutor<Teacher> {
 
@@ -29,4 +27,5 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long>, JpaSpec
 
     @Query("SELECT t FROM Teacher t JOIN t.user u WHERE u.username = :username")
     Optional<Teacher> findByUserUsername(String username);
+
 }

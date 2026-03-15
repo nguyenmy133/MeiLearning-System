@@ -7,10 +7,8 @@ import org.springframework.stereotype.Component;
 import com.meilearning.backend.dto.request.CreateClassRequest;
 import com.meilearning.backend.dto.response.ClassResponse;
 import com.meilearning.backend.entity.ClassEntity;
-
 import java.util.Collections;
 import java.util.List;
-
 @Component
 public class ClassMapper {
 

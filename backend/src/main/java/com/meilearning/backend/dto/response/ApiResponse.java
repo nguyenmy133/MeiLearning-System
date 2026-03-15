@@ -6,11 +6,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
+
  * Generic API response wrapper.
- * Táº¥t cáº£ endpoint tráº£ vá» format: { data: T, message: String }
- * Frontend interceptor sáº½ unwrap láº¥y response.data â†’ { data, message }
+
+ * Tất cả endpoint trả về format: { data: T, message: String }
+
+ * Frontend interceptor sẽ unwrap láº¥y response.data â†’ { data, message }
+
  * Rá»“i service destructure: const { data } = await apiClient.get(...)
+
  */
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -23,37 +29,53 @@ public class ApiResponse<T> {
     // â”€â”€ Factory methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public static <T> ApiResponse<T> ok(T data) {
+
         return ApiResponse.<T>builder()
+
                 .data(data)
-                .message("ThĂ nh cĂ´ng")
+                .message("Thành công")
                 .build();
+
     }
 
     public static <T> ApiResponse<T> ok(T data, String message) {
+
         return ApiResponse.<T>builder()
+
                 .data(data)
                 .message(message)
                 .build();
+
     }
 
     public static <T> ApiResponse<T> created(T data) {
+
         return ApiResponse.<T>builder()
+
                 .data(data)
-                .message("Táº¡o má»›i thĂ nh cĂ´ng")
+                .message("Tạo má»›i thành công")
                 .build();
+
     }
 
     public static <T> ApiResponse<T> deleted() {
+
         return ApiResponse.<T>builder()
+
                 .data(null)
-                .message("XĂ³a thĂ nh cĂ´ng")
+                .message("X³a thành công")
                 .build();
+
     }
 
     public static <T> ApiResponse<T> error(String message) {
+
         return ApiResponse.<T>builder()
+
                 .data(null)
                 .message(message)
                 .build();
+
     }
+
 }

@@ -1,7 +1,11 @@
 /**
- * Entity: Xin nghá»‰ phĂ©p â€” Student hoáº·c Teacher xin nghá»‰ buá»•i há»c.
- * requester_id trá» Ä‘áº¿n users(id), requester_type xĂ¡c Ä‘á»‹nh role.
+
+ * Entity: Xin nghá»‰ ph©p â€” Student hoặc Teacher xin nghá»‰ buổi học.
+
+ * requester_id trá» Ä‘áº¿n users(id), requester_type xác định role.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -20,9 +24,7 @@ import lombok.Setter;
 import com.meilearning.backend.entity.enums.LeaveType;
 import com.meilearning.backend.entity.enums.RequestStatus;
 import com.meilearning.backend.entity.enums.RequesterType;
-
 import java.time.Instant;
-
 @Entity
 @Table(name = "leave_requests")
 @Getter
@@ -65,4 +67,5 @@ public class LeaveRequest extends BaseEntity {
 
     @Column(name = "reject_reason", length = 500)
     private String rejectReason;
+
 }

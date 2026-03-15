@@ -2,7 +2,6 @@ package com.meilearning.backend.service;
 
 import com.meilearning.backend.dto.request.CreateLeaveRequest;
 import com.meilearning.backend.dto.response.LeaveRequestResponse;
-
 import java.util.List;
 
 public interface LeaveService {

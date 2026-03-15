@@ -5,15 +5,19 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
+
  * DTO cho login request.
+
  */
+
 @Getter
 @Setter
 public class LoginRequest {
 
-    @NotBlank(message = "TĂªn Ä‘Äƒng nháº­p khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Tên đăng nhập không được để trống")
     private String username;
 
-    @NotBlank(message = "Máº­t kháº©u khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Máº­t khẩu không được để trống")
     private String password;
+
 }

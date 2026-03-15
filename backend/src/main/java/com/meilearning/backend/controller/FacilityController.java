@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.request.CreateFacilityRequest;
 import com.meilearning.backend.dto.request.UpdateFacilityRequest;
 import com.meilearning.backend.dto.response.FacilityResponse;
@@ -15,7 +14,6 @@ import com.meilearning.backend.dto.response.FacilityStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.FacilityService;
 import org.springframework.security.access.prepost.PreAuthorize;
-
 @RestController
 @RequestMapping("/api/v1/facilities")
 @RequiredArgsConstructor

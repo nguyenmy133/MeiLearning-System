@@ -7,16 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import org.springframework.security.access.prepost.PreAuthorize;
-
 import com.meilearning.backend.dto.request.CreateSubjectRequest;
 import com.meilearning.backend.dto.request.UpdateSubjectRequest;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.SubjectResponse;
 import com.meilearning.backend.dto.response.SubjectStatsResponse;
 import com.meilearning.backend.service.SubjectService;
-
 @RestController
 @RequestMapping("/api/v1/subjects")
 @RequiredArgsConstructor

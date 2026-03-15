@@ -1,12 +1,15 @@
 /**
+
  * Filter cháº·n má»—i request, kiá»ƒm tra JWT trong header Authorization.
- * Náº¿u há»£p lá»‡ â†’ set Authentication vĂ o SecurityContext.
+
+ * Nếu há»£p lá»‡ â†’ set Authentication vào SecurityContext.
+
  */
+
 package com.meilearning.backend.security;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,13 +17,11 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -31,32 +32,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
+
         String token = extractToken(request);
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
             String username = jwtTokenProvider.getUsername(token);
+
             String role = jwtTokenProvider.getRole(token);
 
-            // Táº¡o authority tá»« role (VD: ROLE_admin â†’ cho
+            // Tạo authority từ role (VD: ROLE_admin â†’ cho
+
             // @PreAuthorize("hasRole('admin')"))
+
             var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
             var authentication = new UsernamePasswordAuthenticationToken(
-                    username, null, authorities);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
+                    username, null, authorities);
+
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
         }
 
         filterChain.doFilter(request, response);
+
     }
 
-    /** Láº¥y JWT tá»« header "Authorization: Bearer xxx" */
+    /** Lấy JWT từ header "Authorization: Bearer xxx" */
+
     private String extractToken(HttpServletRequest request) {
+
         String bearer = request.getHeader("Authorization");
+
         if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
             return bearer.substring(7);
+
         }
+
         return null;
+
     }
+
 }

@@ -6,13 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.response.NotificationResponse;
 import com.meilearning.backend.service.NotificationService;
-
 import java.security.Principal;
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor

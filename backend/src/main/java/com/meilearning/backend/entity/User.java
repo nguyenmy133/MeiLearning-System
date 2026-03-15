@@ -1,6 +1,9 @@
 /**
- * Entity: NgÆ°á»i dĂ¹ng há»‡ thá»‘ng (Admin, Teacher, Student).
+
+ * Entity: NgÆ°á»i d¹ng hệ thá»‘ng (Admin, Teacher, Student).
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -13,7 +16,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 @Entity
 @Table(name = "users")
 @Getter
@@ -34,9 +36,7 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     private String password;
-
     private String phone;
-
     private String avatar;
 
     @Enumerated(EnumType.STRING)
@@ -47,11 +47,17 @@ public class User extends BaseEntity {
     private boolean active = true;
 
     /**
-     * Roles há»‡ thá»‘ng â€” khá»›p vá»›i UserRole type á»Ÿ Frontend.
+
+     * Roles hệ thá»‘ng â€” khá»›p với UserRole type á»Ÿ Frontend.
+
      */
+
     public enum Role {
+
         admin,
         teacher,
         student
+
     }
+
 }

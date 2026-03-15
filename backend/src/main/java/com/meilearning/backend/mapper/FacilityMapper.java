@@ -5,7 +5,6 @@ import com.meilearning.backend.dto.request.CreateFacilityRequest;
 import com.meilearning.backend.dto.request.UpdateFacilityRequest;
 import com.meilearning.backend.dto.response.FacilityResponse;
 import com.meilearning.backend.entity.Facility;
-
 @Component
 public class FacilityMapper {
 

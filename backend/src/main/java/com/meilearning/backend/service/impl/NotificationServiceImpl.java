@@ -3,7 +3,6 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.response.NotificationResponse;
 import com.meilearning.backend.entity.Notification;
 import com.meilearning.backend.entity.User;
@@ -11,11 +10,9 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.repository.NotificationRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.NotificationService;
-
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -23,7 +20,6 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 

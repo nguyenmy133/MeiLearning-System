@@ -8,15 +8,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.request.CreateTuitionRequest;
 import com.meilearning.backend.dto.request.PayTuitionRequest;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
 import com.meilearning.backend.service.TuitionService;
-
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/tuition")
 @RequiredArgsConstructor

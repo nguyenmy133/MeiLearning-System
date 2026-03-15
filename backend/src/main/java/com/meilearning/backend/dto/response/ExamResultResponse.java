@@ -3,7 +3,6 @@ package com.meilearning.backend.dto.response;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.Instant;
-
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class ExamResultResponse {
     private Long id;

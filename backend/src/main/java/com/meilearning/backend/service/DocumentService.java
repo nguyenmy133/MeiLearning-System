@@ -1,7 +1,6 @@
 package com.meilearning.backend.service;
 
 import com.meilearning.backend.dto.response.DocumentResponse;
-
 import java.util.List;
 
 public interface DocumentService {

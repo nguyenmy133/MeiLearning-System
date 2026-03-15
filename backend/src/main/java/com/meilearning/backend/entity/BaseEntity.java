@@ -5,7 +5,6 @@
 package com.meilearning.backend.entity;
 
 import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,10 +14,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
 import lombok.Setter;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-
 @Getter
 @Setter
 @MappedSuperclass

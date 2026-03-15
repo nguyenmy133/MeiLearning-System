@@ -4,10 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.ExamResult;
-
 import java.util.List;
 import java.util.Optional;
-
 @Repository
 public interface ExamResultRepository extends JpaRepository<ExamResult, Long> {
 
@@ -28,4 +26,5 @@ public interface ExamResultRepository extends JpaRepository<ExamResult, Long> {
 
     @Query("SELECT COALESCE(AVG(er.timeSpent), 0) FROM ExamResult er WHERE er.exam.id = :examId")
     double averageTimeSpentByExamId(Long examId);
+
 }

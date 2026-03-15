@@ -7,13 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.request.UpdateGradeRequest;
 import com.meilearning.backend.dto.response.GradeResponse;
 import com.meilearning.backend.service.GradeService;
-
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/grades")
 @RequiredArgsConstructor

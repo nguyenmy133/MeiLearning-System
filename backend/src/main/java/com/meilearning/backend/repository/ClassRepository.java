@@ -6,9 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.enums.ClassStatus;
-
 import java.util.List;
-
 @Repository
 public interface ClassRepository extends JpaRepository<ClassEntity, Long>, JpaSpecificationExecutor<ClassEntity> {
 
@@ -29,4 +27,5 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long>, JpaSp
 
     @Query("SELECT COALESCE(SUM(SIZE(c.enrollments)), 0) FROM ClassEntity c WHERE c.status = 'active'")
     long countTotalStudentsInActiveClasses();
+
 }

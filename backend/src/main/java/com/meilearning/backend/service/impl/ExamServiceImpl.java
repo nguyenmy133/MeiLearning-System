@@ -3,7 +3,6 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
@@ -15,11 +14,9 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.ExamService;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -34,6 +31,7 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     public ExamResponse create(CreateExamRequest req) {
+
         Teacher teacher = teacherRepository.findById(req.getTeacherId())
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + req.getTeacherId()));
 
@@ -49,61 +47,89 @@ public class ExamServiceImpl implements ExamService {
 
         if (req.getClassIds() != null) {
             List<ClassEntity> classes = classRepository.findAllById(req.getClassIds());
+
             exam.setClasses(classes);
+
         }
 
         exam = examRepository.save(exam);
+
         return mapper.toExamResponse(exam, 0, 0);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public ExamResponse getById(Long id) {
+
         Exam exam = findExam(id);
+
         return toResponseWithStats(exam);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ExamResponse> getAll(Long teacherId, String status) {
+
         List<Exam> exams;
+
         if (teacherId != null && status != null) {
             exams = examRepository.findByTeacherIdAndStatus(teacherId, ExamStatus.valueOf(status));
+
         } else if (teacherId != null) {
             exams = examRepository.findByTeacherId(teacherId);
+
         } else if (status != null) {
             exams = examRepository.findByStatus(ExamStatus.valueOf(status));
+
         } else {
             exams = examRepository.findAll();
+
         }
+
         return exams.stream().map(this::toResponseWithStats).toList();
+
     }
 
     @Override
     public ExamResponse publish(Long id) {
+
         Exam exam = findExam(id);
+
         if (exam.getStatus() != ExamStatus.draft) {
-            throw new BusinessException("Chá»‰ publish exam Ä‘ang á»Ÿ tráº¡ng thĂ¡i draft.");
+            throw new BusinessException("Chá»‰ publish exam Ä‘ang á»Ÿ tráº¡ng thái draft.");
+
         }
+
         exam.setStatus(ExamStatus.published);
+
         exam = examRepository.save(exam);
+
         return toResponseWithStats(exam);
+
     }
 
     @Override
     public void delete(Long id) {
+
         Exam exam = findExam(id);
+
         examRepository.delete(exam);
+
     }
 
     @Override
     public ExamResultResponse submit(Long examId, SubmitExamResultRequest req) {
+
         Exam exam = findExam(examId);
+
         Student student = studentRepository.findById(req.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found: " + req.getStudentId()));
 
         if (resultRepository.existsByExamIdAndStudentId(examId, req.getStudentId())) {
-            throw new BusinessException("Há»c viĂªn Ä‘Ă£ ná»™p bĂ i cho exam nĂ y.");
+            throw new BusinessException("Học viên đã nộp bài cho exam này.");
+
         }
 
         boolean passed = req.getScore().compareTo(BigDecimal.valueOf(50)) >= 0;
@@ -119,32 +145,46 @@ public class ExamServiceImpl implements ExamService {
                 .build();
 
         result = resultRepository.save(result);
+
         return mapper.toResultResponse(result);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ExamResultResponse> getResults(Long examId) {
+
         return resultRepository.findByExamId(examId).stream()
                 .map(mapper::toResultResponse).toList();
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public ExamResultResponse getStudentResult(Long examId, Long studentId) {
+
         ExamResult result = resultRepository.findByExamIdAndStudentId(examId, studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("ChÆ°a cĂ³ káº¿t quáº£ cho exam " + examId));
+                .orElseThrow(() -> new ResourceNotFoundException("ChÆ°a có kết quáº£ cho exam " + examId));
+
         return mapper.toResultResponse(result);
+
     }
 
     private Exam findExam(Long id) {
+
         return examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + id));
+
     }
 
     private ExamResponse toResponseWithStats(Exam exam) {
+
         int count = (int) resultRepository.countByExamId(exam.getId());
+
         double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
+
         return mapper.toExamResponse(exam, count, avg);
+
     }
+
 }

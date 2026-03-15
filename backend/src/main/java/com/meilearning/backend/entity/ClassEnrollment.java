@@ -1,7 +1,11 @@
 /**
- * Entity: ÄÄƒng kĂ½ lá»›p â€” Join table giá»¯a Student vĂ  Class.
- * Unique constraint: má»—i há»c viĂªn chá»‰ Ä‘Äƒng kĂ½ 1 lá»›p 1 láº§n.
+
+ * Entity: ÄÄƒng k½ lớp â€” Join table giữa Student và Class.
+
+ * Unique constraint: má»—i học viên chỉ đăng k½ 1 lớp 1 lần.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -16,13 +20,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.time.LocalDate;
-
 @Entity
 @Table(name = "class_enrollments", uniqueConstraints = {
         @UniqueConstraint(name = "uk_enrollment_student_class", columnNames = { "student_id", "class_id" })
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,4 +43,5 @@ public class ClassEnrollment extends BaseEntity {
 
     @Column(name = "enrolled_at")
     private LocalDate enrolledAt;
+
 }

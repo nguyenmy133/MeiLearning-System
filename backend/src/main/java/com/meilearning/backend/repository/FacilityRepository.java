@@ -5,9 +5,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.Facility;
 import com.meilearning.backend.entity.enums.FacilityStatus;
-
 import java.util.List;
-
 @Repository
 public interface FacilityRepository extends JpaRepository<Facility, Long>, JpaSpecificationExecutor<Facility> {
 
@@ -18,4 +16,5 @@ public interface FacilityRepository extends JpaRepository<Facility, Long>, JpaSp
     long countByStatus(FacilityStatus status);
 
     boolean existsByName(String name);
+
 }

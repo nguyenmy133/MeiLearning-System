@@ -5,9 +5,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.Exam;
 import com.meilearning.backend.entity.enums.ExamStatus;
-
 import java.util.List;
-
 @Repository
 public interface ExamRepository extends JpaRepository<Exam, Long>, JpaSpecificationExecutor<Exam> {
 
@@ -20,4 +18,5 @@ public interface ExamRepository extends JpaRepository<Exam, Long>, JpaSpecificat
     long countByStatus(ExamStatus status);
 
     long countByTeacherId(Long teacherId);
+
 }

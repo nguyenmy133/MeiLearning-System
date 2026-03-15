@@ -1,63 +1,80 @@
 /**
+
  * JWT utility: táº¡o token, parse token, validate token.
+
  */
+
 package com.meilearning.backend.security;
 
 import java.util.Date;
-
 import javax.crypto.SecretKey;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Component
 public class JwtTokenProvider {
 
     private final SecretKey signingKey;
     private final long expirationMs;
-
     private static final String DEV_SECRET_FALLBACK =
+
             "dGhpcyBpcyBhIHNhbXBsZSBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5IQ==";
 
     public JwtTokenProvider(
+
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms:86400000}") long expirationMs,
             @Value("${spring.profiles.active:dev}") String activeProfile) {
 
         // ── Security validation ──────────────────────────────────────
+
         if (DEV_SECRET_FALLBACK.equals(secret)) {
             if (!"dev".equalsIgnoreCase(activeProfile)) {
                 log.error("⚠️  FATAL: Using default JWT secret in '{}' profile! "
+
                         + "Set JWT_SECRET environment variable for production.", activeProfile);
+
                 throw new IllegalStateException(
+
                         "JWT_SECRET must be set for non-dev profiles. "
+
                         + "Generate one with: openssl rand -base64 64");
+
             }
+
             log.warn("⚠️  Using default JWT secret — ONLY safe for local development!");
+
         }
 
         byte[] keyBytes = Decoders.BASE64.decode(secret);
+
         if (keyBytes.length < 32) { // 256-bit minimum for HS256
             throw new IllegalStateException(
+
                     "JWT secret too short (" + keyBytes.length * 8 + " bits). "
+
                     + "Minimum is 256 bits (32 bytes). Generate with: openssl rand -base64 64");
+
         }
 
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+
         this.expirationMs = expirationMs;
+
     }
 
-    /** Táº¡o JWT access token */
+    /** Tạo JWT access token */
+
     public String generateToken(Long userId, String username, String role) {
+
         Date now = new Date();
+
         Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
@@ -68,39 +85,59 @@ public class JwtTokenProvider {
                 .expiration(expiry)
                 .signWith(signingKey)
                 .compact();
+
     }
 
-    /** Láº¥y username tá»« token */
+    /** Lấy username từ token */
+
     public String getUsername(String token) {
+
         return parseClaims(token).getSubject();
+
     }
 
-    /** Láº¥y role tá»« token */
+    /** Lấy role từ token */
+
     public String getRole(String token) {
+
         return parseClaims(token).get("role", String.class);
+
     }
 
-    /** Láº¥y userId tá»« token */
+    /** Lấy userId từ token */
+
     public Long getUserId(String token) {
+
         return parseClaims(token).get("userId", Long.class);
+
     }
 
-    /** Kiá»ƒm tra token há»£p lá»‡ */
+    /** Kiểm tra token há»£p lá»‡ */
+
     public boolean validateToken(String token) {
+
         try {
             parseClaims(token);
+
             return true;
+
         } catch (JwtException | IllegalArgumentException e) {
             log.warn("Invalid JWT token: {}", e.getMessage());
+
             return false;
+
         }
+
     }
 
     private Claims parseClaims(String token) {
+
         return Jwts.parser()
                 .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+
     }
+
 }

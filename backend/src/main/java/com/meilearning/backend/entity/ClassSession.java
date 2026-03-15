@@ -1,6 +1,9 @@
 /**
- * Entity: Buá»•i há»c cá»¥ thá»ƒ â€” Ä‘Æ°á»£c generate tá»« Class.schedule hoáº·c táº¡o thá»§ cĂ´ng (bĂ¹/thĂªm).
+
+ * Entity: Buá»•i học cá»¥ thể â€” được generate từ Class.schedule hoặc táº¡o thủ công (b¹/thªm).
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -20,18 +23,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.SessionStatus;
 import com.meilearning.backend.entity.enums.SessionType;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Table(name = "class_sessions", indexes = {
         @Index(name = "idx_sessions_class", columnList = "class_id"),
         @Index(name = "idx_sessions_date", columnList = "date"),
         @Index(name = "idx_sessions_class_date", columnList = "class_id, date")
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -78,4 +80,5 @@ public class ClassSession extends BaseEntity {
     @OneToMany(mappedBy = "session")
     @Builder.Default
     private List<RescheduleRequest> rescheduleRequests = new ArrayList<>();
+
 }

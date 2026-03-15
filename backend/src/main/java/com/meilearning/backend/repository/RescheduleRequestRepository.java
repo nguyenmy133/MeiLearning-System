@@ -5,11 +5,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.RescheduleRequest;
 import com.meilearning.backend.entity.enums.RequestStatus;
-
 import java.util.List;
-
 @Repository
 public interface RescheduleRequestRepository
+
         extends JpaRepository<RescheduleRequest, Long>, JpaSpecificationExecutor<RescheduleRequest> {
 
     List<RescheduleRequest> findByTeacherId(Long teacherId);
@@ -21,4 +20,5 @@ public interface RescheduleRequestRepository
     List<RescheduleRequest> findByTeacherIdAndStatus(Long teacherId, RequestStatus status);
 
     long countByStatus(RequestStatus status);
+
 }

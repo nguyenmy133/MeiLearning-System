@@ -9,8 +9,11 @@ import com.meilearning.backend.entity.User;
 import com.meilearning.backend.repository.UserRepository;
 
 /**
- * Táº¡o tĂ i khoáº£n Admin máº·c Ä‘á»‹nh khi DB trá»‘ng.
+
+ * Tạo tài khoản Admin mặc định khi DB trống.
+
  */
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -21,6 +24,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+
         if (userRepository.count() == 0) {
             User admin = User.builder()
                     .name("Admin")
@@ -32,7 +36,11 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             userRepository.save(admin);
-            log.info("âœ… Created default admin account: admin / admin123");
+
+            log.info("✅ Created default admin account: admin / admin123");
+
         }
+
     }
+
 }

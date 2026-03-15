@@ -4,7 +4,6 @@ import com.meilearning.backend.service.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,7 +59,6 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
     @Override
     public void delete(String filePath) {
         if (filePath == null || filePath.isBlank()) return;
-
         try {
             // Bỏ leading slash
             String cleanPath = filePath.startsWith("/") ? filePath.substring(1) : filePath;

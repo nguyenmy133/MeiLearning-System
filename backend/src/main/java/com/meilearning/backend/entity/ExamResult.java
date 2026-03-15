@@ -1,7 +1,11 @@
 /**
- * Entity: Káº¿t quáº£ thi â€” má»—i student ná»™p bĂ i 1 láº§n per exam.
+
+ * Entity: Kết quả thi â€” má»—i student nộp bài 1 lần per exam.
+
  * Unique constraint: (exam_id, student_id).
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -16,14 +20,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.math.BigDecimal;
 import java.time.Instant;
-
 @Entity
 @Table(name = "exam_results", uniqueConstraints = {
         @UniqueConstraint(name = "uk_exam_result_exam_student", columnNames = { "exam_id", "student_id" })
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -39,7 +42,8 @@ public class ExamResult extends BaseEntity {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    /** Äiá»ƒm 0-100 */
+    /** Điểm 0-100 */
+
     @Column(precision = 5, scale = 2)
     private BigDecimal score;
 
@@ -47,7 +51,8 @@ public class ExamResult extends BaseEntity {
     @Builder.Default
     private Integer correctAnswers = 0;
 
-    /** Thá»i gian lĂ m bĂ i (phĂºt) */
+    /** Thá»i gian làm bài (phºt) */
+
     @Column(name = "time_spent")
     private Integer timeSpent;
 
@@ -56,4 +61,5 @@ public class ExamResult extends BaseEntity {
 
     @Column(name = "submitted_at")
     private Instant submittedAt;
+
 }

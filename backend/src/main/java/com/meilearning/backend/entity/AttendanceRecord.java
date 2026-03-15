@@ -1,7 +1,11 @@
 /**
- * Entity: Äiá»ƒm danh â€” record Ä‘iá»ƒm danh tá»«ng há»c viĂªn trong tá»«ng buá»•i.
- * Unique constraint: má»—i student chá»‰ Ä‘iá»ƒm danh 1 láº§n/buá»•i.
+
+ * Entity: Điểm danh â€” record điểm danh từng học viên trong từng buổi.
+
+ * Unique constraint: má»—i student chỉ điểm danh 1 lần/buổi.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -20,13 +24,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.AttendanceStatus;
 import com.meilearning.backend.entity.enums.CheckInMethod;
-
 import java.time.LocalTime;
-
 @Entity
 @Table(name = "attendance_records", uniqueConstraints = {
         @UniqueConstraint(name = "uk_attendance_session_student", columnNames = { "session_id", "student_id" })
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -55,4 +58,5 @@ public class AttendanceRecord extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String note;
+
 }

@@ -2,7 +2,6 @@ package com.meilearning.backend.dto.response;
 
 import lombok.*;
 import java.time.Instant;
-
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class TuitionInvoiceResponse {
     private Long id;
@@ -28,7 +27,6 @@ public class TuitionInvoiceResponse {
     private String paidDate;
     private String paymentMethod;
     private String paymentProofUrl;
-
     private Instant createdAt;
     private Instant updatedAt;
 }

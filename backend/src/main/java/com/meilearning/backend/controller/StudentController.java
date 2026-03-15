@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.request.CreateStudentRequest;
 import com.meilearning.backend.dto.request.DropStudentRequest;
 import com.meilearning.backend.dto.request.UpdateStudentRequest;
@@ -16,7 +15,6 @@ import com.meilearning.backend.dto.response.StudentResponse;
 import com.meilearning.backend.dto.response.StudentStatsResponse;
 import com.meilearning.backend.service.StudentService;
 import org.springframework.security.access.prepost.PreAuthorize;
-
 @RestController
 @RequestMapping("/api/v1/students")
 @RequiredArgsConstructor

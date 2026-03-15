@@ -6,16 +6,20 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * DTO cho Ä‘á»•i máº­t kháº©u.
+
+ * DTO cho Ä‘á»•i máº­t khẩu.
+
  */
+
 @Getter
 @Setter
 public class ChangePasswordRequest {
 
-    @NotBlank(message = "Máº­t kháº©u hiá»‡n táº¡i khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Máº­t khẩu hiện tại không được để trống")
     private String currentPassword;
 
-    @NotBlank(message = "Máº­t kháº©u má»›i khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Size(min = 6, message = "Máº­t kháº©u má»›i pháº£i cĂ³ Ă­t nháº¥t 6 kĂ½ tá»±")
+    @NotBlank(message = "Máº­t khẩu má»›i không được để trống")
+    @Size(min = 6, message = "Máº­t khẩu má»›i pháº£i có ­t nháº¥t 6 k½ tá»±")
     private String newPassword;
+
 }

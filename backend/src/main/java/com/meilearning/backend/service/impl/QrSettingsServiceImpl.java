@@ -3,13 +3,11 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.request.UpdateQrSettingsRequest;
 import com.meilearning.backend.dto.response.QrSettingsResponse;
 import com.meilearning.backend.entity.QrSettings;
 import com.meilearning.backend.repository.QrSettingsRepository;
 import com.meilearning.backend.service.QrSettingsService;
-
 @Service
 @RequiredArgsConstructor
 @Transactional

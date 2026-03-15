@@ -7,30 +7,29 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateSubjectRequest {
 
-    @NotBlank(message = "TĂªn mĂ´n há»c khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Tên môn học không được để trống")
     private String name;
 
-    @NotBlank(message = "MĂ£ mĂ´n há»c khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Mã môn học không được để trống")
     private String code;
-
     private String description;
 
-    @NotBlank(message = "Danh má»¥c khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Danh má»¥c không được để trống")
     private String category;
 
-    @NotNull(message = "GiĂ¡ má»—i buá»•i khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Positive(message = "GiĂ¡ má»—i buá»•i pháº£i lá»›n hÆ¡n 0")
+    @NotNull(message = "Giá má»—i buổi không được để trống")
+    @Positive(message = "Giá má»—i buổi pháº£i lá»›n hÆ¡n 0")
     private Long basePricePerSession;
 
-    /** Danh sĂ¡ch tĂªn cÆ¡ sá»Ÿ (VD: ["CÆ¡ sá»Ÿ Quáº­n 1", "CÆ¡ sá»Ÿ Thá»§ Äá»©c"]) */
+    /** Danh sách tªn cơ sở (VD: ["CÆ¡ sở Quáº­n 1", "CÆ¡ sở Thá»§ Äá»©c"]) */
+
     private List<String> facilities;
+
 }

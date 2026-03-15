@@ -1,6 +1,9 @@
 /**
- * Entity: BĂ i kiá»ƒm tra â€” Teacher táº¡o, Ă¡p dá»¥ng cho nhiá»u lá»›p (M:N qua exam_classes).
+
+ * Entity: Bài kiá»ƒm tra â€” Teacher táº¡o, áp dụng cho nhiá»u lớp (M:N qua exam_classes).
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -20,11 +23,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.ExamStatus;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Table(name = "exams")
 @Getter
@@ -44,7 +45,8 @@ public class Exam extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String subject;
 
-    /** Thá»i gian lĂ m bĂ i (phĂºt) */
+    /** Thá»i gian làm bài (phºt) */
+
     @Column(nullable = false)
     private Integer duration;
 
@@ -73,4 +75,5 @@ public class Exam extends BaseEntity {
     @OneToMany(mappedBy = "exam")
     @Builder.Default
     private List<ExamResult> results = new ArrayList<>();
+
 }

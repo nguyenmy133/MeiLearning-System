@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * - Max 10 requests / 60 giây / IP cho /api/v1/auth/**
  * - Trả 429 Too Many Requests nếu vượt limit
- * 
+ *
  * Production nên dùng Redis-based hoặc API Gateway rate limiting.
  */
 @Component
@@ -27,7 +26,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int MAX_REQUESTS = 10;
     private static final long WINDOW_MS = 60_000; // 60 giây
-
     private final Map<String, RateLimitEntry> requestCounts = new ConcurrentHashMap<>();
 
     @Override

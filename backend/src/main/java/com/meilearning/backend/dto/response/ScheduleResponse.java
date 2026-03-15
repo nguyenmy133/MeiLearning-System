@@ -2,7 +2,6 @@ package com.meilearning.backend.dto.response;
 
 import lombok.*;
 import java.util.List;
-
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class ScheduleResponse {
     private String startDate;

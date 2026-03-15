@@ -5,19 +5,18 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateFacilityRequest {
 
-    @NotBlank(message = "TĂªn cÆ¡ sá»Ÿ khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Tên cơ sở không được để trống")
     private String name;
 
-    @NotBlank(message = "Äá»‹a chá»‰ khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Äá»‹a chỉ không được để trống")
     private String address;
-
     private String phone;
     private String manager;
+
 }

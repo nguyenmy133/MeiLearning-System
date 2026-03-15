@@ -1,6 +1,9 @@
 /**
- * Entity: YĂªu cáº§u dá»i lá»‹ch / há»§y buá»•i â€” Teacher gá»­i, Admin duyá»‡t.
+
+ * Entity: Yªu cáº§u dá»i lá»‹ch / há»§y buổi â€” Teacher gá»­i, Admin duyệt.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -18,10 +21,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.RequestStatus;
 import com.meilearning.backend.entity.enums.RescheduleType;
-
 import java.time.Instant;
 import java.time.LocalDate;
-
 @Entity
 @Table(name = "reschedule_requests")
 @Getter
@@ -75,4 +76,5 @@ public class RescheduleRequest extends BaseEntity {
 
     @Column(name = "reject_reason", length = 500)
     private String rejectReason;
+
 }

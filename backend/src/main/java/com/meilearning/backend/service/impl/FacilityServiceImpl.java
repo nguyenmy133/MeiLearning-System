@@ -8,7 +8,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.request.CreateFacilityRequest;
 import com.meilearning.backend.dto.request.UpdateFacilityRequest;
 import com.meilearning.backend.dto.response.FacilityResponse;
@@ -24,7 +23,6 @@ import com.meilearning.backend.mapper.FacilityMapper;
 import com.meilearning.backend.repository.FacilityRepository;
 import com.meilearning.backend.repository.RoomRepository;
 import com.meilearning.backend.service.FacilityService;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,79 +35,109 @@ public class FacilityServiceImpl implements FacilityService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<FacilityResponse> getAll(String search, String status, int page, int limit) {
+
         if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+
         Specification<Facility> spec = SpecHelper.empty();
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";
+
             spec = spec.and((root, query, cb) ->
+
                     cb.or(
+
                             cb.like(cb.lower(root.get("name")), keyword),
                             cb.like(cb.lower(root.get("address")), keyword)
+
                     ));
+
         }
 
         if (status != null && !status.isBlank() && !"all".equals(status)) {
             FacilityStatus facilityStatus = FacilityStatus.valueOf(status);
+
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), facilityStatus));
+
         }
 
         Page<Facility> result = facilityRepository.findAll(spec, pageable);
 
         return PageResponse.<FacilityResponse>builder()
+
                 .data(result.getContent().stream().map(facilityMapper::toResponse).toList())
                 .total(result.getTotalElements())
                 .page(page)
                 .limit(limit)
                 .totalPages(result.getTotalPages())
                 .build();
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public FacilityResponse getById(Long id) {
+
         Facility facility = facilityRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y cÆ¡ sá»Ÿ vá»›i id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cơ sở với id: " + id));
+
         return facilityMapper.toResponse(facility);
+
     }
 
     @Override
     public FacilityResponse create(CreateFacilityRequest request) {
+
         if (facilityRepository.existsByName(request.getName())) {
-            throw new DuplicateResourceException("TĂªn cÆ¡ sá»Ÿ '" + request.getName() + "' Ä‘Ă£ tá»“n táº¡i");
+            throw new DuplicateResourceException("Tên cơ sở '" + request.getName() + "' đã tồn tại");
+
         }
+
         Facility facility = facilityMapper.toEntity(request);
+
         facility = facilityRepository.save(facility);
+
         return facilityMapper.toResponse(facility);
+
     }
 
     @Override
     public FacilityResponse update(Long id, UpdateFacilityRequest request) {
+
         Facility facility = facilityRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y cÆ¡ sá»Ÿ vá»›i id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cơ sở với id: " + id));
 
         if (request.getName() != null && !request.getName().equals(facility.getName())) {
             if (facilityRepository.existsByName(request.getName())) {
-                throw new DuplicateResourceException("TĂªn cÆ¡ sá»Ÿ '" + request.getName() + "' Ä‘Ă£ tá»“n táº¡i");
+                throw new DuplicateResourceException("Tên cơ sở '" + request.getName() + "' đã tồn tại");
+
             }
+
         }
 
         facilityMapper.updateEntity(request, facility);
+
         facility = facilityRepository.save(facility);
+
         return facilityMapper.toResponse(facility);
+
     }
 
     @Override
     public void delete(Long id) {
+
         Facility facility = facilityRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y cÆ¡ sá»Ÿ vá»›i id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cơ sở với id: " + id));
+
         facilityRepository.delete(facility);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public FacilityStatsResponse getStats() {
+
         return FacilityStatsResponse.builder()
                 .totalFacilities(facilityRepository.count())
                 .totalRooms(roomRepository.count())
@@ -117,5 +145,7 @@ public class FacilityServiceImpl implements FacilityService {
                 .availableRooms(roomRepository.countByStatus(RoomStatus.available))
                 .activeFacilities(facilityRepository.countByStatus(FacilityStatus.active))
                 .build();
+
     }
+
 }

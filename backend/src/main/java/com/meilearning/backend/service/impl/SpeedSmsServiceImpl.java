@@ -7,7 +7,6 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
@@ -38,7 +37,6 @@ public class SpeedSmsServiceImpl implements SmsService {
 
     @Value("${app.sms.max-per-day:3}")
     private int maxPerDay;
-
     private final RestTemplate restTemplate = new RestTemplate();
 
     // Rate limit tracking: phone → { date → count }

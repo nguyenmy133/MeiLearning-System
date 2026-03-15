@@ -4,10 +4,8 @@ import org.springframework.stereotype.Component;
 import com.meilearning.backend.dto.response.StudentResponse;
 import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.Student;
-
 import java.util.Collections;
 import java.util.List;
-
 @Component
 public class StudentMapper {
 

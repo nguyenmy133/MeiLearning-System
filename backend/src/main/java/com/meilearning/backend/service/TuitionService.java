@@ -4,38 +4,48 @@ import com.meilearning.backend.dto.request.CreateTuitionRequest;
 import com.meilearning.backend.dto.request.PayTuitionRequest;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
-
 import java.util.List;
 
 public interface TuitionService {
 
-    /** Táº¡o hĂ³a Ä‘Æ¡n thá»§ cĂ´ng (admin) */
+    /** Tạo h³a đơn thủ công (admin) */
+
     TuitionInvoiceResponse create(CreateTuitionRequest request);
 
-    /** Tá»± Ä‘á»™ng generate hĂ³a Ä‘Æ¡n cho thĂ¡ng hiá»‡n táº¡i */
+    /** Tự động generate h³a đơn cho tháng hiện tại */
+
     List<TuitionInvoiceResponse> generateMonthlyInvoices(String month);
 
-    /** Láº¥y táº¥t cáº£ hĂ³a Ä‘Æ¡n (admin) - filter theo status, month */
+    /** Lấy tất cả h³a đơn (admin) - filter theo status, month */
+
     List<TuitionInvoiceResponse> getAll(String status, String month, Long studentId);
 
-    /** Láº¥y hĂ³a Ä‘Æ¡n theo student */
+    /** Lấy h³a đơn theo student */
+
     List<TuitionInvoiceResponse> getByStudent(Long studentId);
 
-    /** Láº¥y chi tiáº¿t 1 hĂ³a Ä‘Æ¡n */
+    /** Lấy chi tiết 1 h³a đơn */
+
     TuitionInvoiceResponse getById(Long id);
 
-    /** Student ná»™p chá»©ng tá»« thanh toĂ¡n */
+    /** Student nộp chá»©ng từ thanh toán */
+
     TuitionInvoiceResponse pay(Long id, PayTuitionRequest request);
 
-    /** Admin xĂ¡c nháº­n thanh toĂ¡n */
+    /** Admin xác nháº­n thanh toán */
+
     TuitionInvoiceResponse confirm(Long id);
 
-    /** Admin tá»« chá»‘i thanh toĂ¡n (Ä‘Æ°a láº¡i pending) */
+    /** Admin từ chối thanh toán (Ä‘Æ°a lại pending) */
+
     TuitionInvoiceResponse reject(Long id);
 
-    /** Láº¥y danh sĂ¡ch quĂ¡ háº¡n */
+    /** Lấy danh sách quá háº¡n */
+
     List<TuitionInvoiceResponse> getOverdue();
 
-    /** Thá»‘ng kĂª */
+    /** Thống kª */
+
     TuitionStatsResponse getStats(String month);
+
 }

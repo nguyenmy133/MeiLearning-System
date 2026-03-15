@@ -3,7 +3,6 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.response.DocumentResponse;
 import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.Document;
@@ -13,9 +12,7 @@ import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.DocumentRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.DocumentService;
-
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional

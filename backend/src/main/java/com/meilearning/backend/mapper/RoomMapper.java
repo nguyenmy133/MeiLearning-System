@@ -6,7 +6,6 @@ import com.meilearning.backend.dto.request.UpdateRoomRequest;
 import com.meilearning.backend.dto.response.RoomResponse;
 import com.meilearning.backend.entity.Facility;
 import com.meilearning.backend.entity.Room;
-
 @Component
 public class RoomMapper {
 

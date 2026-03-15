@@ -6,11 +6,10 @@ import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.LeaveRequest;
 import com.meilearning.backend.entity.enums.RequestStatus;
 import com.meilearning.backend.entity.enums.RequesterType;
-
 import java.util.List;
-
 @Repository
 public interface LeaveRequestRepository
+
         extends JpaRepository<LeaveRequest, Long>, JpaSpecificationExecutor<LeaveRequest> {
 
     List<LeaveRequest> findByRequesterId(Long requesterId);
@@ -26,4 +25,5 @@ public interface LeaveRequestRepository
     long countByStatus(RequestStatus status);
 
     long countByRequesterTypeAndStatus(RequesterType requesterType, RequestStatus status);
+
 }

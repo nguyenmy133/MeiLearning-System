@@ -2,7 +2,6 @@ package com.meilearning.backend.service;
 
 import com.meilearning.backend.dto.request.CreateRescheduleRequest;
 import com.meilearning.backend.dto.response.RescheduleRequestResponse;
-
 import java.util.List;
 
 public interface RescheduleService {

@@ -7,10 +7,8 @@ import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.entity.enums.StudentStatus;
 import com.meilearning.backend.entity.enums.TuitionStatus;
-
 import java.util.List;
 import java.util.Optional;
-
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpecificationExecutor<Student> {
 
@@ -37,4 +35,5 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
 
     @Query("SELECT COUNT(s) FROM Student s WHERE s.status = :status AND s.tuitionStatus = :tuitionStatus")
     long countByStatusAndTuitionStatus(StudentStatus status, TuitionStatus tuitionStatus);
+
 }

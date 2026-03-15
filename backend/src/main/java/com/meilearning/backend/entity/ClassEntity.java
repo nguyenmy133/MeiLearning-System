@@ -1,10 +1,17 @@
 /**
- * Entity: Lá»›p há»c.
- * schedule Ä‘Æ°á»£c lÆ°u dáº¡ng JSON column (SessionSlot[]).
+
+ * Entity: Lớp học.
+
+ * schedule được lÆ°u dáº¡ng JSON column (SessionSlot[]).
+
  *
- * LÆ°u Ă½: TĂªn class Java lĂ  ClassEntity vĂ¬ "Class" lĂ  reserved word trong Java.
- * Table name váº«n lĂ  "classes".
+
+ * LÆ°u ½: Tên class Java là ClassEntity v¬ "Class" là reserved word trong Java.
+
+ * Table name váº«n là "classes".
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -24,11 +31,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.ClassStatus;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Table(name = "classes", indexes = {
         @Index(name = "idx_classes_subject", columnList = "subject_id"),
@@ -36,6 +41,7 @@ import java.util.List;
         @Index(name = "idx_classes_room", columnList = "room_id"),
         @Index(name = "idx_classes_status", columnList = "status")
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -66,9 +72,12 @@ public class ClassEntity extends BaseEntity {
     private Long pricePerSession;
 
     /**
-     * Lá»‹ch há»c dáº¡ng JSON: [{"weekday":1,"startTime":"18:00","endTime":"20:00"},
+
+     * Lá»‹ch học dáº¡ng JSON: [{"weekday":1,"startTime":"18:00","endTime":"20:00"},
      * ...]
+
      */
+
     @Column(columnDefinition = "JSON")
     private String schedule;
 
@@ -111,4 +120,5 @@ public class ClassEntity extends BaseEntity {
     @OneToMany(mappedBy = "classEntity")
     @Builder.Default
     private List<RescheduleRequest> rescheduleRequests = new ArrayList<>();
+
 }

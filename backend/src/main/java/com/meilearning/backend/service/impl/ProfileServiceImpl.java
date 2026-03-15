@@ -3,7 +3,6 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.request.UpdateProfileRequest;
 import com.meilearning.backend.dto.response.ProfileResponse;
 import com.meilearning.backend.entity.Student;
@@ -15,7 +14,6 @@ import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.ProfileService;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -38,7 +36,6 @@ public class ProfileServiceImpl implements ProfileService {
 
         if (request.getName() != null) user.setName(request.getName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
-
         // Email — check unique
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {

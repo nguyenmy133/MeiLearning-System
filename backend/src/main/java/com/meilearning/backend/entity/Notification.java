@@ -18,7 +18,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 @Entity
 @Table(name = "notifications", indexes = {
         @Index(name = "idx_notifications_user", columnList = "user_id, is_read")

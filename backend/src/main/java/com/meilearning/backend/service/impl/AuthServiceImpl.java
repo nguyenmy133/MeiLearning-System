@@ -2,7 +2,6 @@ package com.meilearning.backend.service.impl;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import lombok.RequiredArgsConstructor;
 import com.meilearning.backend.dto.request.ChangePasswordRequest;
 import com.meilearning.backend.dto.request.LoginRequest;
@@ -14,7 +13,6 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.security.JwtTokenProvider;
 import com.meilearning.backend.service.AuthService;
-
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -25,18 +23,22 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
+
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BusinessException("TĂªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u khĂ´ng Ä‘Ăºng"));
+                .orElseThrow(() -> new BusinessException("Tên đăng nhập hoặc máº­t khẩu không Ä‘ºng"));
 
         if (!user.isActive()) {
-            throw new BusinessException("TĂ i khoáº£n Ä‘Ă£ bá»‹ khĂ³a. LiĂªn há»‡ quáº£n trá»‹ viĂªn.");
+            throw new BusinessException("Tài khoản đã bị khóa. Liên hệ quản trị viên.");
+
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("TĂªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u khĂ´ng Ä‘Ăºng");
+            throw new BusinessException("Tên đăng nhập hoặc máº­t khẩu không Ä‘ºng");
+
         }
 
         String token = jwtTokenProvider.generateToken(
+
                 user.getId(), user.getUsername(), user.getRole().name());
 
         UserResponse userResponse = UserResponse.builder()
@@ -50,25 +52,31 @@ public class AuthServiceImpl implements AuthService {
                 .user(userResponse)
                 .accessToken(token)
                 .build();
+
     }
 
     @Override
     public void changePassword(String username, ChangePasswordRequest request) {
+
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngÆ°á»i d¹ng: " + username));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new BusinessException("Máº­t kháº©u hiá»‡n táº¡i khĂ´ng Ä‘Ăºng");
+            throw new BusinessException("Máº­t khẩu hiện tại không Ä‘ºng");
+
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
         userRepository.save(user);
+
     }
 
     @Override
     public UserResponse getCurrentUser(String username) {
+
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngÆ°á»i d¹ng: " + username));
 
         return UserResponse.builder()
                 .id(user.getId())
@@ -76,5 +84,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .build();
+
     }
+
 }

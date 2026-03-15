@@ -3,7 +3,6 @@ package com.meilearning.backend.mapper;
 import org.springframework.stereotype.Component;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.entity.TuitionInvoice;
-
 @Component
 public class TuitionMapper {
 

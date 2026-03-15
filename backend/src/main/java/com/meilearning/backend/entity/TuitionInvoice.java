@@ -1,8 +1,13 @@
 /**
- * Entity: HĂ³a Ä‘Æ¡n há»c phĂ­.
- * price_per_session lÆ°u snapshot giĂ¡ táº¡i thá»i Ä‘iá»ƒm táº¡o hĂ³a Ä‘Æ¡n
- * Ä‘á»ƒ khĂ´ng bá»‹ áº£nh hÆ°á»Ÿng khi giĂ¡ lá»›p thay Ä‘á»•i.
+
+ * Entity: H³a đơn học ph­.
+
+ * price_per_session lÆ°u snapshot giá tại thá»i điểm táº¡o h³a đơn
+
+ * để không bị ảnh hưởng khi giá lớp thay đổi.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -20,15 +25,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.InvoiceStatus;
-
 import java.time.LocalDate;
-
 @Entity
 @Table(name = "tuition_invoices", indexes = {
         @Index(name = "idx_tuition_student", columnList = "student_id"),
         @Index(name = "idx_tuition_month", columnList = "month"),
         @Index(name = "idx_tuition_status", columnList = "status")
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -44,7 +48,8 @@ public class TuitionInvoice extends BaseEntity {
     @JoinColumn(name = "class_id", nullable = false)
     private ClassEntity classEntity;
 
-    /** ThĂ¡ng hĂ³a Ä‘Æ¡n: "MM/YYYY" */
+    /** Tháng h³a đơn: "MM/YYYY" */
+
     @Column(nullable = false, length = 7)
     private String month;
 
@@ -52,7 +57,8 @@ public class TuitionInvoice extends BaseEntity {
     @Builder.Default
     private Integer billableSessions = 0;
 
-    /** Snapshot giĂ¡/buá»•i táº¡i thá»i Ä‘iá»ƒm táº¡o hĂ³a Ä‘Æ¡n */
+    /** Snapshot giá/buổi tại thá»i điểm táº¡o h³a đơn */
+
     @Column(name = "price_per_session", nullable = false)
     private Long pricePerSession;
 
@@ -82,4 +88,5 @@ public class TuitionInvoice extends BaseEntity {
 
     @Column(name = "payment_proof_url", length = 500)
     private String paymentProofUrl;
+
 }

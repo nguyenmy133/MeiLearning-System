@@ -1,6 +1,9 @@
 /**
- * Entity: PhĂ²ng há»c â€” thuá»™c má»™t Facility.
+
+ * Entity: Ph²ng học â€” thuá»™c má»™t Facility.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -19,14 +22,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.RoomStatus;
-
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Table(name = "rooms", indexes = {
         @Index(name = "idx_rooms_facility", columnList = "facility_id")
 })
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -54,4 +56,5 @@ public class Room extends BaseEntity {
     @OneToMany(mappedBy = "room")
     @Builder.Default
     private List<ClassEntity> classes = new ArrayList<>();
+
 }

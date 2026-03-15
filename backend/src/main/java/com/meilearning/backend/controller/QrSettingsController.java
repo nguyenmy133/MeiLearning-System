@@ -7,11 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.request.UpdateQrSettingsRequest;
 import com.meilearning.backend.dto.response.QrSettingsResponse;
 import com.meilearning.backend.service.QrSettingsService;
-
 @RestController
 @RequestMapping("/api/v1/qr-settings")
 @RequiredArgsConstructor

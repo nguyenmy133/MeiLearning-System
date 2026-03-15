@@ -3,7 +3,6 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.request.CreateRescheduleRequest;
 import com.meilearning.backend.dto.response.RescheduleRequestResponse;
 import com.meilearning.backend.entity.*;
@@ -14,11 +13,9 @@ import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.RescheduleService;
 import com.meilearning.backend.service.NotificationDispatcher;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -33,8 +30,10 @@ public class RescheduleServiceImpl implements RescheduleService {
 
     @Override
     public RescheduleRequestResponse create(CreateRescheduleRequest req) {
+
         Teacher teacher = teacherRepository.findById(req.getTeacherId())
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+
         ClassEntity classEntity = classRepository.findById(req.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
@@ -52,79 +51,111 @@ public class RescheduleServiceImpl implements RescheduleService {
         if (req.getSessionId() != null) {
             ClassSession session = sessionRepository.findById(req.getSessionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+
             rr.setSession(session);
+
         }
 
         rr = rescheduleRepository.save(rr);
+
         return mapper.toRescheduleResponse(rr);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<RescheduleRequestResponse> getAll(String status) {
+
         List<RescheduleRequest> list = status != null
+
                 ? rescheduleRepository.findByStatus(RequestStatus.valueOf(status))
+
                 : rescheduleRepository.findAll();
+
         return list.stream().map(mapper::toRescheduleResponse).toList();
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<RescheduleRequestResponse> getByTeacher(Long teacherId) {
+
         return rescheduleRepository.findByTeacherId(teacherId).stream()
                 .map(mapper::toRescheduleResponse).toList();
+
     }
 
     @Override
     public RescheduleRequestResponse approve(Long id, String reviewedBy) {
+
         RescheduleRequest rr = findRequest(id);
+
         if (rr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ duyá»‡t yĂªu cáº§u Ä‘ang pending.");
+            throw new BusinessException("Chá»‰ duyệt yªu cáº§u Ä‘ang pending.");
 
         rr.setStatus(RequestStatus.approved);
         rr.setReviewedBy(reviewedBy);
         rr.setReviewedAt(Instant.now());
 
-        // Náº¿u cancel â†’ Ä‘Ă¡nh dáº¥u session lĂ  cancelled
+        // Nếu cancel â†’ Ä‘ánh dấu session là cancelled
+
         if (rr.getType() == RescheduleType.cancel && rr.getSession() != null) {
             rr.getSession().setStatus(SessionStatus.cancelled);
+
             sessionRepository.save(rr.getSession());
+
         }
 
         rr = rescheduleRepository.save(rr);
 
         // Gửi thông báo cho teacher (MEDIUM: In-App + Email)
+
         if (rr.getTeacher() != null && rr.getTeacher().getUser() != null) {
             String className = rr.getClassEntity() != null
+
                     ? rr.getClassEntity().getName() : "";
+
             notificationDispatcher.notifyWithEmail(
+
                     rr.getTeacher().getUser(),
                     "schedule_change",
                     "Yêu cầu dạy bù được duyệt",
                     "Yêu cầu " + rr.getType() + " cho lớp " + className
+
                             + " ngày " + rr.getOriginalDate() + " đã được duyệt."
+
             );
+
         }
 
         return mapper.toRescheduleResponse(rr);
+
     }
 
     @Override
     public RescheduleRequestResponse reject(Long id, String reviewedBy, String reason) {
+
         RescheduleRequest rr = findRequest(id);
+
         if (rr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ tá»« chá»‘i yĂªu cáº§u Ä‘ang pending.");
+            throw new BusinessException("Chá»‰ từ chối yªu cáº§u Ä‘ang pending.");
 
         rr.setStatus(RequestStatus.rejected);
         rr.setReviewedBy(reviewedBy);
         rr.setReviewedAt(Instant.now());
         rr.setRejectReason(reason);
+
         rr = rescheduleRepository.save(rr);
+
         return mapper.toRescheduleResponse(rr);
+
     }
 
     private RescheduleRequest findRequest(Long id) {
+
         return rescheduleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reschedule request not found: " + id));
+
     }
+
 }

@@ -6,11 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.TuitionInvoice;
 import com.meilearning.backend.entity.enums.InvoiceStatus;
-
 import java.util.List;
-
 @Repository
 public interface TuitionInvoiceRepository
+
         extends JpaRepository<TuitionInvoice, Long>, JpaSpecificationExecutor<TuitionInvoice> {
 
     List<TuitionInvoice> findByStudentId(Long studentId);
@@ -30,4 +29,5 @@ public interface TuitionInvoiceRepository
 
     @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid' AND t.month = :month")
     long sumRevenueByMonth(String month);
+
 }

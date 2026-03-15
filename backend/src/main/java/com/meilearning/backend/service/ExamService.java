@@ -4,7 +4,6 @@ import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
-
 import java.util.List;
 
 public interface ExamService {

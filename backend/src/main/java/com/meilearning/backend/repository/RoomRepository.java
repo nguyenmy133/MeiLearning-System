@@ -6,9 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.Room;
 import com.meilearning.backend.entity.enums.RoomStatus;
-
 import java.util.List;
-
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificationExecutor<Room> {
 
@@ -29,4 +27,5 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
     long sumCapacityByFacilityId(Long facilityId);
 
     java.util.Optional<Room> findByName(String name);
+
 }

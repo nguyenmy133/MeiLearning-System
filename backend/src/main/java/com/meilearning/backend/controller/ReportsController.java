@@ -6,12 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import com.meilearning.backend.dto.response.AttendanceStatsResponse;
 import com.meilearning.backend.dto.response.ReportsOverviewResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
 import com.meilearning.backend.service.ReportsService;
-
 @RestController
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor

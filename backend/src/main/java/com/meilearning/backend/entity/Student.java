@@ -1,7 +1,11 @@
 /**
- * Entity: Há»c viĂªn â€” má»Ÿ rá»™ng tá»« User (1:1 qua user_id).
- * Chá»©a thĂ´ng tin nghiá»‡p vá»¥ riĂªng cá»§a há»c viĂªn.
+
+ * Entity: Học viên â€” má»Ÿ rá»™ng từ User (1:1 qua user_id).
+
+ * Chá»©a thông tin nghiá»‡p vá»¥ riªng cá»§a học viên.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -21,11 +25,9 @@ import lombok.Setter;
 import com.meilearning.backend.entity.enums.Gender;
 import com.meilearning.backend.entity.enums.StudentStatus;
 import com.meilearning.backend.entity.enums.TuitionStatus;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Table(name = "students")
 @Getter
@@ -98,4 +100,5 @@ public class Student extends BaseEntity {
     @OneToMany(mappedBy = "student")
     @Builder.Default
     private List<Grade> grades = new ArrayList<>();
+
 }

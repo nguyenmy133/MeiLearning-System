@@ -3,7 +3,6 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.meilearning.backend.dto.request.CreateLeaveRequest;
 import com.meilearning.backend.dto.response.LeaveRequestResponse;
 import com.meilearning.backend.entity.*;
@@ -13,10 +12,8 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.LeaveService;
-
 import java.time.Instant;
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -29,6 +26,7 @@ public class LeaveServiceImpl implements LeaveService {
 
     @Override
     public LeaveRequestResponse create(CreateLeaveRequest req) {
+
         User requester = userRepository.findById(req.getRequesterId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + req.getRequesterId()));
 
@@ -42,39 +40,54 @@ public class LeaveServiceImpl implements LeaveService {
         if (req.getSessionId() != null) {
             ClassSession session = sessionRepository.findById(req.getSessionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+
             lr.setSession(session);
+
         }
 
         lr = leaveRepository.save(lr);
+
         return mapper.toLeaveResponse(lr);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<LeaveRequestResponse> getAll(String status, String requesterType) {
+
         List<LeaveRequest> list;
+
         if (status != null) {
             list = leaveRepository.findByStatus(RequestStatus.valueOf(status));
+
         } else if (requesterType != null) {
             list = leaveRepository.findByRequesterType(RequesterType.valueOf(requesterType));
+
         } else {
             list = leaveRepository.findAll();
+
         }
+
         return list.stream().map(mapper::toLeaveResponse).toList();
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<LeaveRequestResponse> getByRequester(Long requesterId) {
+
         return leaveRepository.findByRequesterId(requesterId).stream()
                 .map(mapper::toLeaveResponse).toList();
+
     }
 
     @Override
     public LeaveRequestResponse approve(Long id, Long reviewerId) {
+
         LeaveRequest lr = findLeave(id);
+
         if (lr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ duyá»‡t Ä‘Æ¡n Ä‘ang pending.");
+            throw new BusinessException("Chá»‰ duyệt đơn Ä‘ang pending.");
 
         User reviewer = userRepository.findById(reviewerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reviewer not found"));
@@ -82,15 +95,20 @@ public class LeaveServiceImpl implements LeaveService {
         lr.setStatus(RequestStatus.approved);
         lr.setReviewedBy(reviewer);
         lr.setReviewedAt(Instant.now());
+
         lr = leaveRepository.save(lr);
+
         return mapper.toLeaveResponse(lr);
+
     }
 
     @Override
     public LeaveRequestResponse reject(Long id, Long reviewerId, String reason) {
+
         LeaveRequest lr = findLeave(id);
+
         if (lr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ tá»« chá»‘i Ä‘Æ¡n Ä‘ang pending.");
+            throw new BusinessException("Chá»‰ từ chối đơn Ä‘ang pending.");
 
         User reviewer = userRepository.findById(reviewerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reviewer not found"));
@@ -99,12 +117,18 @@ public class LeaveServiceImpl implements LeaveService {
         lr.setReviewedBy(reviewer);
         lr.setReviewedAt(Instant.now());
         lr.setRejectReason(reason);
+
         lr = leaveRepository.save(lr);
+
         return mapper.toLeaveResponse(lr);
+
     }
 
     private LeaveRequest findLeave(Long id) {
+
         return leaveRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Leave request not found: " + id));
+
     }
+
 }

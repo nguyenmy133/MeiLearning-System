@@ -6,7 +6,6 @@ import com.meilearning.backend.dto.response.AttendanceResponse;
 import com.meilearning.backend.entity.AttendanceRecord;
 import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.enums.AttendanceStatus;
-
 @Component
 public class SessionMapper {
 

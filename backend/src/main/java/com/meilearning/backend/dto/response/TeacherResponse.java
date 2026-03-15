@@ -3,7 +3,6 @@ package com.meilearning.backend.dto.response;
 import lombok.*;
 import java.time.Instant;
 import java.util.List;
-
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class TeacherResponse {
     private Long id;

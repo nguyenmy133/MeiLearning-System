@@ -1,6 +1,9 @@
 /**
- * Entity: MĂ´n há»c.
+
+ * Entity: Môn học.
+
  */
+
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -16,10 +19,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.SubjectStatus;
-
 import java.util.ArrayList;
 import java.util.List;
-
 @Entity
 @Table(name = "subjects")
 @Getter
@@ -45,7 +46,8 @@ public class Subject extends BaseEntity {
     @Builder.Default
     private Long basePricePerSession = 0L;
 
-    /** Danh sĂ¡ch tĂªn cÆ¡ sá»Ÿ cĂ³ dáº¡y mĂ´n nĂ y, lÆ°u dáº¡ng JSON: ["CÆ¡ sá»Ÿ Q1", "CÆ¡ sá»Ÿ Q3"] */
+    /** Danh sách tªn cơ sở có dáº¡y môn này, lÆ°u dáº¡ng JSON: ["CÆ¡ sở Q1", "CÆ¡ sở Q3"] */
+
     @Column(columnDefinition = "TEXT")
     private String facilitiesJson;
 
@@ -63,4 +65,5 @@ public class Subject extends BaseEntity {
     @ManyToMany(mappedBy = "subjects")
     @Builder.Default
     private List<Teacher> teachers = new ArrayList<>();
+
 }
