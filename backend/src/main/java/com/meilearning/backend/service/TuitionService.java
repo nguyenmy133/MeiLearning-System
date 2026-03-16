@@ -2,22 +2,21 @@ package com.meilearning.backend.service;
 
 import com.meilearning.backend.dto.request.CreateTuitionRequest;
 import com.meilearning.backend.dto.request.PayTuitionRequest;
+import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
 import java.util.List;
 
 public interface TuitionService {
 
-    /** Tạo hóa đơn thủ công (admin) */
-
     TuitionInvoiceResponse create(CreateTuitionRequest request);
-
-    /** Tự động generate hóa đơn cho tháng hiện tại */
 
     List<TuitionInvoiceResponse> generateMonthlyInvoices(String month);
 
-    /** Lấy tất cả hóa đơn (admin) - filter theo status, month */
+    /** Paginated */
+    PageResponse<TuitionInvoiceResponse> getAll(String status, String month, Long studentId, int page, int limit);
 
+    /** Legacy — trả full list */
     List<TuitionInvoiceResponse> getAll(String status, String month, Long studentId);
 
     /** Lấy hóa đơn theo student */

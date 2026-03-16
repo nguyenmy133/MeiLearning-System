@@ -40,11 +40,8 @@ public class ProfileController {
     @Operation(summary = "Upload avatar")
     public ResponseEntity<Map<String, String>> uploadAvatar(
             Principal principal,
-            @RequestParam("avatar") MultipartFile file) throws Exception {
-        String avatarUrl = profileService.uploadAvatar(
-                principal.getName(),
-                file.getBytes(),
-                file.getOriginalFilename());
+            @RequestParam("avatar") MultipartFile file) {
+        String avatarUrl = profileService.uploadAvatar(principal.getName(), file);
         return ResponseEntity.ok(Map.of("avatarUrl", avatarUrl));
     }
 }

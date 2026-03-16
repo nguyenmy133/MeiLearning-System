@@ -3,6 +3,7 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import com.meilearning.backend.dto.request.UpdateProfileRequest;
 import com.meilearning.backend.dto.response.ProfileResponse;
 import com.meilearning.backend.entity.Student;
@@ -13,7 +14,9 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.repository.UserRepository;
+import com.meilearning.backend.service.FileStorageService;
 import com.meilearning.backend.service.ProfileService;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -22,6 +25,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepository;
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
+    private final FileStorageService fileStorageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -62,10 +66,16 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
-    public String uploadAvatar(String username, byte[] fileData, String originalFilename) {
+    public String uploadAvatar(String username, MultipartFile file) {
         User user = findUser(username);
-        // Placeholder: lưu đường dẫn avatar — thực tế cần lưu file vào storage
-        String avatarUrl = "/uploads/avatars/" + user.getId() + "_" + originalFilename;
+
+        // Xóa avatar cũ (nếu có)
+        if (user.getAvatar() != null && !user.getAvatar().isBlank()) {
+            fileStorageService.delete(user.getAvatar());
+        }
+
+        // Lưu avatar mới qua FileStorageService
+        String avatarUrl = fileStorageService.store(file, "avatars");
         user.setAvatar(avatarUrl);
         userRepository.save(user);
         return avatarUrl;

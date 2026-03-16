@@ -16,7 +16,7 @@ public class QrSettingsServiceImpl implements QrSettingsService {
     private final QrSettingsRepository qrSettingsRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public QrSettingsResponse getSettings() {
         QrSettings settings = getOrCreateSettings();
         return toResponse(settings);

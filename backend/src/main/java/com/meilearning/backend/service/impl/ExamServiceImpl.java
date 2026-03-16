@@ -14,6 +14,14 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.ExamService;
+import com.meilearning.backend.service.NotificationDispatcher;
+import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +36,8 @@ public class ExamServiceImpl implements ExamService {
     private final ClassRepository classRepository;
     private final StudentRepository studentRepository;
     private final AcademicMapper mapper;
+    private final NotificationDispatcher notificationDispatcher;
+    private final ClassEnrollmentRepository enrollmentRepository;
 
     @Override
     public ExamResponse create(CreateExamRequest req) {
@@ -70,6 +80,28 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<ExamResponse> getAll(Long teacherId, String status, int page, int limit) {
+        if (page < 1) page = 1;
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Specification<Exam> spec = SpecHelper.empty();
+        if (teacherId != null) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("teacher").get("id"), teacherId));
+        }
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), ExamStatus.valueOf(status)));
+        }
+        Page<Exam> result = examRepository.findAll(spec, pageable);
+        return PageResponse.<ExamResponse>builder()
+                .data(result.getContent().stream().map(this::toResponseWithStats).toList())
+                .total(result.getTotalElements())
+                .page(page)
+                .limit(limit)
+                .totalPages(result.getTotalPages())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ExamResponse> getAll(Long teacherId, String status) {
 
         List<Exam> exams;
@@ -104,9 +136,27 @@ public class ExamServiceImpl implements ExamService {
 
         exam.setStatus(ExamStatus.published);
 
-        exam = examRepository.save(exam);
+        final Exam savedExam = examRepository.save(exam);
 
-        return toResponseWithStats(exam);
+        // Notify all students in the exam's classes
+        if (savedExam.getClasses() != null) {
+            for (ClassEntity cls : savedExam.getClasses()) {
+                enrollmentRepository.findByClassEntityId(cls.getId())
+                        .forEach(enrollment -> {
+                            if (enrollment.getStudent() != null && enrollment.getStudent().getUser() != null) {
+                                notificationDispatcher.notifyWithEmail(
+                                        enrollment.getStudent().getUser(),
+                                        "exam",
+                                        "Bài kiểm tra mới: " + savedExam.getTitle(),
+                                        "Bài kiểm tra \"" + savedExam.getTitle() + "\" môn " + savedExam.getSubject()
+                                                + " đã được publish. Vui lòng kiểm tra và làm bài."
+                                );
+                            }
+                        });
+            }
+        }
+
+        return toResponseWithStats(savedExam);
 
     }
 
@@ -145,6 +195,17 @@ public class ExamServiceImpl implements ExamService {
                 .build();
 
         result = resultRepository.save(result);
+
+        // Notify teacher: student nộp bài
+        if (exam.getTeacher() != null && exam.getTeacher().getUser() != null) {
+            notificationDispatcher.notifyInApp(
+                    exam.getTeacher().getUser(),
+                    "exam_submission",
+                    "Học viên nộp bài: " + exam.getTitle(),
+                    student.getUser() != null ? student.getUser().getName() : "Học viên"
+                            + " đã nộp bài kiểm tra \"" + exam.getTitle() + "\". Điểm: " + req.getScore()
+            );
+        }
 
         return mapper.toResultResponse(result);
 

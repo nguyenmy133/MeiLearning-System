@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateLeaveRequest;
 import com.meilearning.backend.dto.response.LeaveRequestResponse;
+import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.LeaveService;
 import java.util.List;
 @RestController
@@ -23,10 +24,12 @@ public class LeaveController {
 
     @GetMapping
     @Operation(summary = "Danh sách đơn nghỉ phép")
-    public ResponseEntity<List<LeaveRequestResponse>> getAll(
+    public ResponseEntity<PageResponse<LeaveRequestResponse>> getAll(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String requesterType) {
-        return ResponseEntity.ok(leaveService.getAll(status, requesterType));
+            @RequestParam(required = false) String requesterType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return ResponseEntity.ok(leaveService.getAll(status, requesterType, page, limit));
     }
 
     @GetMapping("/requester/{requesterId}")

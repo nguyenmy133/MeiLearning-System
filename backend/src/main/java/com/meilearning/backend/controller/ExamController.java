@@ -12,6 +12,7 @@ import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
+import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.ExamService;
 import java.util.List;
 @RestController
@@ -25,11 +26,13 @@ public class ExamController {
 
     @GetMapping
     @Operation(summary = "Danh sách bài kiểm tra")
-    public ResponseEntity<List<ExamResponse>> getAll(
+    public ResponseEntity<PageResponse<ExamResponse>> getAll(
 
             @RequestParam(required = false) Long teacherId,
-            @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(examService.getAll(teacherId, status));
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return ResponseEntity.ok(examService.getAll(teacherId, status, page, limit));
 
     }
 

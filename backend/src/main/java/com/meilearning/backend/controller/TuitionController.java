@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateTuitionRequest;
 import com.meilearning.backend.dto.request.PayTuitionRequest;
+import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
 import com.meilearning.backend.service.TuitionService;
@@ -25,11 +26,13 @@ public class TuitionController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách hóa đơn (Admin)")
-    public ResponseEntity<List<TuitionInvoiceResponse>> getAll(
+    public ResponseEntity<PageResponse<TuitionInvoiceResponse>> getAll(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String month,
-            @RequestParam(required = false) Long studentId) {
-        return ResponseEntity.ok(tuitionService.getAll(status, month, studentId));
+            @RequestParam(required = false) Long studentId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return ResponseEntity.ok(tuitionService.getAll(status, month, studentId, page, limit));
     }
 
     @GetMapping("/{id}")

@@ -145,6 +145,7 @@ export const API = {
         LIST: "/notifications",
         MARK_READ: (id: number | string) => `/notifications/${id}/read`,
         MARK_ALL_READ: "/notifications/read-all",
+        SEND: "/notifications/send",
     },
 
     // ── Reports ─────────────────────────────────────────────────

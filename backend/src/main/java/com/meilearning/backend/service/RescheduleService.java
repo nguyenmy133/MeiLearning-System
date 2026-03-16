@@ -1,11 +1,13 @@
 package com.meilearning.backend.service;
 
 import com.meilearning.backend.dto.request.CreateRescheduleRequest;
+import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.RescheduleRequestResponse;
 import java.util.List;
 
 public interface RescheduleService {
     RescheduleRequestResponse create(CreateRescheduleRequest request);
+    PageResponse<RescheduleRequestResponse> getAll(String status, int page, int limit);
     List<RescheduleRequestResponse> getAll(String status);
     List<RescheduleRequestResponse> getByTeacher(Long teacherId);
     RescheduleRequestResponse approve(Long id, String reviewedBy);

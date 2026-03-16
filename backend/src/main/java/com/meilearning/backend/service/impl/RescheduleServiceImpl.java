@@ -13,6 +13,13 @@ import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.RescheduleService;
 import com.meilearning.backend.service.NotificationDispatcher;
+import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -27,6 +34,7 @@ public class RescheduleServiceImpl implements RescheduleService {
     private final ClassSessionRepository sessionRepository;
     private final AcademicMapper mapper;
     private final NotificationDispatcher notificationDispatcher;
+    private final ClassEnrollmentRepository enrollmentRepository;
 
     @Override
     public RescheduleRequestResponse create(CreateRescheduleRequest req) {
@@ -60,6 +68,25 @@ public class RescheduleServiceImpl implements RescheduleService {
 
         return mapper.toRescheduleResponse(rr);
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<RescheduleRequestResponse> getAll(String status, int page, int limit) {
+        if (page < 1) page = 1;
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Specification<RescheduleRequest> spec = SpecHelper.empty();
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), RequestStatus.valueOf(status)));
+        }
+        Page<RescheduleRequest> result = rescheduleRepository.findAll(spec, pageable);
+        return PageResponse.<RescheduleRequestResponse>builder()
+                .data(result.getContent().stream().map(mapper::toRescheduleResponse).toList())
+                .total(result.getTotalElements())
+                .page(page)
+                .limit(limit)
+                .totalPages(result.getTotalPages())
+                .build();
     }
 
     @Override
@@ -103,32 +130,40 @@ public class RescheduleServiceImpl implements RescheduleService {
             rr.getSession().setStatus(SessionStatus.cancelled);
 
             sessionRepository.save(rr.getSession());
-
         }
 
-        rr = rescheduleRepository.save(rr);
+        final RescheduleRequest savedRr = rescheduleRepository.save(rr);
 
-        // Gửi thông báo cho teacher (MEDIUM: In-App + Email)
+        String className = savedRr.getClassEntity() != null ? savedRr.getClassEntity().getName() : "";
 
-        if (rr.getTeacher() != null && rr.getTeacher().getUser() != null) {
-            String className = rr.getClassEntity() != null
-
-                    ? rr.getClassEntity().getName() : "";
-
+        // Notify teacher (MEDIUM)
+        if (savedRr.getTeacher() != null && savedRr.getTeacher().getUser() != null) {
             notificationDispatcher.notifyWithEmail(
-
-                    rr.getTeacher().getUser(),
+                    savedRr.getTeacher().getUser(),
                     "schedule_change",
-                    "Yêu cầu dạy bù được duyệt",
-                    "Yêu cầu " + rr.getType() + " cho lớp " + className
-
-                            + " ngày " + rr.getOriginalDate() + " đã được duyệt."
-
+                    "Yêu cầu " + savedRr.getType() + " được duyệt",
+                    "Yêu cầu " + savedRr.getType() + " cho lớp " + className
+                            + " ngày " + savedRr.getOriginalDate() + " đã được duyệt."
             );
-
         }
 
-        return mapper.toRescheduleResponse(rr);
+        // Notify tất cả students trong lớp (MEDIUM)
+        if (savedRr.getClassEntity() != null) {
+            enrollmentRepository.findByClassEntityId(savedRr.getClassEntity().getId())
+                    .forEach(enrollment -> {
+                        if (enrollment.getStudent() != null && enrollment.getStudent().getUser() != null) {
+                            notificationDispatcher.notifyWithEmail(
+                                    enrollment.getStudent().getUser(),
+                                    "schedule_change",
+                                    "Lịch học lớp " + className + " thay đổi",
+                                    "Lịch học lớp " + className + " ngày " + savedRr.getOriginalDate()
+                                            + " đã được thay đổi. Vui lòng kiểm tra lịch mới."
+                            );
+                        }
+                    });
+        }
+
+        return mapper.toRescheduleResponse(savedRr);
 
     }
 
@@ -146,6 +181,18 @@ public class RescheduleServiceImpl implements RescheduleService {
         rr.setRejectReason(reason);
 
         rr = rescheduleRepository.save(rr);
+
+        // Notify teacher: yêu cầu bị từ chối
+        if (rr.getTeacher() != null && rr.getTeacher().getUser() != null) {
+            String className = rr.getClassEntity() != null ? rr.getClassEntity().getName() : "";
+            notificationDispatcher.notifyWithEmail(
+                    rr.getTeacher().getUser(),
+                    "schedule_change",
+                    "Yêu cầu " + rr.getType() + " bị từ chối",
+                    "Yêu cầu " + rr.getType() + " cho lớp " + className
+                            + " ngày " + rr.getOriginalDate() + " đã bị từ chối. Lý do: " + reason
+            );
+        }
 
         return mapper.toRescheduleResponse(rr);
 

@@ -9,7 +9,8 @@ WORKDIR /build
 # Cache Maven dependencies
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+# Fix line endings (CRLF -> LF) and make executable
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 # Build application
 COPY src/ src/
@@ -22,8 +23,8 @@ WORKDIR /app
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Copy built artifact
-COPY --from=builder /build/target/*.jar app.jar
+# Copy built artifact — backend-0.0.1-SNAPSHOT.jar is the main one
+COPY --from=builder /build/target/backend-0.0.1-SNAPSHOT.jar app.jar
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app

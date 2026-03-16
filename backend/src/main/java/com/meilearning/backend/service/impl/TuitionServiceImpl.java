@@ -2,6 +2,11 @@ package com.meilearning.backend.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.meilearning.backend.dto.request.CreateTuitionRequest;
@@ -25,6 +30,9 @@ import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TuitionInvoiceRepository;
 import com.meilearning.backend.service.TuitionService;
+import com.meilearning.backend.service.NotificationDispatcher;
+import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +51,7 @@ public class TuitionServiceImpl implements TuitionService {
     private final ClassEnrollmentRepository enrollmentRepository;
     private final AttendanceRecordRepository attendanceRepository;
     private final TuitionMapper tuitionMapper;
+    private final NotificationDispatcher notificationDispatcher;
 
     // â”€â”€ Create Invoice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -78,6 +87,18 @@ public class TuitionServiceImpl implements TuitionService {
                 .build();
 
         invoice = invoiceRepository.save(invoice);
+
+        // Notify student: hóa đơn mới
+        if (student.getUser() != null) {
+            notificationDispatcher.notifyWithEmail(
+                    student.getUser(),
+                    "tuition",
+                    "Hóa đơn học phí tháng " + request.getMonth(),
+                    "Hóa đơn học phí lớp " + classEntity.getName()
+                            + " tháng " + request.getMonth()
+                            + " số tiền: " + totalAmount + "đ. Hạn thanh toán: " + invoice.getDueDate() + "."
+            );
+        }
 
         return tuitionMapper.toResponse(invoice);
 
@@ -139,6 +160,32 @@ public class TuitionServiceImpl implements TuitionService {
     }
 
     // â”€â”€ Query â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<TuitionInvoiceResponse> getAll(String status, String month, Long studentId,
+                                                        int page, int limit) {
+        if (page < 1) page = 1;
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Specification<TuitionInvoice> spec = SpecHelper.empty();
+        if (studentId != null) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("student").get("id"), studentId));
+        }
+        if (month != null && !month.isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("month"), month));
+        }
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), InvoiceStatus.valueOf(status)));
+        }
+        Page<TuitionInvoice> result = invoiceRepository.findAll(spec, pageable);
+        return PageResponse.<TuitionInvoiceResponse>builder()
+                .data(result.getContent().stream().map(tuitionMapper::toResponse).toList())
+                .total(result.getTotalElements())
+                .page(page)
+                .limit(limit)
+                .totalPages(result.getTotalPages())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -234,6 +281,17 @@ public class TuitionServiceImpl implements TuitionService {
 
         invoice = invoiceRepository.save(invoice);
 
+        // Notify student: payment confirmed
+        if (invoice.getStudent() != null && invoice.getStudent().getUser() != null) {
+            notificationDispatcher.notifyInApp(
+                    invoice.getStudent().getUser(),
+                    "tuition",
+                    "Thanh toán đã xác nhận",
+                    "Thanh toán học phí tháng " + invoice.getMonth()
+                            + " lớp " + invoice.getClassEntity().getName() + " đã được xác nhận."
+            );
+        }
+
         return tuitionMapper.toResponse(invoice);
 
     }
@@ -254,6 +312,18 @@ public class TuitionServiceImpl implements TuitionService {
         invoice.setPaymentProofUrl(null);
 
         invoice = invoiceRepository.save(invoice);
+
+        // Notify student: payment rejected
+        if (invoice.getStudent() != null && invoice.getStudent().getUser() != null) {
+            notificationDispatcher.notifyWithEmail(
+                    invoice.getStudent().getUser(),
+                    "tuition",
+                    "Thanh toán bị từ chối",
+                    "Thanh toán học phí tháng " + invoice.getMonth()
+                            + " lớp " + invoice.getClassEntity().getName()
+                            + " bị từ chối. Vui lòng liên hệ admin để biết thêm chi tiết."
+            );
+        }
 
         return tuitionMapper.toResponse(invoice);
 

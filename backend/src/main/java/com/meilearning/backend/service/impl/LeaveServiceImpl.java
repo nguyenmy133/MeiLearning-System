@@ -12,6 +12,14 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
 import com.meilearning.backend.service.LeaveService;
+import com.meilearning.backend.service.NotificationDispatcher;
+import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import java.time.Instant;
 import java.util.List;
 @Service
@@ -23,6 +31,7 @@ public class LeaveServiceImpl implements LeaveService {
     private final UserRepository userRepository;
     private final ClassSessionRepository sessionRepository;
     private final AcademicMapper mapper;
+    private final NotificationDispatcher notificationDispatcher;
 
     @Override
     public LeaveRequestResponse create(CreateLeaveRequest req) {
@@ -49,6 +58,29 @@ public class LeaveServiceImpl implements LeaveService {
 
         return mapper.toLeaveResponse(lr);
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<LeaveRequestResponse> getAll(String status, String requesterType,
+                                                      int page, int limit) {
+        if (page < 1) page = 1;
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Specification<LeaveRequest> spec = SpecHelper.empty();
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), RequestStatus.valueOf(status)));
+        }
+        if (requesterType != null && !requesterType.isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("requesterType"), RequesterType.valueOf(requesterType)));
+        }
+        Page<LeaveRequest> result = leaveRepository.findAll(spec, pageable);
+        return PageResponse.<LeaveRequestResponse>builder()
+                .data(result.getContent().stream().map(mapper::toLeaveResponse).toList())
+                .total(result.getTotalElements())
+                .page(page)
+                .limit(limit)
+                .totalPages(result.getTotalPages())
+                .build();
     }
 
     @Override
@@ -98,6 +130,18 @@ public class LeaveServiceImpl implements LeaveService {
 
         lr = leaveRepository.save(lr);
 
+        // Notify requester: đơn đã được duyệt
+        if (lr.getRequester() != null) {
+            String sessionInfo = lr.getSession() != null
+                    ? " ngày " + lr.getSession().getDate() : "";
+            notificationDispatcher.notifyWithEmail(
+                    lr.getRequester(),
+                    "leave_approved",
+                    "Đơn xin nghỉ đã được duyệt",
+                    "Đơn xin nghỉ" + sessionInfo + " đã được duyệt."
+            );
+        }
+
         return mapper.toLeaveResponse(lr);
 
     }
@@ -119,6 +163,18 @@ public class LeaveServiceImpl implements LeaveService {
         lr.setRejectReason(reason);
 
         lr = leaveRepository.save(lr);
+
+        // Notify requester: đơn bị từ chối
+        if (lr.getRequester() != null) {
+            String sessionInfo = lr.getSession() != null
+                    ? " ngày " + lr.getSession().getDate() : "";
+            notificationDispatcher.notifyWithEmail(
+                    lr.getRequester(),
+                    "leave_rejected",
+                    "Đơn xin nghỉ bị từ chối",
+                    "Đơn xin nghỉ" + sessionInfo + " đã bị từ chối. Lý do: " + reason
+            );
+        }
 
         return mapper.toLeaveResponse(lr);
 

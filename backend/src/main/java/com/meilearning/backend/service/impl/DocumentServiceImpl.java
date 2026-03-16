@@ -3,6 +3,7 @@ package com.meilearning.backend.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import com.meilearning.backend.dto.response.DocumentResponse;
 import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.Document;
@@ -12,7 +13,16 @@ import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.DocumentRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.DocumentService;
+import com.meilearning.backend.service.FileStorageService;
+import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.SpecHelper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -21,6 +31,26 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final ClassRepository classRepository;
+    private final FileStorageService fileStorageService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<DocumentResponse> getAll(Long classId, int page, int limit) {
+        if (page < 1) page = 1;
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Specification<Document> spec = SpecHelper.empty();
+        if (classId != null) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("classEntity").get("id"), classId));
+        }
+        Page<Document> result = documentRepository.findAll(spec, pageable);
+        return PageResponse.<DocumentResponse>builder()
+                .data(result.getContent().stream().map(this::toResponse).toList())
+                .total(result.getTotalElements())
+                .page(page)
+                .limit(limit)
+                .totalPages(result.getTotalPages())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -42,8 +72,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public DocumentResponse upload(String username, String title, String description,
-                                   Long classId, byte[] fileData, String originalFilename,
-                                   String contentType, long fileSize) {
+                                   Long classId, MultipartFile file) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user: " + username));
 
@@ -53,15 +82,15 @@ public class DocumentServiceImpl implements DocumentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + classId));
         }
 
-        // Placeholder: lưu file vào local storage — production nên dùng S3
-        String fileUrl = "/uploads/documents/" + user.getId() + "_" + originalFilename;
+        // Lưu file thực tế qua FileStorageService
+        String fileUrl = fileStorageService.store(file, "documents");
 
         Document document = Document.builder()
                 .title(title)
                 .description(description)
                 .fileUrl(fileUrl)
-                .fileType(contentType)
-                .fileSize(fileSize)
+                .fileType(file.getContentType())
+                .fileSize(file.getSize())
                 .classEntity(classEntity)
                 .uploadedBy(user)
                 .build();
@@ -73,6 +102,8 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public void delete(Long id) {
         Document doc = findById(id);
+        // Xóa file vật lý trước khi xóa record
+        fileStorageService.delete(doc.getFileUrl());
         documentRepository.delete(doc);
     }
 
