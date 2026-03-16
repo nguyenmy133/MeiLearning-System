@@ -93,9 +93,9 @@ export function AdminDashboard() {
     { ...stats[3], icon: CreditCard },
   ];
 
-  const attendanceRate = Math.round(
-    (todayAttendance.present / todayAttendance.total) * 100
-  );
+  const attendanceRate = todayAttendance.total > 0
+    ? Math.round((todayAttendance.present / todayAttendance.total) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -255,7 +255,9 @@ export function AdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {todaySchedule.map((session) => {
+            {todaySchedule.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Không có lịch học hôm nay</p>
+            ) : todaySchedule.map((session) => {
               const cfg = SESSION_STATUS_CONFIG[session.status];
               return (
                 <div
@@ -301,7 +303,9 @@ export function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {alerts.map((alert, index) => (
+              {alerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Không có cảnh báo nào</p>
+              ) : alerts.map((alert, index) => (
                 <div
                   key={index}
                   className={`flex items-center justify-between p-3 rounded-lg ${
@@ -336,7 +340,9 @@ export function AdminDashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-2">
-              {overdueStudents.map((s) => (
+              {overdueStudents.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Không có học phí quá hạn</p>
+              ) : overdueStudents.map((s) => (
                 <div
                   key={s.name}
                   className="flex items-center justify-between p-3 rounded-lg bg-destructive/5"

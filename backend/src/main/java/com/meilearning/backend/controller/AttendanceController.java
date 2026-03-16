@@ -65,5 +65,19 @@ public class AttendanceController {
 
     }
 
-}
+    @GetMapping("/sessions")
+    @Operation(summary = "Lấy danh sách buổi điểm danh (stub)")
+    public ResponseEntity<List<Object>> getSessions(
+            @RequestParam(required = false) String status) {
+        // Stub: trả danh sách rỗng cho đến khi implement đầy đủ
+        return ResponseEntity.ok(java.util.Collections.emptyList());
+    }
 
+    @GetMapping("/alerts")
+    @Operation(summary = "Lấy cảnh báo vắng mặt (stub)")
+    public ResponseEntity<List<Object>> getAlerts() {
+        // Stub: trả danh sách rỗng cho đến khi implement đầy đủ
+        return ResponseEntity.ok(java.util.Collections.emptyList());
+    }
+
+}

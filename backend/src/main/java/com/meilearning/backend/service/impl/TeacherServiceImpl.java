@@ -29,6 +29,7 @@ import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.TeacherService;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 @Service
@@ -149,10 +150,10 @@ public class TeacherServiceImpl implements TeacherService {
         // 3. Link subjects by name
 
         if (request.getSubjects() != null && !request.getSubjects().isEmpty()) {
-            List<Subject> subjects = request.getSubjects().stream()
+            List<Subject> subjects = new ArrayList<>(request.getSubjects().stream()
                     .map(name -> subjectRepository.findByNameIgnoreCase(name)
                             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy môn học: " + name)))
-                    .toList();
+                    .toList());
 
             teacher.setSubjects(subjects);
 
@@ -185,10 +186,10 @@ public class TeacherServiceImpl implements TeacherService {
         // Update subjects if provided
 
         if (request.getSubjects() != null) {
-            List<Subject> subjects = request.getSubjects().stream()
+            List<Subject> subjects = new ArrayList<>(request.getSubjects().stream()
                     .map(name -> subjectRepository.findByNameIgnoreCase(name)
                             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy môn học: " + name)))
-                    .toList();
+                    .toList());
 
             teacher.setSubjects(subjects);
 

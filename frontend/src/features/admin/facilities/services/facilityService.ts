@@ -5,11 +5,13 @@ import type {
   CreateFacilityDTO,
   UpdateFacilityDTO,
   FacilityStats,
+  FacilityQueryParams,
 } from "../types";
 
-export async function getFacilities(): Promise<Facility[]> {
-  const { data } = await apiClient.get(API.FACILITIES.LIST);
-  return data;
+export async function getFacilities(params?: FacilityQueryParams): Promise<Facility[]> {
+  const { data } = await apiClient.get(API.FACILITIES.LIST, { params });
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function getFacilityById(id: number): Promise<Facility> {
@@ -38,6 +40,6 @@ export async function deleteFacility(id: number): Promise<void> {
 
 export async function getActiveFacilities(): Promise<Facility[]> {
   const { data } = await apiClient.get(API.FACILITIES.LIST, { params: { status: "active" } });
-  return data;
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 

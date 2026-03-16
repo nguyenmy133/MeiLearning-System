@@ -1,10 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
-import type { Room, CreateRoomDTO, UpdateRoomDTO } from "../types";
+import type { Room, CreateRoomDTO, UpdateRoomDTO, RoomQueryParams } from "../types";
 
-export async function getRooms(): Promise<Room[]> {
-  const { data } = await apiClient.get(API.ROOMS.LIST);
-  return data;
+export async function getRooms(params?: RoomQueryParams): Promise<Room[]> {
+  const { data } = await apiClient.get(API.ROOMS.LIST, { params });
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function getRoomById(id: number): Promise<Room> {

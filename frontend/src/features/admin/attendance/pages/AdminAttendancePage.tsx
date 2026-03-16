@@ -43,7 +43,7 @@ import {
   useToggleQR,
 } from "../hooks";
 import type { AttendanceQueryParams } from "../types";
-import { ATTENDANCE_CLASS_LIST } from "../types";
+import { useClassOptions } from "@/hooks/useClassOptions";
 import { toast } from "sonner";
 
 // ── Format helpers ────────────────────────────────────────────────────────────
@@ -81,6 +81,7 @@ export function AdminAttendancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClassId, setFilterClassId] = useState("all");
   const [filterDate, setFilterDate] = useState("");
+  const { data: classOptions } = useClassOptions();
 
   const queryParams: AttendanceQueryParams = {
     search: searchTerm || undefined,
@@ -280,7 +281,7 @@ export function AdminAttendancePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả lớp</SelectItem>
-                    {ATTENDANCE_CLASS_LIST.map((c) => (
+                    {(classOptions ?? []).map((c) => (
                       <SelectItem key={c.id} value={String(c.id)}>
                         {c.name}
                       </SelectItem>

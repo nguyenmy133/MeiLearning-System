@@ -46,12 +46,18 @@ import {
 import { checkConflict } from "../services";
 import type { ScheduledSession, AddSessionDTO } from "../types";
 import {
-  FACILITIES,
-  ROOMS_BY_FACILITY,
   DAY_LABELS,
-  TEACHER_REFS,
-  DEMO_WEEK_START,
 } from "../types";
+import { useTeacherOptions, useFacilityOptions, useRoomsByFacility } from "@/hooks/useClassOptions";
+
+// Get current Monday as default week start
+function getCurrentMonday(): string {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().split("T")[0];
+}
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function addDays(dateStr: string, days: number): string {
@@ -166,6 +172,8 @@ interface AddSessionFormProps {
 
 function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const { data: classRefs = [] } = useClassRefs();
+  const { data: teacherOptions } = useTeacherOptions();
+  const { data: facilityOptions } = useFacilityOptions();
 
   const [type, setType] = useState<"makeup" | "extra">("makeup");
   const [classId, setClassId] = useState<number>(0);
@@ -190,14 +198,20 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
     }
   };
 
-  // Synchronous conflict check — no async needed
-  const conflictWarning = useMemo(() => {
-    if (!date || !startTime || !endTime || !teacherName) return null;
-    const result = checkConflict(date, startTime, endTime, teacherName, facilityId, room);
-    return result.hasConflict ? result.message : null;
-  }, [date, startTime, endTime, teacherName, facilityId, room]);
+  // Async conflict check
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+  useEffect(() => {
+    if (!date || !startTime || !endTime || !facilityId || !room) {
+      setConflictWarning(null);
+      return;
+    }
+    checkConflict(date, startTime, endTime, facilityId, room)
+      .then((result) => setConflictWarning(result.hasConflict ? (result.message ?? "Trùng lịch") : null))
+      .catch(() => setConflictWarning(null));
+  }, [date, startTime, endTime, facilityId, room]);
 
-  const availableRooms = facilityId ? (ROOMS_BY_FACILITY[facilityId] ?? []) : [];
+  const { data: roomOptions } = useRoomsByFacility(facilityId);
+  const availableRooms = roomOptions ?? [];
 
   const canSubmit =
     !!classId && !!date && !!startTime && !!endTime && !!room && !conflictWarning;
@@ -306,9 +320,9 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
               <SelectValue placeholder="Chọn giáo viên" />
             </SelectTrigger>
             <SelectContent>
-              {TEACHER_REFS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
+              {(teacherOptions ?? []).map((t) => (
+                <SelectItem key={t.id} value={t.name}>
+                  {t.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -361,8 +375,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
                 <SelectValue placeholder="Chọn cơ sở" />
               </SelectTrigger>
               <SelectContent>
-                {FACILITIES.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
+                {(facilityOptions ?? []).map((f) => (
+                  <SelectItem key={f.id} value={String(f.id)}>
                     {f.name}
                   </SelectItem>
                 ))}
@@ -379,8 +393,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
               </SelectTrigger>
               <SelectContent>
                 {availableRooms.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
+                  <SelectItem key={r.id} value={r.name}>
+                    {r.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -435,7 +449,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function AdminSchedulePage() {
   const [selectedFacilityId, setSelectedFacilityId] = useState("all");
-  const [weekStart, setWeekStart] = useState(DEMO_WEEK_START);
+  const [weekStart, setWeekStart] = useState(getCurrentMonday);
+  const { data: facilityOpts } = useFacilityOptions();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: sessions = [], isLoading: loadingSessions } = useWeekSessions(
@@ -516,8 +531,8 @@ export function AdminSchedulePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả cơ sở</SelectItem>
-                {FACILITIES.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
+                {(facilityOpts ?? []).map((f) => (
+                  <SelectItem key={f.id} value={String(f.id)}>
                     {f.name}
                   </SelectItem>
                 ))}

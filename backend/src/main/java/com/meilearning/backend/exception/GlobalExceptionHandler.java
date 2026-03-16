@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xá»­ lý lỗi validation (@Valid / @Validated)
+     * Xử­ lý lỗi validation (@Valid / @Validated)
 
      */
 
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse body = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
-                .message("Dá»¯ liá»‡u không hợp lá»‡")
+                .message("Dữ liệu không hợp lệ")
                 .errors(errors)
                 .timestamp(Instant.now())
                 .build();
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xá»­ lý ResourceNotFoundException (404)
+     * Xử­ lý ResourceNotFoundException (404)
 
      */
 
@@ -85,7 +85,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xá»­ lý BusinessException (422 Unprocessable Entity)
+     * Xử­ lý BusinessException (422 Unprocessable Entity)
 
      */
 
@@ -104,7 +104,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xá»­ lý DuplicateResourceException (409 Conflict)
+     * Xử­ lý DuplicateResourceException (409 Conflict)
 
      */
 

@@ -45,8 +45,14 @@ apiClient.interceptors.response.use(
             localStorage.removeItem('accessToken');
             localStorage.removeItem('user');
             window.location.href = '/login';
+        } else if (status === 400) {
+            // Validation error — hiển thị message từ backend
+            toast.error(serverMessage || 'Dữ liệu không hợp lệ.');
         } else if (status === 403) {
             toast.error(serverMessage || 'Bạn không có quyền thực hiện thao tác này!');
+        } else if (status === 409) {
+            // Duplicate resource — hiển thị message từ backend
+            toast.error(serverMessage || 'Dữ liệu đã tồn tại.');
         } else if (status === 422) {
             // Business error — hiển thị message từ backend
             toast.error(serverMessage || 'Dữ liệu không hợp lệ.');

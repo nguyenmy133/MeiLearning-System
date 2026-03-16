@@ -10,7 +10,7 @@ import com.meilearning.backend.repository.QrSettingsRepository;
 import com.meilearning.backend.service.QrSettingsService;
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class QrSettingsServiceImpl implements QrSettingsService {
 
     private final QrSettingsRepository qrSettingsRepository;
@@ -23,6 +23,7 @@ public class QrSettingsServiceImpl implements QrSettingsService {
     }
 
     @Override
+    @Transactional
     public QrSettingsResponse updateSettings(UpdateQrSettingsRequest request) {
         QrSettings settings = getOrCreateSettings();
         if (request.getEnabled() != null) settings.setEnabled(request.getEnabled());

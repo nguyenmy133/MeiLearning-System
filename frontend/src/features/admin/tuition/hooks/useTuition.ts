@@ -68,15 +68,21 @@ export function useGenerateMonthlyInvoices() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (month: string) => generateMonthlyInvoices(month),
-    onSuccess: ({ generated, skipped }) => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: tuitionKeys.all });
-      toast.success(
-        `Đã tạo ${generated} hóa đơn mới` +
-          (skipped > 0 ? ` (bỏ qua ${skipped} học viên đã có bill)` : "")
-      );
+      const generated = data?.generated ?? 0;
+      const skipped = data?.skipped ?? 0;
+      if (generated === 0 && skipped === 0) {
+        toast.info("Không có hóa đơn nào cần tạo cho tháng này.");
+      } else {
+        toast.success(
+          `Đã tạo ${generated} hóa đơn mới` +
+            (skipped > 0 ? ` (bỏ qua ${skipped} học viên đã có bill)` : "")
+        );
+      }
     },
     onError: (err: Error) => {
-      toast.error(err.message);
+      toast.error(err.message || "Không thể tạo hóa đơn. Vui lòng thử lại.");
     },
   });
 }

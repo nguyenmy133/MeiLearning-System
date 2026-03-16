@@ -148,28 +148,79 @@ function FacilityForm({ initialData, onSubmit, isPending, mode }: FacilityFormPr
   const [manager, setManager] = useState(initialData?.manager ?? "");
   const [status, setStatus] = useState<FacilityStatusType>(initialData?.status ?? "active");
 
+  // Track which fields user has interacted with
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  // Validation rules
+  const validatePhone = (val: string): string => {
+    if (!val.trim()) return ""; // optional — bỏ trống OK
+    const digits = val.replace(/[\s\-\.]/g, "");
+    if (!/^\d+$/.test(digits)) return "Số điện thoại chỉ được chứa chữ số";
+    if (digits.length < 10 || digits.length > 11) return "Số điện thoại phải có 10-11 chữ số";
+    return "";
+  };
+
+  const errors = {
+    name: !name.trim() ? "Tên cơ sở không được để trống" : "",
+    address: !address.trim() ? "Địa chỉ không được để trống" : "",
+    phone: validatePhone(phone),
+  };
+  const isValid = !errors.name && !errors.address && !errors.phone;
+
   const handleSubmit = () => {
+    // Mark all fields as touched to show errors
+    setTouched({ name: true, address: true, phone: true });
+    if (!isValid) return;
+
     if (mode === "create") {
-      onSubmit({ name, address, phone, manager } as CreateFacilityDTO);
+      onSubmit({ name: name.trim(), address: address.trim(), phone: phone.trim(), manager: manager.trim() } as CreateFacilityDTO);
     } else {
-      onSubmit({ name, address, phone, manager, status } as UpdateFacilityDTO);
+      onSubmit({ name: name.trim(), address: address.trim(), phone: phone.trim(), manager: manager.trim(), status } as UpdateFacilityDTO);
     }
   };
 
   return (
     <div className="space-y-4 py-4">
       <div className="space-y-2">
-        <Label>Tên cơ sở</Label>
-        <Input placeholder="Nhập tên cơ sở" value={name} onChange={(e) => setName(e.target.value)} />
+        <Label>Tên cơ sở <span className="text-destructive">*</span></Label>
+        <Input
+          placeholder="Nhập tên cơ sở"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => markTouched("name")}
+          className={touched.name && errors.name ? "border-destructive" : ""}
+        />
+        {touched.name && errors.name && (
+          <p className="text-xs text-destructive">{errors.name}</p>
+        )}
       </div>
       <div className="space-y-2">
-        <Label>Địa chỉ</Label>
-        <Textarea placeholder="Nhập địa chỉ đầy đủ" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <Label>Địa chỉ <span className="text-destructive">*</span></Label>
+        <Textarea
+          placeholder="Nhập địa chỉ đầy đủ"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          onBlur={() => markTouched("address")}
+          className={touched.address && errors.address ? "border-destructive" : ""}
+        />
+        {touched.address && errors.address && (
+          <p className="text-xs text-destructive">{errors.address}</p>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Số điện thoại</Label>
-          <Input placeholder="028-xxxx-xxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input
+            placeholder="0901234567"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={() => markTouched("phone")}
+            className={touched.phone && errors.phone ? "border-destructive" : ""}
+          />
+          {touched.phone && errors.phone && (
+            <p className="text-xs text-destructive">{errors.phone}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Quản lý</Label>
@@ -198,7 +249,7 @@ function FacilityForm({ initialData, onSubmit, isPending, mode }: FacilityFormPr
         </p>
       )}
 
-      <Button className="w-full mt-2" onClick={handleSubmit} disabled={isPending || !name.trim()}>
+      <Button className="w-full mt-2" onClick={handleSubmit} disabled={isPending}>
         {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {mode === "create" ? "Lưu cơ sở" : "Cập nhật cơ sở"}
       </Button>
@@ -227,12 +278,27 @@ function RoomForm({ initialData, onSubmit, isPending, mode }: RoomFormProps) {
   const [capacity, setCapacity] = useState(initialData?.capacity ?? 20);
   const [status, setStatus] = useState<RoomStatusType>(initialData?.status ?? "available");
 
+  // Track touched fields
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  // Validation rules
+  const errors = {
+    name: !name.trim() ? "Tên phòng không được để trống" : "",
+    facilityId: !facilityId ? "Vui lòng chọn cơ sở" : "",
+    capacity: capacity < 1 ? "Sức chứa tối thiểu là 1" : capacity > 200 ? "Sức chứa tối đa là 200" : "",
+  };
+  const isValid = !errors.name && !errors.facilityId && !errors.capacity;
+
   const handleSubmit = () => {
+    setTouched({ name: true, facilityId: true, capacity: true });
+    if (!isValid) return;
+
     if (mode === "create") {
-      onSubmit({ name, facilityId: Number(facilityId), capacity } as CreateRoomDTO);
+      onSubmit({ name: name.trim(), facilityId: Number(facilityId), capacity } as CreateRoomDTO);
     } else {
       onSubmit({
-        name, facilityId: Number(facilityId), capacity, status,
+        name: name.trim(), facilityId: Number(facilityId), capacity, status,
       } as UpdateRoomDTO);
     }
   };
@@ -241,28 +307,48 @@ function RoomForm({ initialData, onSubmit, isPending, mode }: RoomFormProps) {
     <div className="space-y-4 py-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Tên phòng</Label>
-          <Input placeholder="VD: Phòng 101" value={name} onChange={(e) => setName(e.target.value)} />
+          <Label>Tên phòng <span className="text-destructive">*</span></Label>
+          <Input
+            placeholder="VD: Phòng 101"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => markTouched("name")}
+            className={touched.name && errors.name ? "border-destructive" : ""}
+          />
+          {touched.name && errors.name && (
+            <p className="text-xs text-destructive">{errors.name}</p>
+          )}
         </div>
         <div className="space-y-2">
-          <Label>Cơ sở</Label>
-          <Select value={facilityId} onValueChange={setFacilityId}>
-            <SelectTrigger><SelectValue placeholder="Chọn cơ sở" /></SelectTrigger>
+          <Label>Cơ sở <span className="text-destructive">*</span></Label>
+          <Select value={facilityId} onValueChange={(v) => { setFacilityId(v); markTouched("facilityId"); }}>
+            <SelectTrigger className={touched.facilityId && errors.facilityId ? "border-destructive" : ""}>
+              <SelectValue placeholder="Chọn cơ sở" />
+            </SelectTrigger>
             <SelectContent>
               {activeFacilities?.map((f) => (
                 <SelectItem key={f.id} value={f.id.toString()}>{f.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {touched.facilityId && errors.facilityId && (
+            <p className="text-xs text-destructive">{errors.facilityId}</p>
+          )}
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Sức chứa</Label>
+        <Label>Sức chứa <span className="text-destructive">*</span></Label>
         <Input
           type="number" min={1} max={200} value={capacity}
           onChange={(e) => setCapacity(Number(e.target.value))}
+          onBlur={() => markTouched("capacity")}
+          className={touched.capacity && errors.capacity ? "border-destructive" : ""}
         />
-        <p className="text-xs text-muted-foreground">Nhập số lượng từ 1 - 200 học viên</p>
+        {touched.capacity && errors.capacity ? (
+          <p className="text-xs text-destructive">{errors.capacity}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Nhập số lượng từ 1 - 200 học viên</p>
+        )}
       </div>
 
       {mode === "edit" && (
@@ -287,7 +373,7 @@ function RoomForm({ initialData, onSubmit, isPending, mode }: RoomFormProps) {
 
       <Button
         className="w-full mt-2" onClick={handleSubmit}
-        disabled={isPending || !name.trim() || !facilityId}
+        disabled={isPending}
       >
         {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {mode === "create" ? "Lưu phòng" : "Cập nhật phòng"}
@@ -335,8 +421,8 @@ export function AdminFacilitiesPage() {
   const { data: facilitiesData, isLoading: loadingFacilities } = useFacilities({ search: searchTerm });
   const { data: roomsData, isLoading: loadingRooms } = useRooms({ search: searchTerm });
 
-  const facilities = facilitiesData?.data ?? [];
-  const rooms = roomsData?.data ?? [];
+  const facilities = facilitiesData ?? [];
+  const rooms = roomsData ?? [];
 
   // ===== Mutations =====
   const createFacilityMut = useCreateFacility();
@@ -413,7 +499,7 @@ export function AdminFacilitiesPage() {
 
   // ===== Room count per facility =====
   const getRoomCount = (facilityId: number) =>
-    roomsData?.data.filter((r) => r.facilityId === facilityId).length ?? 0;
+    rooms.filter((r) => r.facilityId === facilityId).length;
 
   // ===== RENDER =====
   return (

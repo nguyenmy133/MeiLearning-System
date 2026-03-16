@@ -41,8 +41,9 @@ import type {
   Class, CreateClassDTO, UpdateClassDTO, SessionSlot, ClassStatusType,
 } from "../types";
 import {
-  CLASS_STATUS_LABELS, SUBJECT_OPTIONS, FACILITY_OPTIONS, WEEKDAYS, formatSchedule,
+  CLASS_STATUS_LABELS, WEEKDAYS, formatSchedule,
 } from "../types";
+import { useSubjectOptions, useFacilityOptions } from "@/hooks/useClassOptions";
 
 // ============================================================================
 // STATUS BADGE
@@ -276,6 +277,8 @@ interface ClassFormProps {
 
 function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
   const { data: teacherRefs = [] } = useTeacherRefs();
+  const { data: subjectOptions = [] } = useSubjectOptions();
+  const { data: facilityOptions = [] } = useFacilityOptions();
 
   const [name, setName] = useState(initial?.name ?? "");
   const [subject, setSubject] = useState(initial?.subject ?? "");
@@ -358,7 +361,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
               <SelectValue placeholder="Chọn môn" />
             </SelectTrigger>
             <SelectContent>
-              {SUBJECT_OPTIONS.map((s) => (
+              {subjectOptions.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
@@ -391,8 +394,8 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
               <SelectValue placeholder="Chọn cơ sở" />
             </SelectTrigger>
             <SelectContent>
-              {FACILITY_OPTIONS.map((f) => (
-                <SelectItem key={f} value={f}>{f}</SelectItem>
+              {facilityOptions.map((f) => (
+                <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -527,6 +530,8 @@ export function AdminClassesPage() {
   const [endingClass, setEndingClass] = useState<Class | null>(null);
 
   // ── Queries ──
+  const { data: subjectOpts = [] } = useSubjectOptions();
+  const { data: facilityOpts = [] } = useFacilityOptions();
   const { data: classesData, isLoading } = useClasses({
     search: searchTerm || undefined,
     subject: filterSubject !== "all" ? filterSubject : undefined,
@@ -540,7 +545,7 @@ export function AdminClassesPage() {
   const deleteMutation = useDeleteClass();
   const endMutation = useEndClass();
 
-  const classes = classesData?.data ?? [];
+  const classes = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
 
   // ── Handlers ──
   const handleCreate = (data: CreateClassDTO | UpdateClassDTO) => {
@@ -643,7 +648,7 @@ export function AdminClassesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả môn</SelectItem>
-                  {SUBJECT_OPTIONS.map((s) => (
+                  {subjectOpts.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
@@ -665,8 +670,8 @@ export function AdminClassesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả cơ sở</SelectItem>
-                  {FACILITY_OPTIONS.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  {facilityOpts.map((f) => (
+                    <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

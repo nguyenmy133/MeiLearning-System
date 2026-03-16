@@ -24,9 +24,12 @@ import lombok.Setter;
 import com.meilearning.backend.entity.enums.RoomStatus;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.UniqueConstraint;
 @Entity
 @Table(name = "rooms", indexes = {
         @Index(name = "idx_rooms_facility", columnList = "facility_id")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_room_name_facility", columnNames = {"name", "facility_id"})
 })
 
 @Getter
@@ -50,8 +53,6 @@ public class Room extends BaseEntity {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private RoomStatus status = RoomStatus.available;
-
-    // â”€â”€ Relationships â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @OneToMany(mappedBy = "room")
     @Builder.Default

@@ -10,7 +10,8 @@ import type {
 
 export async function getTeachers(params?: TeacherQueryParams): Promise<Teacher[]> {
   const { data } = await apiClient.get(API.TEACHERS.LIST, { params });
-  return data;
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function getTeacherById(id: number): Promise<Teacher> {

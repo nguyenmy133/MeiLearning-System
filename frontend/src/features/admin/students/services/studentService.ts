@@ -11,7 +11,8 @@ import type {
 
 export async function getStudents(params?: StudentQueryParams): Promise<Student[]> {
   const { data } = await apiClient.get(API.STUDENTS.LIST, { params });
-  return data;
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function getStudentById(id: number): Promise<Student> {

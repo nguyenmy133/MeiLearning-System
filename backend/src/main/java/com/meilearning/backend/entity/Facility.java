@@ -46,8 +46,6 @@ public class Facility extends BaseEntity {
     @Builder.Default
     private FacilityStatus status = FacilityStatus.active;
 
-    // â”€â”€ Relationships â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     @OneToMany(mappedBy = "facility")
     @Builder.Default
     private List<Room> rooms = new ArrayList<>();

@@ -3,7 +3,8 @@ import { API } from "@/config/api-endpoints";
 
 export async function getTuitionInvoices(params?: { status?: string; month?: string; studentId?: number }) {
   const { data } = await apiClient.get(API.TUITION.LIST, { params });
-  return data;
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function getTuitionById(id: number) {

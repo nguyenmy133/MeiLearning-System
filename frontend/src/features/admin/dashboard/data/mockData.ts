@@ -8,10 +8,10 @@ import {
 } from "../types";
 
 export const mockStats: DashboardStatData[] = [
-  { label: "Tổng học viên", value: "1,234", change: "+12%", trend: "up" },
-  { label: "Giáo viên", value: "52", change: "+3", trend: "up" },
-  { label: "Lớp đang mở", value: "48", change: "-2", trend: "down" },
-  { label: "Doanh thu tháng", value: "450M", change: "+8%", trend: "up" },
+  { label: "Tổng học viên", value: "0", change: "", trend: "up" },
+  { label: "Giáo viên", value: "0", change: "", trend: "up" },
+  { label: "Lớp đang mở", value: "0", change: "", trend: "up" },
+  { label: "Doanh thu tháng", value: "0đ", change: "", trend: "up" },
 ];
 
 export const mockRevenueData: DailyRevenue[] = [

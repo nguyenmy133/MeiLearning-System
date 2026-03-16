@@ -46,8 +46,9 @@ import type {
 } from "../types";
 import {
   STUDENT_STATUS_LABELS, TUITION_STATUS_LABELS,
-  CLASS_OPTIONS, DROP_REASONS,
+  DROP_REASONS,
 } from "../types";
+import { useClassOptions } from "@/hooks/useClassOptions";
 
 // ============================================================================
 // HELPERS
@@ -178,6 +179,7 @@ interface ClassPickerProps {
 }
 
 function ClassPicker({ selected, onChange }: ClassPickerProps) {
+  const { data: classOptions } = useClassOptions();
   const toggle = (opt: { id: number; name: string }) => {
     const exists = selected.some((c) => c.classId === opt.id);
     onChange(
@@ -190,7 +192,7 @@ function ClassPicker({ selected, onChange }: ClassPickerProps) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {CLASS_OPTIONS.map((opt) => (
+        {(classOptions ?? []).map((opt) => (
           <button
             key={opt.id}
             type="button"
@@ -502,6 +504,7 @@ export function AdminStudentsPage() {
   const [filterClassId, setFilterClassId] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTuition, setFilterTuition] = useState("all");
+  const { data: classOptions } = useClassOptions();
 
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -530,7 +533,7 @@ export function AdminStudentsPage() {
   const dropMutation = useDropStudent();
   const reactivateMutation = useReactivateStudent();
 
-  const students = studentsData?.data ?? [];
+  const students = Array.isArray(studentsData) ? studentsData : (studentsData as any)?.data ?? [];
 
   // ── Handlers ──
   const handleCreate = (data: CreateStudentDTO | UpdateStudentDTO) => {
@@ -610,8 +613,8 @@ export function AdminStudentsPage() {
   const handleResetPassword = () => {
     if (!resetTarget) return;
     resetPwMutation.mutate(resetTarget.id, {
-      onSuccess: (pw) => {
-        setNewPassword(pw);
+      onSuccess: () => {
+        setNewPassword(generatePassword());
         toast.success("Đã đặt lại mật khẩu thành công");
       },
       onError: (err) => toast.error(err.message),
@@ -681,7 +684,7 @@ export function AdminStudentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả lớp</SelectItem>
-                  {CLASS_OPTIONS.map((opt) => (
+                  {(classOptions ?? []).map((opt) => (
                     <SelectItem key={opt.id} value={String(opt.id)}>{opt.name}</SelectItem>
                   ))}
                 </SelectContent>

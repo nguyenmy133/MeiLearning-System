@@ -28,4 +28,8 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
 
     java.util.Optional<Room> findByName(String name);
 
+    boolean existsByNameAndFacilityId(String name, Long facilityId);
+
+    boolean existsByNameAndFacilityIdAndIdNot(String name, Long facilityId, Long id);
+
 }

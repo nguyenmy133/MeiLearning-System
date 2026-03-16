@@ -31,7 +31,7 @@ import {
   Check,
 } from "lucide-react";
 import { useCreateStudent } from "../hooks";
-import { CLASS_OPTIONS } from "../types";
+import { useClassOptions } from "@/hooks/useClassOptions";
 import type { CreateStudentDTO } from "../types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -44,14 +44,14 @@ function generatePassword(): string {
 }
 
 /** Map tên lớp (chuỗi cách nhau dấu phẩy) → ClassEnrollment[] */
-function parseClasses(raw: string) {
+function parseClasses(raw: string, classOpts: { id: number; name: string }[]) {
   if (!raw) return [];
   return raw
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
     .map((name) => {
-      const opt = CLASS_OPTIONS.find(
+      const opt = classOpts.find(
         (c) => c.name.toLowerCase() === name.toLowerCase()
       );
       return opt ? { classId: opt.id, className: opt.name } : null;
@@ -121,6 +121,7 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const createMutation = useCreateStudent();
+  const { data: classOptions } = useClassOptions();
 
   const handleClose = () => {
     if (step === "importing") return;
@@ -199,7 +200,7 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
         phone: r.phone,
         parentPhone: r.parentPhone,
         email: r.email,
-        classes: parseClasses(r.classes),
+        classes: parseClasses(r.classes, classOptions ?? []),
         username: r.phone,       // phone = username
         password: r.password,
       };

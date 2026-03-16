@@ -21,6 +21,7 @@ import com.meilearning.backend.mapper.RoomMapper;
 import com.meilearning.backend.repository.FacilityRepository;
 import com.meilearning.backend.repository.RoomRepository;
 import com.meilearning.backend.service.RoomService;
+import com.meilearning.backend.exception.DuplicateResourceException;
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -81,7 +82,7 @@ public class RoomServiceImpl implements RoomService {
     public RoomResponse getById(Long id) {
 
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ph²ng với id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với id: " + id));
 
         return roomMapper.toResponse(room);
 
@@ -92,6 +93,12 @@ public class RoomServiceImpl implements RoomService {
 
         Facility facility = facilityRepository.findById(request.getFacilityId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cơ sở với id: " + request.getFacilityId()));
+
+        // Check trùng tên phòng trong cùng cơ sở
+        if (roomRepository.existsByNameAndFacilityId(request.getName(), request.getFacilityId())) {
+            throw new DuplicateResourceException(
+                    "Phòng '" + request.getName() + "' đã tồn tại trong cơ sở '" + facility.getName() + "'");
+        }
 
         Room room = roomMapper.toEntity(request, facility);
 
@@ -105,14 +112,22 @@ public class RoomServiceImpl implements RoomService {
     public RoomResponse update(Long id, UpdateRoomRequest request) {
 
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ph²ng với id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với id: " + id));
 
         Facility facility = null;
+        Long targetFacilityId = (request.getFacilityId() != null) ? request.getFacilityId() : room.getFacility().getId();
 
         if (request.getFacilityId() != null && !request.getFacilityId().equals(room.getFacility().getId())) {
             facility = facilityRepository.findById(request.getFacilityId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cơ sở với id: " + request.getFacilityId()));
+        }
 
+        // Check trùng tên phòng trong cùng cơ sở (trừ chính nó)
+        String newName = (request.getName() != null) ? request.getName() : room.getName();
+        if (roomRepository.existsByNameAndFacilityIdAndIdNot(newName, targetFacilityId, id)) {
+            String facilityName = (facility != null) ? facility.getName() : room.getFacility().getName();
+            throw new DuplicateResourceException(
+                    "Phòng '" + newName + "' đã tồn tại trong cơ sở '" + facilityName + "'");
         }
 
         roomMapper.updateEntity(request, room, facility);
@@ -127,7 +142,7 @@ public class RoomServiceImpl implements RoomService {
     public void delete(Long id) {
 
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ph²ng với id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với id: " + id));
 
         roomRepository.delete(room);
 

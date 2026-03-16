@@ -1,22 +1,29 @@
 import { apiClient } from "@/lib/api-client";
-import type { DashboardData, DashboardStatData } from "../types";
-import {
-  mockStats,
-  mockRevenueData,
-  mockTodaySchedule,
-  mockTodayAttendance,
-  mockAlerts,
-  mockOverdueStudents,
-} from "../data/mockData";
+import type { DashboardData, DashboardStatData, DailyRevenue } from "../types";
+
+const defaultStats: DashboardStatData[] = [
+  { label: "Tổng học viên", value: "0", change: "", trend: "up" },
+  { label: "Giáo viên", value: "0", change: "", trend: "up" },
+  { label: "Lớp đang mở", value: "0", change: "", trend: "up" },
+  { label: "Doanh thu tháng", value: "0đ", change: "", trend: "up" },
+];
+
+const defaultRevenueData: DailyRevenue[] = [
+  { day: "T2", revenue: 0 },
+  { day: "T3", revenue: 0 },
+  { day: "T4", revenue: 0 },
+  { day: "T5", revenue: 0 },
+  { day: "T6", revenue: 0 },
+  { day: "T7", revenue: 0 },
+  { day: "CN", revenue: 0 },
+];
 
 /**
- * Dashboard data — hybrid approach:
- * Gọi tất cả BE stats APIs, merge vào dashboard.
- * Fallback mock data cho các phần BE chưa hỗ trợ (schedule, alerts).
+ * Dashboard data — calls all backend stats APIs.
+ * Returns safe defaults when BE is unavailable.
  */
 export async function getDashboardData(): Promise<DashboardData> {
   try {
-    // Gọi nhiều API song song
     const [studentsRes, teachersRes, classesRes, tuitionRes, attendanceRes] =
       await Promise.allSettled([
         apiClient.get("/students/stats"),
@@ -26,13 +33,12 @@ export async function getDashboardData(): Promise<DashboardData> {
         apiClient.get("/attendance/stats"),
       ]);
 
-    // Build stats từ real data, fallback mock nếu API lỗi
-    const stats: DashboardStatData[] = [...mockStats];
+    const stats: DashboardStatData[] = [...defaultStats];
 
     if (studentsRes.status === "fulfilled") {
       const s = studentsRes.value.data;
-      if (s?.total !== undefined) {
-        stats[0] = { ...stats[0], value: String(s.total) };
+      if (s?.totalStudents !== undefined) {
+        stats[0] = { ...stats[0], value: String(s.totalStudents) };
       }
     }
     if (teachersRes.status === "fulfilled") {
@@ -50,42 +56,43 @@ export async function getDashboardData(): Promise<DashboardData> {
     if (tuitionRes.status === "fulfilled") {
       const t = tuitionRes.value.data;
       if (t?.totalRevenue !== undefined) {
-        const revenueM = Math.round(t.totalRevenue / 1_000_000);
-        stats[3] = { ...stats[3], value: `${revenueM}M` };
+        const revenue = t.totalRevenue;
+        const display = revenue >= 1_000_000 
+          ? `${Math.round(revenue / 1_000_000)}M`
+          : revenue > 0 
+            ? new Intl.NumberFormat("vi-VN").format(revenue) + "đ"
+            : "0đ";
+        stats[3] = { ...stats[3], value: display };
       }
     }
 
-    // Attendance — map to TodayAttendance if API returns data
-    let todayAttendance = mockTodayAttendance;
+    let todayAttendance = { total: 0, present: 0, absent: 0, late: 0 };
     if (attendanceRes.status === "fulfilled") {
       const a = attendanceRes.value.data;
-      if (a?.totalPresent !== undefined) {
-        todayAttendance = {
-          total: a.totalRecords ?? mockTodayAttendance.total,
-          present: a.totalPresent ?? mockTodayAttendance.present,
-          absent: a.totalAbsent ?? mockTodayAttendance.absent,
-          late: a.totalLate ?? mockTodayAttendance.late,
-        };
-      }
+      todayAttendance = {
+        total: a?.totalSessions ?? 0,
+        present: a?.presentCount ?? 0,
+        absent: a?.absentCount ?? 0,
+        late: a?.lateCount ?? 0,
+      };
     }
 
     return {
       stats,
-      revenueData: mockRevenueData,     // TODO: add revenue chart API
-      todaySchedule: mockTodaySchedule,  // TODO: add today schedule API
+      revenueData: defaultRevenueData,
+      todaySchedule: [],
       todayAttendance,
-      alerts: mockAlerts,                // TODO: add alerts API
-      overdueStudents: mockOverdueStudents, // TODO: add overdue tuition API
+      alerts: [],
+      overdueStudents: [],
     };
   } catch {
-    // Fallback hoàn toàn về mock data
     return {
-      stats: mockStats,
-      revenueData: mockRevenueData,
-      todaySchedule: mockTodaySchedule,
-      todayAttendance: mockTodayAttendance,
-      alerts: mockAlerts,
-      overdueStudents: mockOverdueStudents,
+      stats: defaultStats,
+      revenueData: defaultRevenueData,
+      todaySchedule: [],
+      todayAttendance: { total: 0, present: 0, absent: 0, late: 0 },
+      alerts: [],
+      overdueStudents: [],
     };
   }
 }

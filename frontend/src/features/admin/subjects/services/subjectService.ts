@@ -13,7 +13,9 @@ import type {
 /** Fetch subject list with optional filters */
 export async function getSubjects(params?: SubjectQueryParams): Promise<Subject[]> {
   const { data } = await apiClient.get(API.SUBJECTS.LIST, { params });
-  return data;
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  // Extract the array from the paginated response
+  return Array.isArray(data) ? data : data.data ?? [];
 }
 
 /** Fetch a single subject by id */

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,22 @@ export function QRSettingsPage() {
   const { data, isLoading } = useQRSettings();
   const update = useUpdateQRSettings();
 
-  // local shadow state handled via mutation variables
+  // Remote settings as source of truth
+  const remote = data ?? { expiryTime: 5, lateThreshold: 10, allowRegenerate: true };
+
+  // Local state for input fields (avoids re-save on every keystroke)
+  const [expiryTime, setExpiryTime] = useState(remote.expiryTime);
+  const [lateThreshold, setLateThreshold] = useState(remote.lateThreshold);
+
+  // Sync local state when remote changes
+  useEffect(() => {
+    if (data) {
+      setExpiryTime(data.expiryTime);
+      setLateThreshold(data.lateThreshold);
+    }
+  }, [data]);
+
+  // Toast on success
   useEffect(() => {
     if (update.isSuccess) {
       toast({
@@ -23,11 +38,28 @@ export function QRSettingsPage() {
     }
   }, [update.isSuccess, toast]);
 
-  const settings = data ?? { expiryTime: 5, lateThreshold: 10, allowRegenerate: true };
+  // Save all current values
+  const saveConfig = useCallback(
+    (overrides?: Partial<typeof remote>) => {
+      update.reset();
+      update.mutate({
+        expiryTime,
+        lateThreshold,
+        allowRegenerate: remote.allowRegenerate,
+        ...overrides,
+      });
+    },
+    [expiryTime, lateThreshold, remote.allowRegenerate, update]
+  );
 
-  const handleChange = (partial: Partial<typeof settings>) => {
+  // Toggle switch → auto-save immediately
+  const handleToggle = (checked: boolean) => {
     update.reset();
-    update.mutate({ ...settings, ...partial });
+    update.mutate({
+      expiryTime,
+      lateThreshold,
+      allowRegenerate: checked,
+    });
   };
 
   return (
@@ -59,8 +91,9 @@ export function QRSettingsPage() {
               type="number"
               min={1}
               max={30}
-              value={settings.expiryTime}
-              onChange={(e) => handleChange({ expiryTime: parseInt(e.target.value) || 5 })}
+              value={expiryTime}
+              onChange={(e) => setExpiryTime(parseInt(e.target.value) || 5)}
+              onBlur={() => saveConfig({ expiryTime })}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">
@@ -78,8 +111,9 @@ export function QRSettingsPage() {
               type="number"
               min={5}
               max={60}
-              value={settings.lateThreshold}
-              onChange={(e) => handleChange({ lateThreshold: parseInt(e.target.value) || 10 })}
+              value={lateThreshold}
+              onChange={(e) => setLateThreshold(parseInt(e.target.value) || 10)}
+              onBlur={() => saveConfig({ lateThreshold })}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">
@@ -98,13 +132,14 @@ export function QRSettingsPage() {
               </p>
             </div>
             <Switch
-              checked={settings.allowRegenerate}
-              onCheckedChange={(checked) => handleChange({ allowRegenerate: checked })}
+              checked={remote.allowRegenerate}
+              onCheckedChange={handleToggle}
+              disabled={update.isPending}
             />
           </div>
 
           <Button
-            onClick={() => handleChange({ ...settings })}
+            onClick={() => saveConfig()}
             disabled={update.isPending || isLoading}
             className="btn-primary"
           >

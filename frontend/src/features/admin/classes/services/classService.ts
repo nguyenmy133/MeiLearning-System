@@ -10,7 +10,8 @@ import type {
 
 export async function getClasses(params?: ClassQueryParams): Promise<Class[]> {
   const { data } = await apiClient.get(API.CLASSES.LIST, { params });
-  return data;
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function getClassById(id: number): Promise<Class> {
@@ -39,7 +40,8 @@ export async function deleteClass(id: number): Promise<void> {
 
 export async function getTeacherRefs(): Promise<Array<{ id: number; name: string }>> {
   const { data } = await apiClient.get("/teachers", { params: { limit: 100 } });
-  return data;
+  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
+  return Array.isArray(data) ? data : data?.data ?? [];
 }
 
 export async function endClass(id: number): Promise<Class> {

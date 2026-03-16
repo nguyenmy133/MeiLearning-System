@@ -64,7 +64,8 @@ import {
   useDeleteSubject,
 } from "../hooks";
 import type { Subject, CreateSubjectDTO, UpdateSubjectDTO } from "../types";
-import { SUBJECT_CATEGORIES, ALL_FACILITIES, SUBJECT_STATUS_LABELS } from "../types";
+import { SUBJECT_CATEGORIES, SUBJECT_STATUS_LABELS } from "../types";
+import { useFacilityOptions } from "@/hooks/useClassOptions";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Subject["status"] }) {
@@ -129,21 +130,40 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
   );
   const [status, setStatus] = useState<Subject["status"]>(initial?.status ?? "active");
   const [facilities, setFacilities] = useState<string[]>(initial?.facilities ?? []);
+  const { data: facilityOptions } = useFacilityOptions();
+
+  // Track touched fields
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  // Validation rules
+  const errors = {
+    name: !name.trim() ? "Tên môn học không được để trống" : "",
+    code: !code.trim() ? "Mã môn không được để trống" : "",
+    basePricePerSession: basePricePerSession <= 0 ? "Giá mỗi buổi phải lớn hơn 0" : "",
+    facilities: facilities.length === 0 ? "Chọn ít nhất một cơ sở" : "",
+  };
+  const isValid = !errors.name && !errors.code && !errors.basePricePerSession && !errors.facilities;
 
   const toggleFacility = (facility: string) => {
     setFacilities((prev) =>
       prev.includes(facility) ? prev.filter((f) => f !== facility) : [...prev, facility]
     );
+    markTouched("facilities");
   };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("vi-VN").format(value);
 
   const handleSubmit = () => {
+    // Mark all required fields as touched
+    setTouched({ name: true, code: true, basePricePerSession: true, facilities: true });
+    if (!isValid) return;
+
     if (mode === "create") {
-      onSubmit({ name, code, description, category, basePricePerSession, facilities } as CreateSubjectDTO);
+      onSubmit({ name: name.trim(), code: code.trim(), description: description.trim(), category, basePricePerSession, facilities } as CreateSubjectDTO);
     } else {
-      onSubmit({ name, code, description, category, basePricePerSession, facilities, status } as UpdateSubjectDTO);
+      onSubmit({ name: name.trim(), code: code.trim(), description: description.trim(), category, basePricePerSession, facilities, status } as UpdateSubjectDTO);
     }
   };
 
@@ -158,7 +178,12 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
             placeholder="VD: Toán"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onBlur={() => markTouched("name")}
+            className={touched.name && errors.name ? "border-destructive" : ""}
           />
+          {touched.name && errors.name && (
+            <p className="text-xs text-destructive">{errors.name}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>
@@ -168,7 +193,12 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
             placeholder="VD: MATH"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onBlur={() => markTouched("code")}
+            className={touched.code && errors.code ? "border-destructive" : ""}
           />
+          {touched.code && errors.code && (
+            <p className="text-xs text-destructive">{errors.code}</p>
+          )}
         </div>
       </div>
 
@@ -217,13 +247,17 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
           step={10000}
           value={basePricePerSession}
           onChange={(e) => setBasePricePerSession(Number(e.target.value))}
+          onBlur={() => markTouched("basePricePerSession")}
           placeholder="VD: 150000"
+          className={touched.basePricePerSession && errors.basePricePerSession ? "border-destructive" : ""}
         />
-        {basePricePerSession > 0 && (
+        {touched.basePricePerSession && errors.basePricePerSession ? (
+          <p className="text-xs text-destructive">{errors.basePricePerSession}</p>
+        ) : basePricePerSession > 0 ? (
           <p className="text-xs text-muted-foreground">
             = {formatCurrency(basePricePerSession)}₫ / buổi (giá tham khảo khi tạo lớp)
           </p>
-        )}
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -231,19 +265,19 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
           Cơ sở giảng dạy <span className="text-destructive">*</span>
         </Label>
         <div className="flex flex-wrap gap-2">
-          {ALL_FACILITIES.map((facility) => (
+          {(facilityOptions ?? []).map((facility) => (
             <Badge
-              key={facility}
-              variant={facilities.includes(facility) ? "default" : "outline"}
+              key={facility.id}
+              variant={facilities.includes(facility.name) ? "default" : "outline"}
               className="cursor-pointer transition-colors"
-              onClick={() => toggleFacility(facility)}
+              onClick={() => toggleFacility(facility.name)}
             >
-              {facility}
+              {facility.name}
             </Badge>
           ))}
         </div>
-        {facilities.length === 0 && (
-          <p className="text-xs text-destructive">Chọn ít nhất một cơ sở</p>
+        {touched.facilities && errors.facilities && (
+          <p className="text-xs text-destructive">{errors.facilities}</p>
         )}
       </div>
 
@@ -264,7 +298,7 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
         <Button
           className="flex-1"
           onClick={handleSubmit}
-          disabled={isPending || !name.trim() || !code.trim() || facilities.length === 0}
+          disabled={isPending}
         >
           {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {mode === "create" ? "Thêm môn học" : "Cập nhật"}

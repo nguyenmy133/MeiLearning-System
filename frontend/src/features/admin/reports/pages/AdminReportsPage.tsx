@@ -36,7 +36,7 @@ import {
 import { StatCard } from "@/features/admin/components/StatCard";
 import { ChartTooltip } from "@/features/admin/components/ChartTooltip";
 import { useFinancialReport, useAcademicReport } from "../hooks";
-import { REPORT_MONTHS } from "../types";
+import { useMonthOptions } from "@/hooks/useClassOptions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,7 +67,9 @@ function PageSkeleton() {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminReportsPage() {
-  const [selectedMonth, setSelectedMonth] = useState("Tháng 12/2024");
+  const monthOptions = useMonthOptions();
+  const currentMonth = monthOptions[0] ? `Tháng ${monthOptions[0].replace('/', '/')}` : "";
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedTab, setSelectedTab] = useState<"financial" | "academic">(
     "financial"
   );
@@ -101,37 +103,44 @@ export function AdminReportsPage() {
         )
       : 0;
 
+  const totalRevenue = financial?.tuitionSummary?.collected ?? 0;
+  const totalStudents = academic?.attendanceByClass
+    ? academic.attendanceByClass.reduce((sum, c) => sum + c.students, 0)
+    : 0;
+
   const overviewStats = [
     {
       label: "Doanh thu tháng",
-      value: "95M ₫",
-      change: "+7.9%",
+      value: totalRevenue > 0 ? `${formatCurrency(totalRevenue)} ₫` : "0 ₫",
+      change: "",
       trend: "up" as const,
       icon: CreditCard,
     },
     {
       label: "Học viên đang học",
-      value: "245",
-      change: "+5.6%",
+      value: String(totalStudents),
+      change: "",
       trend: "up" as const,
       icon: Users,
-      sub: "So với tháng trước",
+      sub: "Tổng học viên trong các lớp",
     },
     {
       label: "Tỉ lệ điểm danh TB",
       value: `${avgAttendance}%`,
-      change: "-1.2%",
-      trend: "down" as const,
+      change: "",
+      trend: avgAttendance >= 80 ? "up" as const : "down" as const,
       icon: BookOpen,
       sub: "Trung bình tất cả lớp",
     },
     {
       label: "Tỉ lệ thu học phí",
-      value: `${tuitionRate}%`,
-      change: "+4%",
+      value: `${isNaN(tuitionRate) ? 0 : tuitionRate}%`,
+      change: "",
       trend: "up" as const,
       icon: GraduationCap,
-      sub: `Còn lại: ${formatCurrency(tuitionSummary.pending + tuitionSummary.overdue)} ₫`,
+      sub: tuitionSummary.pending + tuitionSummary.overdue > 0
+        ? `Còn lại: ${formatCurrency(tuitionSummary.pending + tuitionSummary.overdue)} ₫`
+        : "Đã thu đủ",
     },
   ];
 
@@ -152,11 +161,14 @@ export function AdminReportsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {REPORT_MONTHS.map((m) => (
-              <SelectItem key={m} value={m}>
-                {m}
-              </SelectItem>
-            ))}
+            {monthOptions.map((m) => {
+              const label = `Tháng ${m}`;
+              return (
+                <SelectItem key={m} value={label}>
+                  {label}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>

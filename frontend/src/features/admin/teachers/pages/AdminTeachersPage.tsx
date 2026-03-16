@@ -40,7 +40,8 @@ import {
 import type {
   Teacher, CreateTeacherDTO, UpdateTeacherDTO, TeacherStatusType,
 } from "../types";
-import { TEACHER_STATUS_LABELS, SUBJECT_OPTIONS } from "../types";
+import { TEACHER_STATUS_LABELS } from "../types";
+import { useSubjectOptions } from "@/hooks/useClassOptions";
 
 // ============================================================================
 // HELPERS
@@ -161,6 +162,7 @@ interface TeacherFormProps {
 }
 
 function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
+  const { data: subjectOptions = [] } = useSubjectOptions();
   const [name, setName] = useState(initial?.name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
@@ -169,8 +171,45 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
 
   // Chỉ dùng cho mode create
   const [username, setUsername] = useState("");
+  const [usernameManuallyEdited, setUsernameManuallyEdited] = useState(false);
   const [password, setPassword] = useState(() => generatePassword());
   const [copied, setCopied] = useState(false);
+
+  // Track touched fields
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
+
+  // Validation helpers
+  const validateEmail = (val: string): string => {
+    if (!val.trim()) return "Email không được để trống";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return "Email không đúng định dạng";
+    return "";
+  };
+
+  const validatePhone = (val: string): string => {
+    if (!val.trim()) return "Số điện thoại không được để trống";
+    const digits = val.replace(/[\s\-\.]/g, "");
+    if (!/^\d+$/.test(digits)) return "Số điện thoại chỉ được chứa chữ số";
+    if (digits.length < 10 || digits.length > 11) return "Số điện thoại phải có 10-11 chữ số";
+    return "";
+  };
+
+  const errors = {
+    name: !name.trim() ? "Họ và tên không được để trống" : "",
+    email: validateEmail(email),
+    phone: validatePhone(phone),
+    username: mode === "create" && !username.trim() ? "Tên đăng nhập không được để trống" : "",
+    password: mode === "create" && !password.trim() ? "Mật khẩu không được để trống" : "",
+  };
+  const isValid = !errors.name && !errors.email && !errors.phone && !errors.username && !errors.password;
+
+  // Auto-fill username từ số điện thoại
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
+    if (mode === "create" && !usernameManuallyEdited) {
+      setUsername(value.replace(/[\s\-\.]/g, ""));
+    }
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -187,23 +226,20 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
   };
 
   const handleSubmit = () => {
-    if (!name.trim()) {
-      toast.error("Vui lòng nhập họ tên");
-      return;
-    }
+    // Mark all required fields as touched
+    const touchAll: Record<string, boolean> = { name: true, email: true, phone: true };
     if (mode === "create") {
-      if (!username.trim()) {
-        toast.error("Vui lòng nhập tên đăng nhập");
-        return;
-      }
-      if (!password.trim()) {
-        toast.error("Vui lòng nhập mật khẩu");
-        return;
-      }
-      const dto: CreateTeacherDTO = { name, email, phone, subjects, username, password };
+      touchAll.username = true;
+      touchAll.password = true;
+    }
+    setTouched(touchAll);
+    if (!isValid) return;
+
+    if (mode === "create") {
+      const dto: CreateTeacherDTO = { name: name.trim(), email: email.trim(), phone: phone.trim(), subjects, username: username.trim(), password };
       onSubmit(dto);
     } else {
-      const dto: UpdateTeacherDTO = { name, email, phone, subjects, status };
+      const dto: UpdateTeacherDTO = { name: name.trim(), email: email.trim(), phone: phone.trim(), subjects, status };
       onSubmit(dto);
     }
   };
@@ -216,22 +252,50 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
       </p>
       <div className="space-y-2">
         <Label>Họ và tên <span className="text-destructive">*</span></Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập họ và tên" />
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => markTouched("name")}
+          placeholder="Nhập họ và tên"
+          className={touched.name && errors.name ? "border-destructive" : ""}
+        />
+        {touched.name && errors.name && (
+          <p className="text-xs text-destructive">{errors.name}</p>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Email</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@edu.vn" />
+          <Label>Email <span className="text-destructive">*</span></Label>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => markTouched("email")}
+            placeholder="email@edu.vn"
+            className={touched.email && errors.email ? "border-destructive" : ""}
+          />
+          {touched.email && errors.email && (
+            <p className="text-xs text-destructive">{errors.email}</p>
+          )}
         </div>
         <div className="space-y-2">
-          <Label>Số điện thoại</Label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0901234567" />
+          <Label>Số điện thoại <span className="text-destructive">*</span></Label>
+          <Input
+            value={phone}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            onBlur={() => markTouched("phone")}
+            placeholder="0901234567"
+            className={touched.phone && errors.phone ? "border-destructive" : ""}
+          />
+          {touched.phone && errors.phone && (
+            <p className="text-xs text-destructive">{errors.phone}</p>
+          )}
         </div>
       </div>
       <div className="space-y-2">
         <Label>Môn giảng dạy</Label>
         <div className="flex flex-wrap gap-2">
-          {SUBJECT_OPTIONS.map((subject) => (
+          {subjectOptions.map((subject) => (
             <Badge
               key={subject}
               variant={subjects.includes(subject) ? "default" : "outline"}
@@ -277,12 +341,18 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
             <Label>Tên đăng nhập <span className="text-destructive">*</span></Label>
             <Input
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="VD: mai.nguyen hoặc dùng email"
+              onChange={(e) => { setUsername(e.target.value); setUsernameManuallyEdited(true); }}
+              onBlur={() => markTouched("username")}
+              placeholder="Tự động điền từ SĐT hoặc nhập thủ công"
+              className={touched.username && errors.username ? "border-destructive" : ""}
             />
-            <p className="text-xs text-muted-foreground">
-              Giáo viên sẽ dùng tên này để đăng nhập.
-            </p>
+            {touched.username && errors.username ? (
+              <p className="text-xs text-destructive">{errors.username}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Tên đăng nhập tự động lấy từ số điện thoại. Có thể thay đổi thủ công.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Mật khẩu tạm thời <span className="text-destructive">*</span></Label>
@@ -332,6 +402,7 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
 
 export function AdminTeachersPage() {
   // ── Filters ──
+  const { data: subjectOpts = [] } = useSubjectOptions();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -360,7 +431,7 @@ export function AdminTeachersPage() {
   const lockMutation = useLockTeacher();
   const unlockMutation = useUnlockTeacher();
 
-  const teachers = teachersData?.data ?? [];
+  const teachers = Array.isArray(teachersData) ? teachersData : (teachersData as any)?.data ?? [];
 
   // ── Handlers ──
   const handleCreate = (data: CreateTeacherDTO | UpdateTeacherDTO) => {
@@ -412,9 +483,11 @@ export function AdminTeachersPage() {
   const handleResetPassword = () => {
     if (!resetTarget) return;
     resetPwMutation.mutate(resetTarget.id, {
-      onSuccess: (pw) => {
-        setNewPassword(pw);
+      onSuccess: (pw: any) => {
+        if (pw && typeof pw === 'string') setNewPassword(pw);
         toast.success("Đã đặt lại mật khẩu thành công");
+        // Auto-close dialog sau khi reset thành công
+        setResetTarget(null);
       },
       onError: (err) => toast.error(err.message),
     });
@@ -486,7 +559,7 @@ export function AdminTeachersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả môn</SelectItem>
-                  {SUBJECT_OPTIONS.map((subject) => (
+                  {subjectOpts.map((subject) => (
                     <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                   ))}
                 </SelectContent>

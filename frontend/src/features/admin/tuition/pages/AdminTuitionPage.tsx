@@ -67,9 +67,8 @@ import {
 import type { TuitionInvoice, TuitionQueryParams } from "../types";
 import {
   INVOICE_STATUS_LABELS,
-  TUITION_CLASS_LIST,
-  TUITION_MONTHS,
 } from "../types";
+import { useClassOptions, useMonthOptions } from "@/hooks/useClassOptions";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const formatCurrency = (amount: number) =>
@@ -151,9 +150,11 @@ function TableSkeleton() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function AdminTuitionPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterMonth, setFilterMonth] = useState("09/2024");
+  const [filterMonth, setFilterMonth] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterClass, setFilterClass] = useState("all");
+  const { data: classOptions } = useClassOptions();
+  const monthOptions = useMonthOptions();
   const [selectedPaymentForQR, setSelectedPaymentForQR] =
     useState<TuitionInvoice | null>(null);
   const [confirmCashTarget, setConfirmCashTarget] =
@@ -190,28 +191,28 @@ export function AdminTuitionPage() {
   const statCards = [
     {
       label: "Tổng doanh thu",
-      value: stats ? formatCurrency(stats.totalRevenue) : null,
+      value: stats ? formatCurrency(stats.totalRevenue ?? 0) : null,
       icon: DollarSign,
       color: "text-primary",
       bg: "bg-primary/10",
     },
     {
       label: "Tháng này",
-      value: stats ? formatCurrency(stats.monthRevenue) : null,
+      value: stats ? formatCurrency(stats.monthRevenue ?? 0) : null,
       icon: TrendingUp,
       color: "text-primary",
       bg: "bg-primary/10",
     },
     {
       label: "Chờ thanh toán",
-      value: stats ? formatCurrency(stats.pending) : null,
+      value: stats ? `${stats.pendingCount ?? 0} hóa đơn` : null,
       icon: Clock,
       color: "text-secondary-foreground",
       bg: "bg-secondary/20",
     },
     {
       label: "Quá hạn",
-      value: stats ? formatCurrency(stats.overdue) : null,
+      value: stats ? `${stats.overdueCount ?? 0} hóa đơn` : null,
       icon: AlertCircle,
       color: "text-destructive",
       bg: "bg-destructive/10",
@@ -283,11 +284,12 @@ export function AdminTuitionPage() {
             <Button
               size="sm"
               disabled={generateMutation.isPending}
-              onClick={() =>
+              onClick={() => {
+                const currentMonthStr = `${String(new Date().getMonth() + 1).padStart(2, "0")}/${new Date().getFullYear()}`;
                 generateMutation.mutate(
-                  filterMonth !== "all" ? filterMonth : "09/2024"
-                )
-              }
+                  filterMonth !== "all" ? filterMonth : currentMonthStr
+                );
+              }}
             >
               {generateMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -318,9 +320,9 @@ export function AdminTuitionPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả lớp</SelectItem>
-                {TUITION_CLASS_LIST.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
+                {(classOptions ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.name}>
+                    {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -332,7 +334,7 @@ export function AdminTuitionPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả tháng</SelectItem>
-                {TUITION_MONTHS.map((m) => (
+                {monthOptions.map((m) => (
                   <SelectItem key={m} value={m}>
                     Tháng {m}
                   </SelectItem>
