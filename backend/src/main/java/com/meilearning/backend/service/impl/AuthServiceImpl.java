@@ -25,7 +25,7 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BusinessException("Tên đăng nhập hoặc máº­t khẩu không Ä‘ºng"));
+                .orElseThrow(() -> new BusinessException("Tên đăng nhập hoặc máºít khẩu không Ä‘ºng"));
 
         if (!user.isActive()) {
             throw new BusinessException("Tài khoản đã bị khóa. Liên hệ quản trị viên.");
@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("Tên đăng nhập hoặc máº­t khẩu không Ä‘ºng");
+            throw new BusinessException("Tên đăng nhập hoặc máºít khẩu không Ä‘ºng");
 
         }
 
@@ -59,10 +59,10 @@ public class AuthServiceImpl implements AuthService {
     public void changePassword(String username, ChangePasswordRequest request) {
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngÆ°á»i d¹ng: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngÆ°á»i dùng: " + username));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new BusinessException("Máº­t khẩu hiện tại không Ä‘ºng");
+            throw new BusinessException("Mật khẩu hiện tại không Ä‘ºng");
 
         }
 
@@ -76,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse getCurrentUser(String username) {
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngÆ°á»i d¹ng: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngÆ°á»i dùng: " + username));
 
         return UserResponse.builder()
                 .id(user.getId())

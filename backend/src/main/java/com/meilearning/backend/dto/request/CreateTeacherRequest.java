@@ -13,17 +13,17 @@ public class CreateTeacherRequest {
     private String name;
 
     @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không há»£p lá»‡")
+    @Email(message = "Email không hợp lá»‡")
     private String email;
     private String phone;
 
-    @NotEmpty(message = "Pháº£i chá»n ­t nháº¥t 1 môn dáº¡y")
+    @NotEmpty(message = "Pháº£i chá»n ít nhất 1 môn dạy")
     private List<String> subjects;
 
     @NotBlank(message = "Tên đăng nhập không được để trống")
     private String username;
 
-    @NotBlank(message = "Máº­t khẩu không được để trống")
+    @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
 
     // Optional fields

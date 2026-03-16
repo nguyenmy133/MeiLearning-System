@@ -1,6 +1,6 @@
 /**
 
- * Entity: Kết quả thi â€” má»—i student nộp bài 1 lần per exam.
+ * Entity: Kết quả thi â€” mỗi student nộp bài 1 lần per exam.
 
  * Unique constraint: (exam_id, student_id).
 
@@ -51,7 +51,7 @@ public class ExamResult extends BaseEntity {
     @Builder.Default
     private Integer correctAnswers = 0;
 
-    /** Thá»i gian làm bài (phºt) */
+    /** Thá»i gian làm bài (phút) */
 
     @Column(name = "time_spent")
     private Integer timeSpent;

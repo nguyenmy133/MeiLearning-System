@@ -30,7 +30,7 @@ import java.util.List;
 
 
 
- * Bulk attendance: Teacher gá»­i điểm danh cho cả lớp 1 buổi.
+ * Bulk attendance: Teacher gửi điểm danh cho cả lớp 1 buổi.
 
 
 

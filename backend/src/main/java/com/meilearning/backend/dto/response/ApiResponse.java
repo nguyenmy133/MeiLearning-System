@@ -53,7 +53,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
 
                 .data(data)
-                .message("Tạo má»›i thành công")
+                .message("Tạo mới thành công")
                 .build();
 
     }

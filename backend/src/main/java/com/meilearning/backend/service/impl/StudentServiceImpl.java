@@ -215,7 +215,7 @@ public class StudentServiceImpl implements StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên với id: " + id));
 
         if (student.getStatus() == StudentStatus.active) {
-            throw new BusinessException("Không thể xóa học viên Ä‘ang active. H£y ghi nháº­n nghá»‰ học trước.");
+            throw new BusinessException("Không thể xóa học viên đang active. Hãy ghi nhận nghỉ học trước.");
 
         }
 

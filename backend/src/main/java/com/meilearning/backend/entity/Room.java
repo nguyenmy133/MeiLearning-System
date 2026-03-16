@@ -1,6 +1,6 @@
 /**
 
- * Entity: Ph²ng học â€” thuá»™c má»™t Facility.
+ * Entity: Phòng học â€” thuộc một Facility.
 
  */
 

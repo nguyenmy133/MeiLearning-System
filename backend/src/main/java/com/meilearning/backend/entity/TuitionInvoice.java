@@ -1,8 +1,8 @@
 /**
 
- * Entity: H³a đơn học ph­.
+ * Entity: Hóa đơn học phí.
 
- * price_per_session lÆ°u snapshot giá tại thá»i điểm táº¡o h³a đơn
+ * price_per_session lưu snapshot giá tại thá»i điểm tạo hóa đơn
 
  * để không bị ảnh hưởng khi giá lớp thay đổi.
 
@@ -48,7 +48,7 @@ public class TuitionInvoice extends BaseEntity {
     @JoinColumn(name = "class_id", nullable = false)
     private ClassEntity classEntity;
 
-    /** Tháng h³a đơn: "MM/YYYY" */
+    /** Tháng hóa đơn: "MM/YYYY" */
 
     @Column(nullable = false, length = 7)
     private String month;
@@ -57,7 +57,7 @@ public class TuitionInvoice extends BaseEntity {
     @Builder.Default
     private Integer billableSessions = 0;
 
-    /** Snapshot giá/buổi tại thá»i điểm táº¡o h³a đơn */
+    /** Snapshot giá/buổi tại thá»i điểm tạo hóa đơn */
 
     @Column(name = "price_per_session", nullable = false)
     private Long pricePerSession;

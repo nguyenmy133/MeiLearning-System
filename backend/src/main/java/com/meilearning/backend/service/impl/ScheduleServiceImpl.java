@@ -46,7 +46,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + classId));
 
         if (classEntity.getSchedule() == null || classEntity.getSchedule().isBlank()) {
-            log.warn("Lớp {} không có lá»‹ch học", classId);
+            log.warn("Lớp {} không có lịch học", classId);
 
             return;
 
@@ -63,7 +63,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
                 : startDate.plusMonths(3); // Default 3 tháng
 
-        // Generate sessions cho má»—i slot
+        // Generate sessions cho mỗi slot
 
         for (Map<String, Object> slot : slots) {
             int weekday = ((Number) slot.get("weekday")).intValue();
@@ -78,7 +78,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
             LocalTime endTime = LocalTime.parse(endTimeStr);
 
-            // T¬m ngày Ä‘áº§u tiªn ph¹ há»£p
+            // Tìm ngày đầu tiên phù hợp
 
             LocalDate current = startDate.with(TemporalAdjusters.nextOrSame(dayOfWeek));
 

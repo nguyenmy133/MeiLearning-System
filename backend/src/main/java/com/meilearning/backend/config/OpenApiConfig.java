@@ -39,7 +39,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("MeiLearning System API")
                         .version("1.0.0")
-                        .description("REST API cho hệ thá»‘ng quản lý trung t¢m dáº¡y thªm MeiLearning")
+                        .description("REST API cho hệ thống quản lý trung tâm dạy thêm MeiLearning")
                         .contact(new Contact()
                                 .name("MeiLearning Team")))
 
@@ -54,7 +54,7 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .description("Nháº­p JWT token (không cáº§n prefix 'Bearer ')")));
+                                        .description("Nhập JWT token (không cần prefix 'Bearer ')")));
 
     }
 

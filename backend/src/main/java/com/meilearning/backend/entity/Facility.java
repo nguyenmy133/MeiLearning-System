@@ -1,6 +1,6 @@
 /**
 
- * Entity: CÆ¡ sở (chi nhánh).
+ * Entity: Cơ sở (chi nhánh).
 
  */
 

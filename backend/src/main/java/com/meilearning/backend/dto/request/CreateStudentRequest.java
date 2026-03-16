@@ -12,7 +12,7 @@ public class CreateStudentRequest {
     private String name;
 
     @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không há»£p lá»‡")
+    @Email(message = "Email không hợp lá»‡")
     private String email;
     private String phone;
     private String parentPhone;
@@ -24,7 +24,7 @@ public class CreateStudentRequest {
     @NotBlank(message = "Tên đăng nhập không được để trống")
     private String username;
 
-    @NotBlank(message = "Máº­t khẩu không được để trống")
+    @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
 
     // Optional fields

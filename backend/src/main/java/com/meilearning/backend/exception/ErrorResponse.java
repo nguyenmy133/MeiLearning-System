@@ -8,9 +8,9 @@ import lombok.Getter;
 
 /**
 
- * Cáº¥u trºc JSON trả về cho tất cả lá»—i.
+ * Cáº¥u trºc JSON trả về cho tất cả lỗi.
 
- * Khá»›p với ApiErrorResponse á»Ÿ Frontend.
+ * Khá»›p với ApiErrorResponse ở Frontend.
 
  */
 

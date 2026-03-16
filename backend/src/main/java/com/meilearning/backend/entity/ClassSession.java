@@ -1,6 +1,6 @@
 /**
 
- * Entity: Buá»•i học cá»¥ thể â€” được generate từ Class.schedule hoặc táº¡o thủ công (b¹/thªm).
+ * Entity: Buá»•i học cá»¥ thể â€” được generate từ Class.schedule hoặc tạo thủ công (b¹/thêm).
 
  */
 

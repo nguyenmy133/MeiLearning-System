@@ -8,9 +8,9 @@
 
  *
 
- * Xá»­ lý táº­p trung tất cả exception â†’ trả về JSON response nháº¥t quán.
+ * Xá»­ lý tập trung tất cả exception â†’ trả về JSON response nhất quán.
 
- * Frontend nháº­n được format cá»‘ định để hiá»ƒn thá»‹ lá»—i.
+ * Frontend nhận được format cá»‘ định để hiển thị lỗi.
 
  * ============================================================================
 
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xá»­ lý lá»—i validation (@Valid / @Validated)
+     * Xá»­ lý lỗi validation (@Valid / @Validated)
 
      */
 
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse body = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())
-                .message("Dá»¯ liá»‡u không há»£p lá»‡")
+                .message("Dá»¯ liá»‡u không hợp lá»‡")
                 .errors(errors)
                 .timestamp(Instant.now())
                 .build();
@@ -123,7 +123,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Catch-all cho má»i exception chưa handle
+     * Catch-all cho mọi exception chưa handle
 
      */
 
@@ -134,7 +134,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse body = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Ä£ xáº£y ra lá»—i hệ thá»‘ng. Vui l²ng thá»­ lại sau.")
+                .message("Ä£ xảy ra lỗi hệ thống. Vui lòng thử lại sau.")
                 .timestamp(Instant.now())
                 .build();
 

@@ -10,7 +10,7 @@
 
  * CORS hiện được cáº¥u h¬nh trá»±c tiáº¿p trong SecurityConfig.corsConfigurationSource()
 
- * để Ä‘áº£m báº£o Spring Security xá»­ lý CORS trước khi check authentication.
+ * để Ä‘áº£m báº£o Spring Security xử lý CORS trước khi check authentication.
 
  *
 

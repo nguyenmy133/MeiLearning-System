@@ -193,7 +193,7 @@ public class ClassServiceImpl implements ClassService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp với id: " + id));
 
         if (entity.getStatus() == ClassStatus.active) {
-            throw new BusinessException("Không thể xóa lớp Ä‘ang hoáº¡t động. H£y kết thúc lớp trước.");
+            throw new BusinessException("Không thể xóa lớp đang hoạt động. Hãy kết thúc lớp trước.");
 
         }
 

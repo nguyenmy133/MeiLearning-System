@@ -30,16 +30,16 @@ public class SubjectResponse {
     private String category;
     private Long basePricePerSession;
 
-    /** Sá»‘ giáo viên Ä‘ang dáº¡y môn này */
+    /** Sá»‘ giáo viên đang dạy môn này */
 
     private int teachers;
 
-    /** Sá»‘ lớp Ä‘ang má»Ÿ cho môn này */
+    /** Sá»‘ lớp đang mở cho môn này */
 
     private int classes;
     private String status;
 
-    /** Danh sách tªn cơ sở có dáº¡y môn này */
+    /** Danh sách tên cơ sở có dạy môn này */
 
     private List<String> facilities;
     private Instant createdAt;

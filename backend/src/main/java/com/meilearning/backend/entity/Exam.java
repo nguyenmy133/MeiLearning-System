@@ -1,6 +1,6 @@
 /**
 
- * Entity: Bài kiá»ƒm tra â€” Teacher táº¡o, áp dụng cho nhiá»u lớp (M:N qua exam_classes).
+ * Entity: Bài kiá»ƒm tra â€” Teacher tạo, áp dụng cho nhiá»u lớp (M:N qua exam_classes).
 
  */
 
@@ -45,7 +45,7 @@ public class Exam extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String subject;
 
-    /** Thá»i gian làm bài (phºt) */
+    /** Thá»i gian làm bài (phút) */
 
     @Column(nullable = false)
     private Integer duration;

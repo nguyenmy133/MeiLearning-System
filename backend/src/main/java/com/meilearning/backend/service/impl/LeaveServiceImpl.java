@@ -87,7 +87,7 @@ public class LeaveServiceImpl implements LeaveService {
         LeaveRequest lr = findLeave(id);
 
         if (lr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ duyệt đơn Ä‘ang pending.");
+            throw new BusinessException("Chỉ duyệt đơn đang pending.");
 
         User reviewer = userRepository.findById(reviewerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reviewer not found"));
@@ -108,7 +108,7 @@ public class LeaveServiceImpl implements LeaveService {
         LeaveRequest lr = findLeave(id);
 
         if (lr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ từ chối đơn Ä‘ang pending.");
+            throw new BusinessException("Chỉ từ chối đơn đang pending.");
 
         User reviewer = userRepository.findById(reviewerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reviewer not found"));

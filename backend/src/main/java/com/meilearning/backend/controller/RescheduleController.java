@@ -44,6 +44,7 @@ public class RescheduleController {
 
     @PatchMapping("/{id}/approve")
     @Operation(summary = "Duyệt yêu cầu (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<RescheduleRequestResponse> approve(
             @PathVariable Long id,
             @RequestParam String reviewedBy) {
@@ -52,6 +53,7 @@ public class RescheduleController {
 
     @PatchMapping("/{id}/reject")
     @Operation(summary = "Từ chối yêu cầu (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<RescheduleRequestResponse> reject(
             @PathVariable Long id,
             @RequestParam String reviewedBy,

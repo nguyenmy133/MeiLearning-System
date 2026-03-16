@@ -44,7 +44,8 @@ public class LeaveController {
     }
 
     @PatchMapping("/{id}/approve")
-    @Operation(summary = "Duyệt đơn")
+    @Operation(summary = "Duyệt đơn (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<LeaveRequestResponse> approve(
             @PathVariable Long id,
             @RequestParam Long reviewerId) {
@@ -52,7 +53,8 @@ public class LeaveController {
     }
 
     @PatchMapping("/{id}/reject")
-    @Operation(summary = "Từ chối đơn")
+    @Operation(summary = "Từ chối đơn (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<LeaveRequestResponse> reject(
             @PathVariable Long id,
             @RequestParam Long reviewerId,

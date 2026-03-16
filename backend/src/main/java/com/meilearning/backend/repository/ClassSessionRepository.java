@@ -28,11 +28,11 @@ public interface ClassSessionRepository
 
     long countByClassEntityIdAndStatus(Long classId, SessionStatus status);
 
-    /** Lấy sessions cá»§a 1 teacher theo ngày (thông qua Class â†’ Teacher) */
+    /** Lấy sessions của 1 teacher theo ngày (thông qua Class â†’ Teacher) */
 
     List<ClassSession> findByClassEntityTeacherIdAndDate(Long teacherId, LocalDate date);
 
-    /** Lấy sessions cá»§a 1 teacher trong tuáº§n */
+    /** Lấy sessions của 1 teacher trong tuáº§n */
 
     List<ClassSession> findByClassEntityTeacherIdAndDateBetween(Long teacherId, LocalDate startDate, LocalDate endDate);
 

@@ -1,8 +1,8 @@
 /**
 
- * Entity: Giáo viên â€” má»Ÿ rá»™ng từ User (1:1 qua user_id).
+ * Entity: Giáo viên â€” mở rộng từ User (1:1 qua user_id).
 
- * Chá»©a thông tin nghiá»‡p vá»¥ riªng cá»§a giáo viên.
+ * Chứa thông tin nghiệp vụ riêng của giáo viên.
 
  */
 

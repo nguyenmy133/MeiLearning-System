@@ -17,7 +17,7 @@ public class CreateExamRequest {
     private Long teacherId;
 
     @NotNull
-    private Integer duration;          // phºt
+    private Integer duration;          // phút
     private Integer totalQuestions;
     private String startTime;          // ISO-8601
     private String endTime;

@@ -1,6 +1,6 @@
 /**
 
- * Entity: Yªu cáº§u dá»i lá»‹ch / há»§y buổi â€” Teacher gá»­i, Admin duyệt.
+ * Entity: Yêu cầu dá»i lịch / hủy buổi â€” Teacher gửi, Admin duyệt.
 
  */
 

@@ -14,19 +14,19 @@ public interface ScheduleService {
 
     void generateAllSessions();
 
-    /** Lấy lá»‹ch theo ngày/tuáº§n/tháng */
+    /** Lấy lịch theo ngày/tuáº§n/tháng */
 
     ScheduleResponse getSchedule(String date, String view);
 
-    /** Lấy lá»‹ch theo teacher */
+    /** Lấy lịch theo teacher */
 
     ScheduleResponse getTeacherSchedule(Long teacherId, String date, String view);
 
-    /** Lấy lá»‹ch theo student */
+    /** Lấy lịch theo student */
 
     ScheduleResponse getStudentSchedule(Long studentId, String date, String view);
 
-    /** Lấy sessions cá»§a 1 class */
+    /** Lấy sessions của 1 class */
 
     List<ClassSessionResponse> getClassSessions(Long classId);
 

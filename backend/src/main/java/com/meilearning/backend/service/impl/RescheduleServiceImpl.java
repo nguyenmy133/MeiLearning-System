@@ -91,13 +91,13 @@ public class RescheduleServiceImpl implements RescheduleService {
         RescheduleRequest rr = findRequest(id);
 
         if (rr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ duyệt yªu cáº§u Ä‘ang pending.");
+            throw new BusinessException("Chỉ duyệt yêu cầu đang pending.");
 
         rr.setStatus(RequestStatus.approved);
         rr.setReviewedBy(reviewedBy);
         rr.setReviewedAt(Instant.now());
 
-        // Nếu cancel â†’ Ä‘ánh dấu session là cancelled
+        // Nếu cancel â†’ đánh dấu session là cancelled
 
         if (rr.getType() == RescheduleType.cancel && rr.getSession() != null) {
             rr.getSession().setStatus(SessionStatus.cancelled);
@@ -138,7 +138,7 @@ public class RescheduleServiceImpl implements RescheduleService {
         RescheduleRequest rr = findRequest(id);
 
         if (rr.getStatus() != RequestStatus.pending)
-            throw new BusinessException("Chá»‰ từ chối yªu cáº§u Ä‘ang pending.");
+            throw new BusinessException("Chỉ từ chối yêu cầu đang pending.");
 
         rr.setStatus(RequestStatus.rejected);
         rr.setReviewedBy(reviewedBy);

@@ -13,9 +13,9 @@ import java.util.List;
 
 /**
 
- * Subject mapper â€” manual implementation thay v¬ MapStruct
+ * Subject mapper â€” manual implementation thay vì MapStruct
 
- * v¬ cáº§n xá»­ lý JSON conversion cho facilities field.
+ * vì cần xử lý JSON conversion cho facilities field.
 
  */
 

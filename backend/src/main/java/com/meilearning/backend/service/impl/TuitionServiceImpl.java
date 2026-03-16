@@ -55,7 +55,7 @@ public class TuitionServiceImpl implements TuitionService {
         ClassEntity classEntity = classRepository.findById(request.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + request.getClassId()));
 
-        // T­nh billable sessions
+        // Tính billable sessions
 
         int billable = calculateBillableSessions(student.getId(), classEntity.getId(), request.getMonth());
 
@@ -178,7 +178,7 @@ public class TuitionServiceImpl implements TuitionService {
     public TuitionInvoiceResponse getById(Long id) {
 
         TuitionInvoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy h³a đơn: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         return tuitionMapper.toResponse(invoice);
 
@@ -199,12 +199,12 @@ public class TuitionServiceImpl implements TuitionService {
     public TuitionInvoiceResponse pay(Long id, PayTuitionRequest request) {
 
         TuitionInvoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy h³a đơn: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         if (invoice.getStatus() != InvoiceStatus.pending
                 && invoice.getStatus() != InvoiceStatus.overdue) {
 
-            throw new BusinessException("Chá»‰ có thể thanh toán h³a đơn pending hoặc overdue.");
+            throw new BusinessException("Chỉ có thể thanh toán hóa đơn pending hoặc overdue.");
 
         }
 
@@ -222,10 +222,10 @@ public class TuitionServiceImpl implements TuitionService {
     public TuitionInvoiceResponse confirm(Long id) {
 
         TuitionInvoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy h³a đơn: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         if (invoice.getStatus() != InvoiceStatus.reviewing) {
-            throw new BusinessException("Chá»‰ xác nháº­n h³a đơn Ä‘ang á»Ÿ tráº¡ng thái reviewing.");
+            throw new BusinessException("Chỉ xác nhận hóa đơn đang ở trạng thái reviewing.");
 
         }
 
@@ -242,10 +242,10 @@ public class TuitionServiceImpl implements TuitionService {
     public TuitionInvoiceResponse reject(Long id) {
 
         TuitionInvoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy h³a đơn: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         if (invoice.getStatus() != InvoiceStatus.reviewing) {
-            throw new BusinessException("Chá»‰ từ chối h³a đơn Ä‘ang reviewing.");
+            throw new BusinessException("Chỉ từ chối hóa đơn đang reviewing.");
 
         }
 
@@ -285,7 +285,7 @@ public class TuitionServiceImpl implements TuitionService {
 
     /**
 
-     * T­nh billable sessions = PRESENT + ABSENT + LATE (không t­nh ABSENT_EXCUSED)
+     * Tính billable sessions = PRESENT + ABSENT + LATE (không tính ABSENT_EXCUSED)
 
      */
 
@@ -321,7 +321,7 @@ public class TuitionServiceImpl implements TuitionService {
             if (record.isPresent()) {
                 AttendanceStatus status = record.get().getStatus();
 
-                // Billable: present + absent (không ph©p) + late
+                // Billable: present + absent (không phép) + late
 
                 if (status == AttendanceStatus.present
                         || status == AttendanceStatus.absent
@@ -332,7 +332,7 @@ public class TuitionServiceImpl implements TuitionService {
 
                 }
 
-                // absent_excused â†’ không t­nh tiá»n
+                // absent_excused â†’ không tính tiền
 
             }
 

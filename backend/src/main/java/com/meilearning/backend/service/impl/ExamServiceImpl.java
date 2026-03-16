@@ -98,7 +98,7 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = findExam(id);
 
         if (exam.getStatus() != ExamStatus.draft) {
-            throw new BusinessException("Chá»‰ publish exam Ä‘ang á»Ÿ tráº¡ng thái draft.");
+            throw new BusinessException("Chỉ publish exam đang ở trạng thái draft.");
 
         }
 
@@ -164,7 +164,7 @@ public class ExamServiceImpl implements ExamService {
     public ExamResultResponse getStudentResult(Long examId, Long studentId) {
 
         ExamResult result = resultRepository.findByExamIdAndStudentId(examId, studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("ChÆ°a có kết quáº£ cho exam " + examId));
+                .orElseThrow(() -> new ResourceNotFoundException("Chưa có kết quả cho exam " + examId));
 
         return mapper.toResultResponse(result);
 

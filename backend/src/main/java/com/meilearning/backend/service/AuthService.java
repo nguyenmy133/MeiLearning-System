@@ -17,7 +17,7 @@ public interface AuthService {
 
     LoginResponse login(LoginRequest request);
 
-    /** Äá»•i máº­t khẩu cho user hiện tại */
+    /** Äá»•i máºít khẩu cho user hiện tại */
 
     void changePassword(String username, ChangePasswordRequest request);
 

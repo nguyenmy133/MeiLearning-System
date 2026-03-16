@@ -8,31 +8,31 @@ import java.util.List;
 
 public interface TuitionService {
 
-    /** Tạo h³a đơn thủ công (admin) */
+    /** Tạo hóa đơn thủ công (admin) */
 
     TuitionInvoiceResponse create(CreateTuitionRequest request);
 
-    /** Tự động generate h³a đơn cho tháng hiện tại */
+    /** Tự động generate hóa đơn cho tháng hiện tại */
 
     List<TuitionInvoiceResponse> generateMonthlyInvoices(String month);
 
-    /** Lấy tất cả h³a đơn (admin) - filter theo status, month */
+    /** Lấy tất cả hóa đơn (admin) - filter theo status, month */
 
     List<TuitionInvoiceResponse> getAll(String status, String month, Long studentId);
 
-    /** Lấy h³a đơn theo student */
+    /** Lấy hóa đơn theo student */
 
     List<TuitionInvoiceResponse> getByStudent(Long studentId);
 
-    /** Lấy chi tiết 1 h³a đơn */
+    /** Lấy chi tiết 1 hóa đơn */
 
     TuitionInvoiceResponse getById(Long id);
 
-    /** Student nộp chá»©ng từ thanh toán */
+    /** Student nộp chứng từ thanh toán */
 
     TuitionInvoiceResponse pay(Long id, PayTuitionRequest request);
 
-    /** Admin xác nháº­n thanh toán */
+    /** Admin xác nhận thanh toán */
 
     TuitionInvoiceResponse confirm(Long id);
 

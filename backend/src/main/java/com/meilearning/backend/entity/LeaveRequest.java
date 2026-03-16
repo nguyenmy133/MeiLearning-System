@@ -1,6 +1,6 @@
 /**
 
- * Entity: Xin nghá»‰ ph©p â€” Student hoặc Teacher xin nghá»‰ buổi học.
+ * Entity: Xin nghỉ phép â€” Student hoặc Teacher xin nghỉ buổi học.
 
  * requester_id trá» Ä‘áº¿n users(id), requester_type xác định role.
 

@@ -1,8 +1,8 @@
 /**
 
- * Filter cháº·n má»—i request, kiá»ƒm tra JWT trong header Authorization.
+ * Filter cháº·n mỗi request, kiá»ƒm tra JWT trong header Authorization.
 
- * Nếu há»£p lá»‡ â†’ set Authentication vào SecurityContext.
+ * Nếu hợp lá»‡ â†’ set Authentication vào SecurityContext.
 
  */
 

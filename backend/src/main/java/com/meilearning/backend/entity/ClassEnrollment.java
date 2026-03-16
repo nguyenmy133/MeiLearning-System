@@ -1,8 +1,8 @@
 /**
 
- * Entity: ÄÄƒng k½ lớp â€” Join table giữa Student và Class.
+ * Entity: ÄÄƒng ký lớp â€” Join table giữa Student và Class.
 
- * Unique constraint: má»—i học viên chỉ đăng k½ 1 lớp 1 lần.
+ * Unique constraint: mỗi học viên chỉ đăng ký 1 lớp 1 lần.
 
  */
 

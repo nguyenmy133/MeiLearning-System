@@ -1,6 +1,6 @@
 /**
 
- * JWT utility: táº¡o token, parse token, validate token.
+ * JWT utility: tạo token, parse token, validate token.
 
  */
 
@@ -112,7 +112,7 @@ public class JwtTokenProvider {
 
     }
 
-    /** Kiểm tra token há»£p lá»‡ */
+    /** Kiểm tra token hợp lá»‡ */
 
     public boolean validateToken(String token) {
 

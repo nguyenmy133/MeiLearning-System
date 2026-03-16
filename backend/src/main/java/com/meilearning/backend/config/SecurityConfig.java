@@ -12,9 +12,9 @@
 
  * - Táº¯t CSRF (REST API stateless)
 
- * - Cho ph©p truy cập public các endpoints: login, register, landing data
+ * - Cho phép truy cập public các endpoints: login, register, landing data
 
- * - Các route khác yªu cáº§u JWT authentication
+ * - Các route khác yêu cầu JWT authentication
 
  * - Thªm JWT filter vào filter chain
 
@@ -45,7 +45,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // cho ph©p @PreAuthorize trªn method
+@EnableMethodSecurity // cho phép @PreAuthorize trªn method
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -66,8 +66,7 @@ public class SecurityConfig {
 
                                                 .requestMatchers(
 
-                                                                "/api/v1/auth/login",
-                                                                "/api/v1/auth/change-password")
+                                                                "/api/v1/auth/login")
 
                                                 .permitAll()
 
@@ -83,7 +82,7 @@ public class SecurityConfig {
 
                                                 .permitAll()
 
-                                                // Tất cả route khác cáº§n authenticated
+                                                // Tất cả route khác cần authenticated
 
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)

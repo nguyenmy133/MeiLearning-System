@@ -12,6 +12,6 @@ public class SubmitExamResultRequest {
     @NotNull
     private BigDecimal score;          // 0-100
     private Integer correctAnswers;
-    private Integer timeSpent;         // phºt
+    private Integer timeSpent;         // phút
 
 }

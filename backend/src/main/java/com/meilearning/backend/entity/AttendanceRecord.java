@@ -2,7 +2,7 @@
 
  * Entity: Điểm danh â€” record điểm danh từng học viên trong từng buổi.
 
- * Unique constraint: má»—i student chỉ điểm danh 1 lần/buổi.
+ * Unique constraint: mỗi student chỉ điểm danh 1 lần/buổi.
 
  */
 

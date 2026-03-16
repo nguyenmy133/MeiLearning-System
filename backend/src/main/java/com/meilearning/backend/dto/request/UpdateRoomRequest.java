@@ -16,8 +16,8 @@ public class UpdateRoomRequest {
     private String name;
     private Long facilityId;
 
-    @Min(value = 1, message = "Sá»©c chá»©a tá»‘i thiá»ƒu là 1")
-    @Max(value = 200, message = "Sá»©c chá»©a tá»‘i Ä‘a là 200")
+    @Min(value = 1, message = "Sức chứa tá»‘i thiểu là 1")
+    @Max(value = 200, message = "Sức chứa tá»‘i đa là 200")
     private Integer capacity;
     private RoomStatus status;
 

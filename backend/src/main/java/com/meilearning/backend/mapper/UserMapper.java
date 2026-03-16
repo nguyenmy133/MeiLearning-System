@@ -11,7 +11,7 @@ import com.meilearning.backend.entity.User;
 
  *
 
- * MapStruct tá»± động generate implementation class tại compile time.
+ * MapStruct tự động generate implementation class tại compile time.
 
  * Sá»­ dụng: @Autowired UserMapper userMapper;
 

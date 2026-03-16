@@ -34,12 +34,14 @@ public class TuitionController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết hóa đơn")
+    @PreAuthorize("hasAnyRole('admin', 'student')")
     public ResponseEntity<TuitionInvoiceResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(tuitionService.getById(id));
     }
 
     @GetMapping("/student/{studentId}")
     @Operation(summary = "Hóa đơn của học viên")
+    @PreAuthorize("hasAnyRole('admin', 'student')")
     public ResponseEntity<List<TuitionInvoiceResponse>> getByStudent(
             @PathVariable Long studentId) {
         return ResponseEntity.ok(tuitionService.getByStudent(studentId));
@@ -62,6 +64,7 @@ public class TuitionController {
 
     @PostMapping("/{id}/pay")
     @Operation(summary = "Nộp chứng từ thanh toán (Student)")
+    @PreAuthorize("hasAnyRole('admin', 'student')")
     public ResponseEntity<TuitionInvoiceResponse> pay(
             @PathVariable Long id,
             @Valid @RequestBody PayTuitionRequest request) {

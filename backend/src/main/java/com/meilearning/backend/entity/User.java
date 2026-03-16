@@ -1,6 +1,6 @@
 /**
 
- * Entity: NgÆ°á»i d¹ng hệ thá»‘ng (Admin, Teacher, Student).
+ * Entity: NgÆ°á»i dùng hệ thống (Admin, Teacher, Student).
 
  */
 
@@ -48,7 +48,7 @@ public class User extends BaseEntity {
 
     /**
 
-     * Roles hệ thá»‘ng â€” khá»›p với UserRole type á»Ÿ Frontend.
+     * Roles hệ thống â€” khớp với UserRole type ở Frontend.
 
      */
 

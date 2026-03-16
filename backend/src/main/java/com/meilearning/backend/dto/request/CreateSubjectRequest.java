@@ -21,14 +21,14 @@ public class CreateSubjectRequest {
     private String code;
     private String description;
 
-    @NotBlank(message = "Danh má»¥c không được để trống")
+    @NotBlank(message = "Danh mục không được để trống")
     private String category;
 
-    @NotNull(message = "Giá má»—i buổi không được để trống")
-    @Positive(message = "Giá má»—i buổi pháº£i lá»›n hÆ¡n 0")
+    @NotNull(message = "Giá mỗi buổi không được để trống")
+    @Positive(message = "Giá mỗi buổi phải lá»›n hÆ¡n 0")
     private Long basePricePerSession;
 
-    /** Danh sách tªn cơ sở (VD: ["CÆ¡ sở Quáº­n 1", "CÆ¡ sở Thá»§ Äá»©c"]) */
+    /** Danh sách tên cơ sở (VD: ["Cơ sở Quận 1", "Cơ sở Thủ Đức"]) */
 
     private List<String> facilities;
 

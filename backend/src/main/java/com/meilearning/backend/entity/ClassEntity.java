@@ -2,11 +2,11 @@
 
  * Entity: Lớp học.
 
- * schedule được lÆ°u dáº¡ng JSON column (SessionSlot[]).
+ * schedule được lưu dáº¡ng JSON column (SessionSlot[]).
 
  *
 
- * LÆ°u ½: Tên class Java là ClassEntity v¬ "Class" là reserved word trong Java.
+ * LÆ°u ½: Tên class Java là ClassEntity vì "Class" là reserved word trong Java.
 
  * Table name váº«n là "classes".
 

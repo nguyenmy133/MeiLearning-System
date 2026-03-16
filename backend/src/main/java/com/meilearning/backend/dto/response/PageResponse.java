@@ -7,7 +7,7 @@ import lombok.Getter;
 
 /**
 
- * DTO ph¢n trang d¹ng chung.
+ * DTO ph¢n trang dùng chung.
 
  * Khá»›p với Frontend PaginatedResponse<T>.
 

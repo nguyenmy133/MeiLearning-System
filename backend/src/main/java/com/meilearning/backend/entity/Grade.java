@@ -2,7 +2,7 @@
 
  * Entity: Điểm tá»•ng kết â€” 1 record per (student, class).
 
- * Tá»•ng há»£p từ exam results + attendance.
+ * Tá»•ng hợp từ exam results + attendance.
 
  */
 
