@@ -1,16 +1,16 @@
 import { apiClient } from "@/lib/api-client";
-import { API_ENDPOINTS } from "@/config/api-endpoints";
+import { API } from "@/config/api-endpoints";
 
 export const documentService = {
   async getDocuments(classId?: number) {
-    const { data } = await apiClient.get(API_ENDPOINTS.DOCUMENTS.LIST, {
+    const { data } = await apiClient.get(API.DOCUMENTS.LIST, {
       params: classId ? { classId } : undefined,
     });
     return data;
   },
 
   async getById(id: number) {
-    const { data } = await apiClient.get(API_ENDPOINTS.DOCUMENTS.DETAIL(id));
+    const { data } = await apiClient.get(API.DOCUMENTS.DETAIL(id));
     return data;
   },
 
@@ -20,14 +20,14 @@ export const documentService = {
     formData.append("title", metadata.title);
     if (metadata.description) formData.append("description", metadata.description);
     if (metadata.classId) formData.append("classId", metadata.classId.toString());
-    const { data } = await apiClient.post(API_ENDPOINTS.DOCUMENTS.UPLOAD, formData, {
+    const { data } = await apiClient.post(API.DOCUMENTS.UPLOAD, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return data;
   },
 
   async deleteDocument(id: number) {
-    await apiClient.delete(API_ENDPOINTS.DOCUMENTS.DELETE(id));
+    await apiClient.delete(API.DOCUMENTS.DELETE(id));
   },
 };
 
