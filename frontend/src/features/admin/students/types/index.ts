@@ -76,9 +76,9 @@ export interface Student {
 /** Tạo mới — KHÔNG có status / tuitionStatus (mặc định active / pending) */
 export interface CreateStudentDTO {
   name: string;
-  email: string;
+  email?: string;
   phone: string;
-  parentPhone: string;
+  parentPhone?: string;
   classes: ClassEnrollment[];
   username: string;
   password: string;

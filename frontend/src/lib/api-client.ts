@@ -46,8 +46,15 @@ apiClient.interceptors.response.use(
             localStorage.removeItem('user');
             window.location.href = '/login';
         } else if (status === 400) {
-            // Validation error — hiển thị message từ backend
-            toast.error(serverMessage || 'Dữ liệu không hợp lệ.');
+            // Validation error — hiển thị chi tiết từng trường bị lỗi
+            const fieldErrors = error.response?.data?.errors;
+            if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+                Object.values(fieldErrors).forEach((msg) => {
+                    toast.error(msg as string);
+                });
+            } else {
+                toast.error(serverMessage || 'Dữ liệu không hợp lệ.');
+            }
         } else if (status === 403) {
             toast.error(serverMessage || 'Bạn không có quyền thực hiện thao tác này!');
         } else if (status === 409) {

@@ -43,7 +43,7 @@ import type {
 import {
   CLASS_STATUS_LABELS, WEEKDAYS, formatSchedule,
 } from "../types";
-import { useSubjectOptions, useFacilityOptions } from "@/hooks/useClassOptions";
+import { useSubjectOptionsWithPrice, useFacilityOptions, useRoomsByFacility } from "@/hooks/useClassOptions";
 
 // ============================================================================
 // STATUS BADGE
@@ -92,7 +92,7 @@ function StatsCards() {
   const items = [
     { label: "Tổng lớp học", value: stats?.totalClasses ?? 0, icon: BookOpen, accent: "bg-primary/10 text-primary" },
     { label: "Đang hoạt động", value: stats?.activeClasses ?? 0, icon: BookOpen, accent: "bg-primary/10 text-primary" },
-    { label: "Học viên", value: stats?.totalStudents ?? 0, icon: Users, accent: "bg-primary/10 text-primary" },
+    { label: "Đã kết thúc", value: stats?.completedClasses ?? 0, icon: CheckCircle2, accent: "bg-muted text-muted-foreground" },
     { label: "Sắp mở", value: stats?.upcomingClasses ?? 0, icon: Calendar, accent: "bg-secondary/20 text-secondary-foreground" },
   ];
 
@@ -277,7 +277,7 @@ interface ClassFormProps {
 
 function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
   const { data: teacherRefs = [] } = useTeacherRefs();
-  const { data: subjectOptions = [] } = useSubjectOptions();
+  const { data: subjectOptionsData = [] } = useSubjectOptionsWithPrice();
   const { data: facilityOptions = [] } = useFacilityOptions();
 
   const [name, setName] = useState(initial?.name ?? "");
@@ -285,11 +285,16 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
   const [teacherId, setTeacherId] = useState<number>(
     initial?.teacher.id ?? 0
   );
-  const [facility, setFacility] = useState(initial?.facility ?? "");
+  const [facilityId, setFacilityId] = useState<string>(
+    // Try to find matching facility id from options, fallback to name
+    ""
+  );
+  const [facilityName, setFacilityName] = useState(initial?.facility ?? "");
   const [room, setRoom] = useState(initial?.room ?? "");
   const [maxStudents, setMaxStudents] = useState(
     initial?.maxStudents ?? 20
   );
+  const [roomCapacity, setRoomCapacity] = useState<number>(0);
   const [pricePerSession, setPricePerSession] = useState(
     initial?.pricePerSession ?? 150000
   );
@@ -304,14 +309,67 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
     initial?.status ?? "upcoming"
   );
 
+  // Initialize facilityId from initial facility name
+  const matchedFacility = facilityOptions.find((f) => f.name === initial?.facility);
+  const effectiveFacilityId = facilityId || (matchedFacility ? String(matchedFacility.id) : "");
+
+  // Room options from selected facility
+  const { data: roomOptions = [] } = useRoomsByFacility(effectiveFacilityId);
+
+  // Filter teachers by selected subject
+  const filteredTeachers = subject
+    ? teacherRefs.filter((t) => (t as any).subjects?.includes(subject) ?? true)
+    : teacherRefs;
+
+  // When subject changes → auto-fill price from basePricePerSession
+  const handleSubjectChange = (newSubject: string) => {
+    setSubject(newSubject);
+    const found = subjectOptionsData.find((s) => s.name === newSubject);
+    if (found && found.basePricePerSession > 0) {
+      setPricePerSession(found.basePricePerSession);
+    }
+    // Reset teacher if current teacher doesn't teach this subject
+    if (teacherId) {
+      const teacher = teacherRefs.find((t) => t.id === teacherId);
+      if (teacher && !(teacher as any).subjects?.includes(newSubject)) {
+        setTeacherId(0);
+      }
+    }
+  };
+
+  // When facility changes → reset room & maxStudents
+  const handleFacilityChange = (fName: string) => {
+    setFacilityName(fName);
+    const fac = facilityOptions.find((f) => f.name === fName);
+    setFacilityId(fac ? String(fac.id) : "");
+    setRoom("");
+    setRoomCapacity(0);
+  };
+
+  // When room changes → auto-fill maxStudents from capacity
+  const handleRoomChange = (roomName: string) => {
+    setRoom(roomName);
+    const selectedRoom = roomOptions.find((r) => r.name === roomName);
+    if (selectedRoom && selectedRoom.capacity > 0) {
+      setRoomCapacity(selectedRoom.capacity);
+      setMaxStudents(selectedRoom.capacity);
+    } else {
+      setRoomCapacity(0);
+    }
+  };
+
   const handleSubmit = () => {
     if (!name.trim()) { toast.error("Vui lòng nhập tên lớp"); return; }
     if (!subject) { toast.error("Vui lòng chọn môn học"); return; }
     if (!teacherId) { toast.error("Vui lòng chọn giáo viên"); return; }
-    if (!facility) { toast.error("Vui lòng chọn cơ sở"); return; }
-    if (!room.trim()) { toast.error("Vui lòng nhập phòng học"); return; }
+    if (!facilityName) { toast.error("Vui lòng chọn cơ sở"); return; }
+    if (!room.trim()) { toast.error("Vui lòng chọn phòng học"); return; }
     if (maxStudents < 1 || maxStudents > 200) {
       toast.error("Sĩ số tối đa phải từ 1 đến 200");
+      return;
+    }
+    if (roomCapacity > 0 && maxStudents > roomCapacity) {
+      toast.error(`Sĩ số tối đa không được vượt sức chứa phòng (${roomCapacity})`);
       return;
     }
     if (pricePerSession < 0) {
@@ -331,11 +389,15 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
       }
     }
     if (!startDate) { toast.error("Vui lòng chọn ngày bắt đầu"); return; }
+    if (mode === "create" && startDate < new Date().toISOString().split("T")[0]) {
+      toast.error("Ngày bắt đầu không được nằm trong quá khứ");
+      return;
+    }
 
     if (mode === "create") {
-      onSubmit({ name, subject, teacherId, facility, room, maxStudents, pricePerSession, schedule, startDate, description } as CreateClassDTO);
+      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description } as CreateClassDTO);
     } else {
-      onSubmit({ name, subject, teacherId, facility, room, maxStudents, pricePerSession, schedule, startDate, description, status } as UpdateClassDTO);
+      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description, status } as UpdateClassDTO);
     }
   };
 
@@ -356,13 +418,13 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Môn học <span className="text-destructive">*</span></Label>
-          <Select value={subject} onValueChange={setSubject}>
+          <Select value={subject} onValueChange={handleSubjectChange}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn môn" />
             </SelectTrigger>
             <SelectContent>
-              {subjectOptions.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
+              {subjectOptionsData.map((s) => (
+                <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -377,19 +439,27 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
               <SelectValue placeholder="Chọn GV" />
             </SelectTrigger>
             <SelectContent>
-              {teacherRefs.map((t) => (
+              {filteredTeachers.map((t) => (
                 <SelectItem key={t.id} value={String(t.id)}>
-                  {t.name}
+                  <div className="flex items-center gap-2">
+                    <span>{t.name}</span>
+                    {(t as any).subjects?.length > 0 && (
+                      <span className="text-xs text-muted-foreground">— {(t as any).subjects.join(", ")}</span>
+                    )}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {subject && filteredTeachers.length === 0 && (
+            <p className="text-xs text-amber-600">Không có GV nào dạy môn {subject}</p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Cơ sở <span className="text-destructive">*</span></Label>
-          <Select value={facility} onValueChange={setFacility}>
+          <Select value={facilityName} onValueChange={handleFacilityChange}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn cơ sở" />
             </SelectTrigger>
@@ -402,11 +472,18 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
         </div>
         <div className="space-y-2">
           <Label>Phòng học <span className="text-destructive">*</span></Label>
-          <Input
-            value={room}
-            onChange={(e) => setRoom(e.target.value)}
-            placeholder="VD: Phòng 101"
-          />
+          <Select value={room} onValueChange={handleRoomChange} disabled={!effectiveFacilityId}>
+            <SelectTrigger>
+              <SelectValue placeholder={effectiveFacilityId ? "Chọn phòng" : "Chọn cơ sở trước"} />
+            </SelectTrigger>
+            <SelectContent>
+              {roomOptions.map((r) => (
+                <SelectItem key={r.id} value={r.name}>
+                  {r.name} {r.capacity > 0 && <span className="text-muted-foreground">({r.capacity} chỗ)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -415,11 +492,15 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
           <Input
             type="number"
             min={1}
-            max={200}
+            max={roomCapacity > 0 ? roomCapacity : 200}
             value={maxStudents}
             onChange={(e) => setMaxStudents(Number(e.target.value))}
           />
-          <p className="text-xs text-muted-foreground">Tối đa 200 học viên.</p>
+          {roomCapacity > 0 ? (
+            <p className="text-xs text-muted-foreground">Sức chứa phòng: {roomCapacity} chỗ. Không được vượt quá.</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Tối đa 200 học viên.</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Giá mỗi buổi (VND)</Label>
@@ -432,6 +513,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
           />
           <p className="text-xs text-muted-foreground">
             {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(pricePerSession)}
+            {subject && " (tự điền từ môn học, có thể điều chỉnh)"}
           </p>
         </div>
       </div>
@@ -477,6 +559,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
+          min={mode === "create" ? new Date().toISOString().split("T")[0] : undefined}
         />
         <p className="text-xs text-muted-foreground">
           Ngày kết thúc sẽ được ghi nhận khi admin bấm{" "}
@@ -530,7 +613,8 @@ export function AdminClassesPage() {
   const [endingClass, setEndingClass] = useState<Class | null>(null);
 
   // ── Queries ──
-  const { data: subjectOpts = [] } = useSubjectOptions();
+  const { data: subjectOptsData = [] } = useSubjectOptionsWithPrice();
+  const subjectOpts = subjectOptsData.map((s) => s.name);
   const { data: facilityOpts = [] } = useFacilityOptions();
   const { data: classesData, isLoading } = useClasses({
     search: searchTerm || undefined,

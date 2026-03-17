@@ -123,8 +123,12 @@ public class StudentServiceImpl implements StudentService {
 
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email '" + request.getEmail() + "' đã tồn tại");
+        // Chỉ check trùng email khi có nhập email
+        String email = (request.getEmail() != null && !request.getEmail().isBlank())
+                ? request.getEmail().trim() : null;
+
+        if (email != null && userRepository.existsByEmail(email)) {
+            throw new DuplicateResourceException("Email '" + email + "' đã tồn tại");
 
         }
 
@@ -133,7 +137,7 @@ public class StudentServiceImpl implements StudentService {
         User user = User.builder()
                 .name(request.getName())
                 .username(request.getUsername())
-                .email(request.getEmail())
+                .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
                 .role(User.Role.student)
@@ -184,9 +188,13 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên với id: " + id));
 
-        if (request.getEmail() != null && !request.getEmail().equals(student.getUser().getEmail())) {
-            if (userRepository.existsByEmail(request.getEmail())) {
-                throw new DuplicateResourceException("Email '" + request.getEmail() + "' đã tồn tại");
+        // Normalize email: blank → null
+        String email = (request.getEmail() != null && !request.getEmail().isBlank())
+                ? request.getEmail().trim() : null;
+
+        if (email != null && !email.equals(student.getUser().getEmail())) {
+            if (userRepository.existsByEmail(email)) {
+                throw new DuplicateResourceException("Email '" + email + "' đã tồn tại");
 
             }
 
@@ -195,7 +203,7 @@ public class StudentServiceImpl implements StudentService {
         // Update User fields
 
         if (request.getName() != null) student.getUser().setName(request.getName());
-        if (request.getEmail() != null) student.getUser().setEmail(request.getEmail());
+        student.getUser().setEmail(email);
         if (request.getPhone() != null) student.getUser().setPhone(request.getPhone());
         if (request.getParentPhone() != null) student.setParentPhone(request.getParentPhone());
         if (request.getAddress() != null) student.setAddress(request.getAddress());

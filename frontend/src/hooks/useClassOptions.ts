@@ -26,14 +26,24 @@ export function useClassOptions() {
   });
 }
 
+export interface TeacherOptionItem {
+  id: number;
+  name: string;
+  subjects: string[];
+}
+
 export function useTeacherOptions() {
-  return useQuery<{ id: number; name: string }[]>({
+  return useQuery<TeacherOptionItem[]>({
     queryKey: ["teachers", "options"],
     queryFn: async () => {
       try {
         const { data } = await apiClient.get("/teachers", { params: { limit: 200 } });
         const list = Array.isArray(data) ? data : data?.data ?? [];
-        return list.map((t: any) => ({ id: t.id, name: t.name || t.fullName }));
+        return list.map((t: any) => ({
+          id: t.id,
+          name: t.name || t.fullName,
+          subjects: t.subjects ?? [],
+        }));
       } catch {
         return [];
       }
@@ -78,6 +88,34 @@ export function useSubjectOptions() {
   });
 }
 
+export interface SubjectOptionWithPrice {
+  name: string;
+  basePricePerSession: number;
+}
+
+/**
+ * Fetch danh sách môn học kèm giá tham khảo.
+ * Dùng để auto-fill giá khi tạo lớp.
+ */
+export function useSubjectOptionsWithPrice() {
+  return useQuery<SubjectOptionWithPrice[]>({
+    queryKey: ["subjects", "optionsWithPrice"],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get("/subjects", { params: { limit: 200 } });
+        const list = Array.isArray(data) ? data : data?.data ?? [];
+        return list.map((s: any) => ({
+          name: s.name || s.subjectName,
+          basePricePerSession: s.basePricePerSession ?? 0,
+        })).filter((s: SubjectOptionWithPrice) => !!s.name);
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /**
  * Generate month options dynamically instead of hardcoded ["09/2024", "08/2024"]
  * Returns last 12 months in MM/YYYY format
@@ -98,8 +136,14 @@ export function useMonthOptions(): string[] {
  * Fetch danh sách phòng theo cơ sở (facilityId).
  * Thay thế hardcoded ROOMS_BY_FACILITY.
  */
+export interface RoomOptionItem {
+  id: number;
+  name: string;
+  capacity: number;
+}
+
 export function useRoomsByFacility(facilityId: number | string | undefined) {
-  return useQuery<{ id: number; name: string }[]>({
+  return useQuery<RoomOptionItem[]>({
     queryKey: ["rooms", "byFacility", facilityId],
     queryFn: async () => {
       if (!facilityId) return [];
@@ -108,7 +152,11 @@ export function useRoomsByFacility(facilityId: number | string | undefined) {
           params: { facilityId, limit: 200 },
         });
         const list = Array.isArray(data) ? data : data?.data ?? [];
-        return list.map((r: any) => ({ id: r.id, name: r.name || r.roomName }));
+        return list.map((r: any) => ({
+          id: r.id,
+          name: r.name || r.roomName,
+          capacity: r.capacity ?? 0,
+        }));
       } catch {
         return [];
       }

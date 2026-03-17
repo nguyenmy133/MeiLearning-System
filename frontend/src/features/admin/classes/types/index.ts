@@ -56,6 +56,7 @@ export interface TeacherRef {
   id: number;
   name: string;
   avatar: string;
+  subjects: string[];
 }
 
 // ==================== ENTITY ====================
@@ -128,8 +129,8 @@ export interface ClassQueryParams {
 export interface ClassStats {
   totalClasses: number;
   activeClasses: number;
+  completedClasses: number;
   upcomingClasses: number;
-  totalStudents: number; // Tổng học viên trên tất cả lớp active
 }
 
 // ==================== LABEL MAPS ====================

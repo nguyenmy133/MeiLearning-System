@@ -247,14 +247,26 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const validatePhone = (value: string) => /^(0[0-9]{9,10})$/.test(value);
+  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const handleSubmit = () => {
     if (!name.trim()) { toast.error("Vui lòng nhập họ tên"); return; }
+    if (email.trim() && !validateEmail(email)) { toast.error("Email không đúng định dạng"); return; }
+
     if (mode === "create") {
       if (!phone.trim()) { toast.error("Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)"); return; }
+      if (!validatePhone(phone)) { toast.error("Số điện thoại không hợp lệ (VD: 0901234567)"); return; }
       if (!password.trim()) { toast.error("Vui lòng nhập mật khẩu"); return; }
-      onSubmit({ name, email, phone, parentPhone, classes, username: phone, password } as CreateStudentDTO);
+    }
+
+    if (phone.trim() && !validatePhone(phone)) { toast.error("Số điện thoại không hợp lệ (VD: 0901234567)"); return; }
+    if (parentPhone.trim() && !validatePhone(parentPhone)) { toast.error("SĐT phụ huynh không hợp lệ (VD: 0911234567)"); return; }
+
+    if (mode === "create") {
+      onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, username: phone, password } as CreateStudentDTO);
     } else {
-      onSubmit({ name, email, phone, parentPhone, classes, tuitionStatus } as UpdateStudentDTO);
+      onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, tuitionStatus } as UpdateStudentDTO);
     }
   };
 

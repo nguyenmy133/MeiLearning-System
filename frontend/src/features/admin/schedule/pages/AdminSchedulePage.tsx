@@ -322,7 +322,12 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
             <SelectContent>
               {(teacherOptions ?? []).map((t) => (
                 <SelectItem key={t.id} value={t.name}>
-                  {t.name}
+                  <div className="flex items-center gap-2">
+                    <span>{t.name}</span>
+                    {t.subjects?.length > 0 && (
+                      <span className="text-xs text-muted-foreground">— {t.subjects.join(", ")}</span>
+                    )}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

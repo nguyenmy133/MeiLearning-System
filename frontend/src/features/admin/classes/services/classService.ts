@@ -38,10 +38,11 @@ export async function deleteClass(id: number): Promise<void> {
   await apiClient.delete(API.CLASSES.DELETE(id));
 }
 
-export async function getTeacherRefs(): Promise<Array<{ id: number; name: string }>> {
+export async function getTeacherRefs(): Promise<Array<{ id: number; name: string; subjects: string[] }>> {
   const { data } = await apiClient.get("/teachers", { params: { limit: 100 } });
   // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  const list = Array.isArray(data) ? data : data?.data ?? [];
+  return list.map((t: any) => ({ id: t.id, name: t.name, subjects: t.subjects ?? [] }));
 }
 
 export async function endClass(id: number): Promise<Class> {

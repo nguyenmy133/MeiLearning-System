@@ -26,6 +26,8 @@ public class CreateClassRequest {
     @NotNull @Positive
     private Long pricePerSession;
     private List<SessionSlotDTO> schedule;
+
+    @NotBlank(message = "Ngày bắt đầu không được để trống")
     private String startDate;
     private String description;
 

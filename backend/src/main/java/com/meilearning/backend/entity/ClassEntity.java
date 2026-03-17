@@ -1,16 +1,3 @@
-/**
-
- * Entity: Lớp học.
-
- * schedule được lưu dáº¡ng JSON column (SessionSlot[]).
-
- *
-
- * LÆ°u ½: Tên class Java là ClassEntity vì "Class" là reserved word trong Java.
-
- * Table name váº«n là "classes".
-
- */
 
 package com.meilearning.backend.entity;
 
@@ -71,14 +58,10 @@ public class ClassEntity extends BaseEntity {
     @Column(name = "price_per_session", nullable = false)
     private Long pricePerSession;
 
-    /**
 
-     * Lá»‹ch học dáº¡ng JSON: [{"weekday":1,"startTime":"18:00","endTime":"20:00"},
-     * ...]
-
-     */
 
     @Column(columnDefinition = "JSON")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private String schedule;
 
     @Column(name = "start_date", nullable = false)
@@ -95,7 +78,6 @@ public class ClassEntity extends BaseEntity {
     @Builder.Default
     private ClassStatus status = ClassStatus.upcoming;
 
-    // â”€â”€ Relationships â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @OneToMany(mappedBy = "classEntity")
     @Builder.Default

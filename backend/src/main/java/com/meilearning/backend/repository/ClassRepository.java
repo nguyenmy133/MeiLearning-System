@@ -28,4 +28,11 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long>, JpaSp
     @Query("SELECT COALESCE(SUM(SIZE(c.enrollments)), 0) FROM ClassEntity c WHERE c.status = 'active'")
     long countTotalStudentsInActiveClasses();
 
+    /** Lấy các lớp upcoming mà startDate đã đến (để auto-activate) */
+    List<ClassEntity> findByStatusAndStartDateLessThanEqual(ClassStatus status, java.time.LocalDate date);
+
+    /** Lấy các lớp active/upcoming đang dùng phòng này (để kiểm tra xung đột) */
+    @Query("SELECT c FROM ClassEntity c WHERE c.room.id = :roomId AND c.status IN ('active', 'upcoming')")
+    List<ClassEntity> findActiveOrUpcomingByRoomId(@org.springframework.data.repository.query.Param("roomId") Long roomId);
+
 }

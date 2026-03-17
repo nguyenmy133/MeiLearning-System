@@ -1,5 +1,7 @@
 package com.meilearning.backend.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,11 @@ import com.meilearning.backend.repository.SubjectRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.ClassService;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -38,6 +45,7 @@ public class ClassServiceImpl implements ClassService {
     private final TeacherRepository teacherRepository;
     private final RoomRepository roomRepository;
     private final ClassMapper classMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     @Transactional(readOnly = true)
@@ -51,64 +59,48 @@ public class ClassServiceImpl implements ClassService {
 
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";
-
             spec = spec.and((root, query, cb) ->
-
                     cb.like(cb.lower(root.get("name")), keyword));
-
         }
 
         if (subject != null && !subject.isBlank()) {
             spec = spec.and((root, query, cb) ->
-
                     cb.like(cb.lower(root.get("subject").get("name")), "%" + subject.toLowerCase() + "%"));
-
         }
 
         if (facility != null && !facility.isBlank()) {
             spec = spec.and((root, query, cb) ->
-
                     cb.like(cb.lower(root.get("room").get("facility").get("name")),
                             "%" + facility.toLowerCase() + "%"));
-
         }
 
         if (status != null && !status.isBlank() && !"all".equals(status)) {
             ClassStatus classStatus = ClassStatus.valueOf(status);
-
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), classStatus));
-
         }
 
         if (teacherId != null) {
             spec = spec.and((root, query, cb) ->
-
                     cb.equal(root.get("teacher").get("id"), teacherId));
-
         }
 
         Page<ClassEntity> result = classRepository.findAll(spec, pageable);
 
         return PageResponse.<ClassResponse>builder()
-
                 .data(result.getContent().stream().map(classMapper::toResponse).toList())
                 .total(result.getTotalElements())
                 .page(page)
                 .limit(limit)
                 .totalPages(result.getTotalPages())
                 .build();
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public ClassResponse getById(Long id) {
-
         ClassEntity entity = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp với id: " + id));
-
         return classMapper.toResponse(entity);
-
     }
 
     @Override
@@ -120,6 +112,37 @@ public class ClassServiceImpl implements ClassService {
         Teacher teacher = teacherRepository.findById(request.getTeacherId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giáo viên: " + request.getTeacherId()));
 
+        LocalDate startDate = request.getStartDate() != null
+                ? LocalDate.parse(request.getStartDate())
+                : LocalDate.now();
+
+        // Không cho tạo lớp với ngày bắt đầu trong quá khứ
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new BusinessException("Ngày bắt đầu không được nằm trong quá khứ.");
+        }
+
+        // Auto-set status: hôm nay → active, tương lai → upcoming
+        ClassStatus initialStatus = startDate.isEqual(LocalDate.now())
+                ? ClassStatus.active
+                : ClassStatus.upcoming;
+
+        // ── Kiểm tra xung đột phòng ──
+        Room room = null;
+        if (request.getRoom() != null && !request.getRoom().isBlank()) {
+            room = roomRepository.findByName(request.getRoom()).orElse(null);
+            if (room != null) {
+                // Validate sĩ số không vượt sức chứa phòng
+                if (request.getMaxStudents() > room.getCapacity()) {
+                    throw new BusinessException(
+                            String.format("Sĩ số tối đa (%d) không được vượt sức chứa phòng \"%s\" (%d chỗ).",
+                                    request.getMaxStudents(), room.getName(), room.getCapacity()));
+                }
+                if (request.getSchedule() != null && !request.getSchedule().isEmpty()) {
+                    checkRoomScheduleConflict(room, request.getSchedule(), null);
+                }
+            }
+        }
+
         ClassEntity entity = ClassEntity.builder()
                 .name(request.getName())
                 .subject(subject)
@@ -127,24 +150,17 @@ public class ClassServiceImpl implements ClassService {
                 .maxStudents(request.getMaxStudents())
                 .pricePerSession(request.getPricePerSession())
                 .schedule(classMapper.scheduleToJson(request.getSchedule()))
-                .startDate(request.getStartDate() != null ? LocalDate.parse(request.getStartDate()) : LocalDate.now())
+                .startDate(startDate)
                 .description(request.getDescription())
+                .status(initialStatus)
                 .build();
 
-        // Optionally link room
-
-        if (request.getRoom() != null && !request.getRoom().isBlank()) {
-            Room room = roomRepository.findByName(request.getRoom())
-                    .orElse(null);
-
+        if (room != null) {
             entity.setRoom(room);
-
         }
 
         entity = classRepository.save(entity);
-
         return classMapper.toResponse(entity);
-
     }
 
     @Override
@@ -153,37 +169,89 @@ public class ClassServiceImpl implements ClassService {
         ClassEntity entity = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp với id: " + id));
 
+        // Lớp completed → chỉ cho sửa description, không cho đổi startDate/status
+        if (entity.getStatus() == ClassStatus.completed) {
+            if (request.getDescription() != null) entity.setDescription(request.getDescription());
+            entity = classRepository.save(entity);
+            return classMapper.toResponse(entity);
+        }
+
+        // ── Cập nhật các field thông thường ──
         if (request.getName() != null) entity.setName(request.getName());
         if (request.getDescription() != null) entity.setDescription(request.getDescription());
         if (request.getMaxStudents() != null) entity.setMaxStudents(request.getMaxStudents());
         if (request.getPricePerSession() != null) entity.setPricePerSession(request.getPricePerSession());
-        if (request.getStartDate() != null) entity.setStartDate(LocalDate.parse(request.getStartDate()));
-        if (request.getStatus() != null) entity.setStatus(request.getStatus());
+
         if (request.getSubject() != null) {
             Subject subject = subjectRepository.findByNameIgnoreCase(request.getSubject())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy môn học: " + request.getSubject()));
-
             entity.setSubject(subject);
-
         }
 
         if (request.getTeacherId() != null) {
             Teacher teacher = teacherRepository.findById(request.getTeacherId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giáo viên: " + request.getTeacherId()));
-
             entity.setTeacher(teacher);
-
         }
 
         if (request.getSchedule() != null) {
             entity.setSchedule(classMapper.scheduleToJson(request.getSchedule()));
+        }
 
+        // ── Kiểm tra xung đột phòng khi đổi phòng hoặc đổi schedule ──
+        if (request.getRoom() != null && !request.getRoom().isBlank()) {
+            Room room = roomRepository.findByName(request.getRoom()).orElse(null);
+            if (room != null) {
+                // Validate sĩ số không vượt sức chứa phòng
+                int effectiveMaxStudents = request.getMaxStudents() != null
+                        ? request.getMaxStudents()
+                        : entity.getMaxStudents();
+                if (effectiveMaxStudents > room.getCapacity()) {
+                    throw new BusinessException(
+                            String.format("Sĩ số tối đa (%d) không được vượt sức chứa phòng \"%s\" (%d chỗ).",
+                                    effectiveMaxStudents, room.getName(), room.getCapacity()));
+                }
+                // Kiểm tra xung đột lịch học
+                List<CreateClassRequest.SessionSlotDTO> scheduleToCheck;
+                if (request.getSchedule() != null) {
+                    scheduleToCheck = request.getSchedule();
+                } else {
+                    scheduleToCheck = parseScheduleToSlots(entity.getSchedule());
+                }
+                if (scheduleToCheck != null && !scheduleToCheck.isEmpty()) {
+                    checkRoomScheduleConflict(room, scheduleToCheck, id);
+                }
+            }
+            entity.setRoom(room);
+        }
+
+        // ── Xử lý startDate + status liên kết ──
+        if (request.getStartDate() != null) {
+            LocalDate newStartDate = LocalDate.parse(request.getStartDate());
+            entity.setStartDate(newStartDate);
+
+            // Auto-recalculate status dựa trên startDate mới
+            if (entity.getStatus() == ClassStatus.upcoming) {
+                if (!newStartDate.isAfter(LocalDate.now())) {
+                    entity.setStatus(ClassStatus.active);
+                }
+            }
+        }
+
+        // Nếu frontend gửi status thủ công (upcoming ↔ active), validate hợp lý
+        if (request.getStatus() != null && request.getStatus() != entity.getStatus()) {
+            ClassStatus newStatus = request.getStatus();
+            if (newStatus == ClassStatus.completed) {
+                throw new BusinessException("Không thể đổi trạng thái thành 'Đã kết thúc'. Dùng chức năng Kết thúc lớp.");
+            }
+            if (newStatus == ClassStatus.upcoming && !entity.getStartDate().isAfter(LocalDate.now())) {
+                throw new BusinessException("Không thể chuyển về 'Sắp mở' vì ngày bắt đầu đã qua.");
+            }
+            entity.setStatus(newStatus);
         }
 
         entity = classRepository.save(entity);
-
         return classMapper.toResponse(entity);
-
     }
 
     @Override
@@ -192,13 +260,23 @@ public class ClassServiceImpl implements ClassService {
         ClassEntity entity = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp với id: " + id));
 
+        // Chỉ cho xóa lớp "upcoming" (chưa bắt đầu, chưa có dữ liệu)
         if (entity.getStatus() == ClassStatus.active) {
             throw new BusinessException("Không thể xóa lớp đang hoạt động. Hãy kết thúc lớp trước.");
+        }
+        if (entity.getStatus() == ClassStatus.completed) {
+            throw new BusinessException("Không thể xóa lớp đã kết thúc. Dữ liệu lịch sử cần được giữ lại.");
+        }
 
+        // Xóa dữ liệu con trước (cascade thủ công vì entity không dùng CascadeType.REMOVE)
+        if (entity.getSessions() != null && !entity.getSessions().isEmpty()) {
+            entity.getSessions().clear();
+        }
+        if (entity.getEnrollments() != null && !entity.getEnrollments().isEmpty()) {
+            entity.getEnrollments().clear();
         }
 
         classRepository.delete(entity);
-
     }
 
     @Override
@@ -209,27 +287,104 @@ public class ClassServiceImpl implements ClassService {
 
         if (entity.getStatus() == ClassStatus.completed) {
             throw new BusinessException("Lớp đã kết thúc rồi.");
-
+        }
+        if (entity.getStatus() == ClassStatus.upcoming) {
+            throw new BusinessException("Không thể kết thúc lớp chưa bắt đầu. Hãy hủy lớp hoặc chờ lớp bắt đầu.");
         }
 
         entity.setStatus(ClassStatus.completed);
         entity.setEndDate(LocalDate.now());
-
         classRepository.save(entity);
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public ClassStatsResponse getStats() {
-
         return ClassStatsResponse.builder()
                 .totalClasses(classRepository.count())
                 .activeClasses(classRepository.countByStatus(ClassStatus.active))
+                .completedClasses(classRepository.countByStatus(ClassStatus.completed))
                 .upcomingClasses(classRepository.countByStatus(ClassStatus.upcoming))
-                .totalStudents(classRepository.countTotalStudentsInActiveClasses())
                 .build();
-
     }
 
+    // ── PRIVATE HELPERS ──────────────────────────────────────────────────────
+
+    /**
+     * Kiểm tra xung đột lịch học trong cùng 1 phòng.
+     * Xung đột xảy ra khi: cùng phòng + cùng thứ + khung giờ chồng nhau
+     * + lớp đang active/upcoming.
+     *
+     * @param room      phòng cần kiểm tra
+     * @param newSlots  lịch học mới
+     * @param excludeId ID lớp cần loại trừ (khi update chính nó), null nếu create
+     */
+    private void checkRoomScheduleConflict(Room room, List<CreateClassRequest.SessionSlotDTO> newSlots, Long excludeId) {
+        List<ClassEntity> existingClasses = classRepository.findActiveOrUpcomingByRoomId(room.getId());
+
+        for (ClassEntity existing : existingClasses) {
+            // Loại trừ chính lớp đang update
+            if (excludeId != null && existing.getId().equals(excludeId)) continue;
+
+            List<Map<String, Object>> existingSlots = parseScheduleJson(existing.getSchedule());
+            if (existingSlots.isEmpty()) continue;
+
+            for (CreateClassRequest.SessionSlotDTO newSlot : newSlots) {
+                for (Map<String, Object> existingSlot : existingSlots) {
+                    int existingWeekday = ((Number) existingSlot.get("weekday")).intValue();
+
+                    if (existingWeekday == newSlot.getWeekday()) {
+                        // Cùng thứ → kiểm tra giờ chồng nhau
+                        LocalTime existStart = LocalTime.parse((String) existingSlot.get("startTime"));
+                        LocalTime existEnd = LocalTime.parse((String) existingSlot.get("endTime"));
+                        LocalTime newStart = LocalTime.parse(newSlot.getStartTime());
+                        LocalTime newEnd = LocalTime.parse(newSlot.getEndTime());
+
+                        // Chồng nhau nếu: newStart < existEnd AND newEnd > existStart
+                        if (newStart.isBefore(existEnd) && newEnd.isAfter(existStart)) {
+                            String dayLabel = getDayLabel(newSlot.getWeekday());
+                            throw new BusinessException(
+                                    String.format("Phòng \"%s\" đã có lớp \"%s\" vào %s (%s–%s). Vui lòng chọn phòng hoặc giờ khác.",
+                                            room.getName(), existing.getName(), dayLabel,
+                                            existStart.toString(), existEnd.toString()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** Parse schedule JSON string → List<Map> */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> parseScheduleJson(String json) {
+        if (json == null || json.isBlank()) return Collections.emptyList();
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /** Parse schedule JSON string → List<SessionSlotDTO> (cho update khi không gửi schedule mới) */
+    private List<CreateClassRequest.SessionSlotDTO> parseScheduleToSlots(String json) {
+        if (json == null || json.isBlank()) return Collections.emptyList();
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private String getDayLabel(int weekday) {
+        return switch (weekday) {
+            case 0 -> "Chủ nhật";
+            case 1 -> "Thứ 2";
+            case 2 -> "Thứ 3";
+            case 3 -> "Thứ 4";
+            case 4 -> "Thứ 5";
+            case 5 -> "Thứ 6";
+            case 6 -> "Thứ 7";
+            default -> "?";
+        };
+    }
 }

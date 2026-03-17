@@ -11,8 +11,7 @@ public class CreateStudentRequest {
     @NotBlank(message = "Tên học viên không được để trống")
     private String name;
 
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không hợp lá»‡")
+    @Email(message = "Email không hợp lệ")
     private String email;
     private String phone;
     private String parentPhone;

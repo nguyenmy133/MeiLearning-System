@@ -5,6 +5,6 @@ import lombok.*;
 public class ClassStatsResponse {
     private long totalClasses;
     private long activeClasses;
+    private long completedClasses;
     private long upcomingClasses;
-    private long totalStudents;
 }
