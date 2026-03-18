@@ -748,14 +748,21 @@ export function AdminStudentsPage() {
 
   const handleOpenReset = (student: Student) => {
     setResetTarget(student);
-    setNewPassword(generatePassword());
+    setNewPassword("");
+    setCopied(false);
+  };
+
+  const handleCloseReset = () => {
+    setResetTarget(null);
+    setNewPassword("");
+    setCopied(false);
   };
 
   const handleResetPassword = () => {
     if (!resetTarget) return;
     resetPwMutation.mutate(resetTarget.id, {
-      onSuccess: () => {
-        setNewPassword(generatePassword());
+      onSuccess: (actualPassword) => {
+        setNewPassword(actualPassword);
         toast.success("Đã đặt lại mật khẩu thành công");
       },
       onError: (err) => toast.error(err.message),
@@ -1122,7 +1129,7 @@ export function AdminStudentsPage() {
          ══════════════════════════════════════════════════════════════════ */}
       <Dialog
         open={!!resetTarget}
-        onOpenChange={(o) => !o && setResetTarget(null)}
+        onOpenChange={(o) => !o && handleCloseReset()}
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -1131,59 +1138,81 @@ export function AdminStudentsPage() {
               Đặt lại mật khẩu
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Đặt lại mật khẩu cho học viên{" "}
-              <span className="font-semibold text-foreground">
-                {resetTarget?.name}
-              </span>
-            </p>
-            <div className="space-y-2">
-              <Label>Mật khẩu mới</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="font-mono text-sm"
-                />
-                <Button
-                  type="button" variant="outline" size="icon"
-                  onClick={() => setNewPassword(generatePassword())}
-                  title="Tạo lại"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button" variant="outline" size="icon"
-                  onClick={() => handleCopy(newPassword)}
-                  title="Sao chép"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
+
+          {/* ── Trước khi reset: xác nhận ── */}
+          {!newPassword ? (
+            <>
+              <div className="space-y-3 py-2">
+                <p className="text-sm text-muted-foreground">
+                  Bạn sắp đặt lại mật khẩu cho học viên{" "}
+                  <span className="font-semibold text-foreground">
+                    {resetTarget?.name}
+                  </span>
+                </p>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted border border-border">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-foreground">
+                    Mật khẩu cũ sẽ bị thay thế. Học viên cần dùng mật khẩu mới để đăng nhập.
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Nhớ gửi mật khẩu này cho học viên.
-              </p>
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setResetTarget(null)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={handleResetPassword}
-              disabled={resetPwMutation.isPending}
-            >
-              {resetPwMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              Xác nhận đặt lại
-            </Button>
-          </DialogFooter>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={handleCloseReset}>
+                  Hủy
+                </Button>
+                <Button
+                  onClick={handleResetPassword}
+                  disabled={resetPwMutation.isPending}
+                >
+                  {resetPwMutation.isPending && (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  )}
+                  Xác nhận đặt lại
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            /* ── Sau khi reset: hiện mật khẩu mới ── */
+            <>
+              <div className="space-y-4 py-2">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                  <p className="text-sm font-medium text-primary">
+                    Đặt lại mật khẩu thành công!
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Mật khẩu mới</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newPassword}
+                      readOnly
+                      className="font-mono text-sm font-semibold bg-muted"
+                    />
+                    <Button
+                      type="button" variant="outline" size="icon"
+                      onClick={() => handleCopy(newPassword)}
+                      title="Sao chép"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Nhớ sao chép và gửi mật khẩu này cho học viên.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseReset} className="w-full">
+                  Đã sao chép, đóng
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

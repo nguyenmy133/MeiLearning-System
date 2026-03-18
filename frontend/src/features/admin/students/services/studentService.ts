@@ -49,8 +49,9 @@ export async function reactivateStudent(id: number): Promise<Student> {
   return data;
 }
 
-export async function resetStudentPassword(id: number): Promise<void> {
-  await apiClient.post(API.STUDENTS.RESET_PASSWORD(id));
+export async function resetStudentPassword(id: number): Promise<string> {
+  const { data } = await apiClient.post(API.STUDENTS.RESET_PASSWORD(id));
+  return data?.newPassword ?? data;
 }
 
 export async function checkPhoneExists(phone: string): Promise<boolean> {

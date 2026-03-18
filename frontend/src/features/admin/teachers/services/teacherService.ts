@@ -38,8 +38,9 @@ export async function deleteTeacher(id: number): Promise<void> {
   await apiClient.delete(API.TEACHERS.DELETE(id));
 }
 
-export async function resetTeacherPassword(id: number): Promise<void> {
-  await apiClient.post(API.TEACHERS.RESET_PASSWORD(id));
+export async function resetTeacherPassword(id: number): Promise<string> {
+  const { data } = await apiClient.post(API.TEACHERS.RESET_PASSWORD(id));
+  return data?.newPassword ?? data;
 }
 
 export async function lockTeacher(id: number): Promise<void> {
