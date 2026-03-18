@@ -18,4 +18,6 @@ public interface StudentService {
     void reactivateStudent(Long id);
     String resetPassword(Long id);
     StudentStatsResponse getStats();
+    boolean checkPhoneExists(String phone);
+    boolean checkEmailExists(String email);
 }

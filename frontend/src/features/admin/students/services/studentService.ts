@@ -52,3 +52,13 @@ export async function reactivateStudent(id: number): Promise<Student> {
 export async function resetStudentPassword(id: number): Promise<void> {
   await apiClient.post(API.STUDENTS.RESET_PASSWORD(id));
 }
+
+export async function checkPhoneExists(phone: string): Promise<boolean> {
+  const { data } = await apiClient.get(API.STUDENTS.CHECK_PHONE, { params: { phone } });
+  return (data as any)?.exists ?? false;
+}
+
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const { data } = await apiClient.get(API.STUDENTS.CHECK_EMAIL, { params: { email } });
+  return (data as any)?.exists ?? false;
+}

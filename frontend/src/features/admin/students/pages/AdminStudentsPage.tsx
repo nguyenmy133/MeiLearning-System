@@ -48,7 +48,7 @@ import {
   STUDENT_STATUS_LABELS, TUITION_STATUS_LABELS,
   DROP_REASONS,
 } from "../types";
-import { useClassOptions } from "@/hooks/useClassOptions";
+import { useClassOptions, useEnrollableClassOptions } from "@/hooks/useClassOptions";
 
 // ============================================================================
 // HELPERS
@@ -179,7 +179,7 @@ interface ClassPickerProps {
 }
 
 function ClassPicker({ selected, onChange }: ClassPickerProps) {
-  const { data: classOptions } = useClassOptions();
+  const { data: classOptions } = useEnrollableClassOptions();
   const toggle = (opt: { id: number; name: string }) => {
     const exists = selected.some((c) => c.classId === opt.id);
     onChange(
@@ -241,27 +241,119 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
   const [password, setPassword] = useState(() => generatePassword());
   const [copied, setCopied] = useState(false);
 
+  // ── Inline field errors ──
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  const setError = (field: string, msg: string) =>
+    setFieldErrors((prev) => ({ ...prev, [field]: msg }));
+  const clearError = (field: string) =>
+    setFieldErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const validatePhone = (value: string) => /^(0[0-9]{9,10})$/.test(value);
-  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const validatePhoneFmt = (value: string) => /^0[0-9]{9}$/.test(value);
+  const validateEmailFmt = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  // ── Blur handlers with async duplicate check ──
+
+  const handleNameBlur = () => {
+    if (!name.trim()) setError("name", "Vui lòng nhập họ tên");
+    else clearError("name");
+  };
+
+  const handlePhoneBlur = async () => {
+    if (mode === "create" && !phone.trim()) {
+      setError("phone", "Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)");
+      return;
+    }
+    if (phone.trim() && !validatePhoneFmt(phone)) {
+      setError("phone", "Số điện thoại không hợp lệ (VD: 0901234567)");
+      return;
+    }
+    if (!phone.trim()) { clearError("phone"); return; }
+
+    // Async duplicate check (only on create)
+    if (mode === "create") {
+      try {
+        setCheckingPhone(true);
+        const { checkPhoneExists } = await import("../services/studentService");
+        const exists = await checkPhoneExists(phone);
+        if (exists) {
+          setError("phone", `Số điện thoại "${phone}" đã được sử dụng`);
+        } else {
+          clearError("phone");
+        }
+      } catch { clearError("phone"); }
+      finally { setCheckingPhone(false); }
+    } else {
+      clearError("phone");
+    }
+  };
+
+  const handleEmailBlur = async () => {
+    if (email.trim() && !validateEmailFmt(email)) {
+      setError("email", "Email không đúng định dạng");
+      return;
+    }
+    if (!email.trim()) { clearError("email"); return; }
+
+    // Async duplicate check (skip if same as initial)
+    if (email.trim() && email.trim() !== initial?.email) {
+      try {
+        setCheckingEmail(true);
+        const { checkEmailExists } = await import("../services/studentService");
+        const exists = await checkEmailExists(email.trim());
+        if (exists) {
+          setError("email", `Email "${email.trim()}" đã được sử dụng`);
+        } else {
+          clearError("email");
+        }
+      } catch { clearError("email"); }
+      finally { setCheckingEmail(false); }
+    } else {
+      clearError("email");
+    }
+  };
+
+  const handleParentPhoneBlur = () => {
+    if (parentPhone.trim() && !validatePhoneFmt(parentPhone)) {
+      setError("parentPhone", "SĐT phụ huynh không hợp lệ (VD: 0911234567)");
+    } else {
+      clearError("parentPhone");
+    }
+  };
+
+  // ── Submit with full validation ──
 
   const handleSubmit = () => {
-    if (!name.trim()) { toast.error("Vui lòng nhập họ tên"); return; }
-    if (email.trim() && !validateEmail(email)) { toast.error("Email không đúng định dạng"); return; }
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = "Vui lòng nhập họ tên";
+    if (email.trim() && !validateEmailFmt(email)) errors.email = "Email không đúng định dạng";
 
     if (mode === "create") {
-      if (!phone.trim()) { toast.error("Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)"); return; }
-      if (!validatePhone(phone)) { toast.error("Số điện thoại không hợp lệ (VD: 0901234567)"); return; }
-      if (!password.trim()) { toast.error("Vui lòng nhập mật khẩu"); return; }
+      if (!phone.trim()) errors.phone = "Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)";
+      else if (!validatePhoneFmt(phone)) errors.phone = "Số điện thoại không hợp lệ (VD: 0901234567)";
+      if (!password.trim()) errors.password = "Vui lòng nhập mật khẩu";
     }
 
-    if (phone.trim() && !validatePhone(phone)) { toast.error("Số điện thoại không hợp lệ (VD: 0901234567)"); return; }
-    if (parentPhone.trim() && !validatePhone(parentPhone)) { toast.error("SĐT phụ huynh không hợp lệ (VD: 0911234567)"); return; }
+    if (phone.trim() && !validatePhoneFmt(phone)) errors.phone = "Số điện thoại không hợp lệ (VD: 0901234567)";
+    if (parentPhone.trim() && !validatePhoneFmt(parentPhone)) errors.parentPhone = "SĐT phụ huynh không hợp lệ (VD: 0911234567)";
+
+    // Keep existing async duplicate errors
+    if (fieldErrors.phone?.includes("đã được sử dụng")) errors.phone = fieldErrors.phone;
+    if (fieldErrors.email?.includes("đã được sử dụng")) errors.email = fieldErrors.email;
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error("Vui lòng kiểm tra lại các trường bị lỗi");
+      return;
+    }
 
     if (mode === "create") {
       onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, username: phone, password } as CreateStudentDTO);
@@ -269,6 +361,9 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
       onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, tuitionStatus } as UpdateStudentDTO);
     }
   };
+
+  const inputErrorClass = (field: string) =>
+    fieldErrors[field] ? "ring-1 ring-destructive border-destructive" : "";
 
   return (
     <div className="space-y-4 py-2">
@@ -278,24 +373,55 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
       </p>
       <div className="space-y-2">
         <Label>Họ và tên <span className="text-destructive">*</span></Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập họ và tên" />
+        <Input
+          value={name}
+          onChange={(e) => { setName(e.target.value); if (e.target.value.trim()) clearError("name"); }}
+          onBlur={handleNameBlur}
+          placeholder="Nhập họ và tên"
+          className={inputErrorClass("name")}
+        />
+        {fieldErrors.name && <p className="text-xs text-destructive">{fieldErrors.name}</p>}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Email</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@gmail.com" />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) clearError("email"); }}
+            onBlur={handleEmailBlur}
+            placeholder="email@gmail.com"
+            className={inputErrorClass("email")}
+          />
+          {checkingEmail && <p className="text-[10px] text-muted-foreground">Đang kiểm tra...</p>}
+          {fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
         </div>
         <div className="space-y-2">
           <Label>Số điện thoại {mode === "create" && <span className="text-destructive">*</span>}</Label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0901234567" />
-          {mode === "create" && phone && (
+          <Input
+            value={phone}
+            onChange={(e) => { setPhone(e.target.value); if (fieldErrors.phone) clearError("phone"); }}
+            onBlur={handlePhoneBlur}
+            placeholder="0901234567"
+            className={inputErrorClass("phone")}
+          />
+          {checkingPhone && <p className="text-[10px] text-muted-foreground">Đang kiểm tra...</p>}
+          {fieldErrors.phone && <p className="text-xs text-destructive">{fieldErrors.phone}</p>}
+          {mode === "create" && phone && !fieldErrors.phone && (
             <p className="text-[10px] text-muted-foreground">Tên đăng nhập sẽ là: <span className="font-mono font-semibold">{phone}</span></p>
           )}
         </div>
       </div>
       <div className="space-y-2">
         <Label>SĐT Phụ huynh</Label>
-        <Input value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} placeholder="0911234567" />
+        <Input
+          value={parentPhone}
+          onChange={(e) => { setParentPhone(e.target.value); if (fieldErrors.parentPhone) clearError("parentPhone"); }}
+          onBlur={handleParentPhoneBlur}
+          placeholder="0911234567"
+          className={inputErrorClass("parentPhone")}
+        />
+        {fieldErrors.parentPhone && <p className="text-xs text-destructive">{fieldErrors.parentPhone}</p>}
       </div>
 
       {/* Lớp đăng ký */}
@@ -345,8 +471,8 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
             <div className="flex gap-2">
               <Input
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="font-mono text-sm"
+                onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) clearError("password"); }}
+                className={`font-mono text-sm ${inputErrorClass("password")}`}
               />
               <Button
                 type="button" variant="outline" size="icon"
@@ -363,6 +489,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
                 {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
+            {fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
             <p className="text-xs text-muted-foreground">
               Học viên nên đổi mật khẩu sau khi đăng nhập lần đầu.
             </p>
@@ -371,13 +498,14 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
       )}
 
 
-      <Button className="w-full" onClick={handleSubmit} disabled={isPending}>
+      <Button className="w-full" onClick={handleSubmit} disabled={isPending || checkingPhone || checkingEmail}>
         {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {mode === "create" ? "Thêm học viên" : "Cập nhật"}
       </Button>
     </div>
   );
 }
+
 
 // ============================================================================
 // DROP STUDENT DIALOG CONTENT

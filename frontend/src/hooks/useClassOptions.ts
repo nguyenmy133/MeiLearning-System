@@ -26,6 +26,31 @@ export function useClassOptions() {
   });
 }
 
+/**
+ * Chỉ lấy lớp chưa kết thúc (active + upcoming) — dùng cho ClassPicker khi tạo/sửa học viên.
+ * Tránh cho phép đăng ký học viên vào lớp đã hoàn thành.
+ */
+export function useEnrollableClassOptions() {
+  return useQuery<ClassOption[]>({
+    queryKey: ["classes", "enrollableOptions"],
+    queryFn: async () => {
+      try {
+        const [activeRes, upcomingRes] = await Promise.all([
+          apiClient.get("/classes", { params: { limit: 200, status: "active" } }),
+          apiClient.get("/classes", { params: { limit: 200, status: "upcoming" } }),
+        ]);
+        const activeList = Array.isArray(activeRes.data) ? activeRes.data : activeRes.data?.data ?? [];
+        const upcomingList = Array.isArray(upcomingRes.data) ? upcomingRes.data : upcomingRes.data?.data ?? [];
+        const merged = [...activeList, ...upcomingList];
+        return merged.map((c: any) => ({ id: c.id, name: c.name || c.className }));
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export interface TeacherOptionItem {
   id: number;
   name: string;

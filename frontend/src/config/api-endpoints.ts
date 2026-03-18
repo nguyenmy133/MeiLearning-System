@@ -37,6 +37,8 @@ export const API = {
         RESET_PASSWORD: (id: number | string) => `/students/${id}/reset-password`,
         STATS: "/students/stats",
         IMPORT: "/students/import",
+        CHECK_PHONE: "/students/check-phone",
+        CHECK_EMAIL: "/students/check-email",
     },
 
     // ── Teachers ────────────────────────────────────────────────

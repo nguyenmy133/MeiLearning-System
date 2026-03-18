@@ -89,4 +89,18 @@ public class StudentController {
     public ResponseEntity<StudentStatsResponse> getStats() {
         return ResponseEntity.ok(studentService.getStats());
     }
+
+    @GetMapping("/check-phone")
+    @Operation(summary = "Kiểm tra SĐT đã tồn tại chưa")
+    public ResponseEntity<java.util.Map<String, Boolean>> checkPhone(@RequestParam String phone) {
+        boolean exists = studentService.checkPhoneExists(phone);
+        return ResponseEntity.ok(java.util.Map.of("exists", exists));
+    }
+
+    @GetMapping("/check-email")
+    @Operation(summary = "Kiểm tra email đã tồn tại chưa")
+    public ResponseEntity<java.util.Map<String, Boolean>> checkEmail(@RequestParam String email) {
+        boolean exists = studentService.checkEmailExists(email);
+        return ResponseEntity.ok(java.util.Map.of("exists", exists));
+    }
 }

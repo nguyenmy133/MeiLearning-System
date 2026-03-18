@@ -167,6 +167,12 @@ public class StudentServiceImpl implements StudentService {
                 ClassEntity classEntity = classRepository.findById(ce.getClassId())
                         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + ce.getClassId()));
 
+                // Không cho thêm học viên vào lớp đã hoàn thành
+                if (classEntity.getStatus() == com.meilearning.backend.entity.enums.ClassStatus.completed) {
+                    throw new BusinessException(
+                            "Không thể thêm học viên vào lớp \"" + classEntity.getName() + "\" vì lớp đã kết thúc.");
+                }
+
                 ClassEnrollment enrollment = ClassEnrollment.builder()
                         .student(student)
                         .classEntity(classEntity)
@@ -212,7 +218,36 @@ public class StudentServiceImpl implements StudentService {
 
         student = studentRepository.save(student);
 
-        return studentMapper.toResponse(student);
+        // Update ClassEnrollments: xóa cũ → tạo mới
+        if (request.getClasses() != null) {
+            // Xóa tất cả enrollment hiện tại
+            classEnrollmentRepository.deleteAll(
+                    classEnrollmentRepository.findByStudentId(student.getId())
+            );
+            classEnrollmentRepository.flush();
+
+            // Tạo enrollment mới theo danh sách request
+            for (var ce : request.getClasses()) {
+                ClassEntity classEntity = classRepository.findById(ce.getClassId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + ce.getClassId()));
+
+                // Không cho thêm học viên vào lớp đã hoàn thành
+                if (classEntity.getStatus() == com.meilearning.backend.entity.enums.ClassStatus.completed) {
+                    throw new BusinessException(
+                            "Không thể thêm học viên vào lớp \"" + classEntity.getName() + "\" vì lớp đã kết thúc.");
+                }
+
+                ClassEnrollment enrollment = ClassEnrollment.builder()
+                        .student(student)
+                        .classEntity(classEntity)
+                        .build();
+
+                classEnrollmentRepository.save(enrollment);
+            }
+        }
+
+        // Re-fetch để response có enrollment mới nhất
+        return studentMapper.toResponse(studentRepository.findById(student.getId()).orElseThrow());
 
     }
 
@@ -301,6 +336,20 @@ public class StudentServiceImpl implements StudentService {
                 .paidTuitionCount(studentRepository.countByTuitionStatus(TuitionStatus.paid))
                 .build();
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean checkPhoneExists(String phone) {
+        // username = phone number trong hệ thống
+        return userRepository.existsByUsername(phone);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean checkEmailExists(String email) {
+        if (email == null || email.isBlank()) return false;
+        return userRepository.existsByEmail(email.trim());
     }
 
 }
