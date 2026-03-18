@@ -49,3 +49,18 @@ export async function endClass(id: number): Promise<Class> {
   const { data } = await apiClient.patch(API.CLASSES.END(id));
   return data;
 }
+
+export interface EnrolledStudent {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  gender: string | null;
+  status: string;
+  enrolledAt: string | null;
+}
+
+export async function getEnrolledStudents(classId: number): Promise<EnrolledStudent[]> {
+  const { data } = await apiClient.get(`/classes/${classId}/students`);
+  return Array.isArray(data) ? data : [];
+}

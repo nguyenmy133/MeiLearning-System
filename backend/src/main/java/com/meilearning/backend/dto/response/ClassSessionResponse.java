@@ -10,12 +10,16 @@ public class ClassSessionResponse {
     private String subjectName;
     private String teacherName;
     private String roomName;
+    private Long roomId;
+    private String facilityName;
+    private Long facilityId;
     private String date;
     private String startTime;
     private String endTime;
     private String status;       // upcoming, completed, cancelled
     private String type;         // regular, makeup, extra
     private String notes;
+    private String classStatus;  // active, upcoming, completed
     private int totalStudents;
     private int presentCount;
     private int absentCount;

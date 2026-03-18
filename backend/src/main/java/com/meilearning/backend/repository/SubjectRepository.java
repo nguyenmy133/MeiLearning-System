@@ -37,4 +37,7 @@ public interface SubjectRepository extends JpaRepository<Subject, Long>, JpaSpec
     @Query("SELECT COUNT(c) FROM ClassEntity c WHERE c.subject IS NOT NULL")
     long countTotalClasses();
 
+    @Query("SELECT COUNT(DISTINCT s.category) FROM Subject s WHERE s.category IS NOT NULL")
+    long countDistinctCategories();
+
 }

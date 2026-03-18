@@ -9,7 +9,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -29,12 +29,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   BookOpen, Plus, Search, MoreHorizontal, Edit, Trash2, Eye,
   Users, Calendar, Clock, Filter, MapPin, CheckCircle2, XCircle,
-  Loader2,
+  Loader2, Info,
 } from "lucide-react";
 
 // ===== Module imports =====
 import {
-  useClasses, useClassStats, useTeacherRefs,
+  useClasses, useClassStats, useTeacherRefs, useEnrolledStudents,
   useCreateClass, useUpdateClass, useDeleteClass, useEndClass,
 } from "../hooks";
 import type {
@@ -369,8 +369,9 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
       return;
     }
     if (roomCapacity > 0 && maxStudents > roomCapacity) {
-      toast.error(`Sĩ số tối đa không được vượt sức chứa phòng (${roomCapacity})`);
-      return;
+      if (!window.confirm(`Sĩ số (${maxStudents}) vượt sức chứa phòng (${roomCapacity}). Bạn có chắc muốn tiếp tục?`)) {
+        return;
+      }
     }
     if (pricePerSession < 0) {
       toast.error("Giá mỗi buổi không được âm");
@@ -397,7 +398,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
     if (mode === "create") {
       onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description } as CreateClassDTO);
     } else {
-      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description, status } as UpdateClassDTO);
+      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description } as UpdateClassDTO);
     }
   };
 
@@ -492,12 +493,16 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
           <Input
             type="number"
             min={1}
-            max={roomCapacity > 0 ? roomCapacity : 200}
+            max={200}
             value={maxStudents}
             onChange={(e) => setMaxStudents(Number(e.target.value))}
           />
-          {roomCapacity > 0 ? (
-            <p className="text-xs text-muted-foreground">Sức chứa phòng: {roomCapacity} chỗ. Không được vượt quá.</p>
+          {roomCapacity > 0 && maxStudents > roomCapacity ? (
+            <p className="text-xs text-amber-600 flex items-center gap-1">
+              ⚠️ Sĩ số ({maxStudents}) vượt sức chứa phòng ({roomCapacity}). Vẫn có thể lưu.
+            </p>
+          ) : roomCapacity > 0 ? (
+            <p className="text-xs text-muted-foreground">Sức chứa phòng: {roomCapacity} chỗ.</p>
           ) : (
             <p className="text-xs text-muted-foreground">Tối đa 200 học viên.</p>
           )}
@@ -518,26 +523,17 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
         </div>
       </div>
 
-      {/* Trạng thái — chỉ hiện khi Edit */}
+      {/* Trạng thái — chỉ hiện thông tin, không cho chỉnh */}
       {mode === "edit" && (
-        <div className="space-y-2">
-          <Label>Trạng thái</Label>
-          <Select
-            value={status}
-            onValueChange={(v) => setStatus(v as ClassStatusType)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(CLASS_STATUS_LABELS).map(([val, lbl]) => (
-                <SelectItem key={val} value={val}>{lbl}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Để kết thúc lớp, dùng chức năng <strong>"Kết thúc lớp"</strong> trong menu.
-          </p>
+        <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/50 text-sm">
+          <Info className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+          <div className="text-muted-foreground">
+            <p>Trạng thái lớp được <strong>tự động quản lý</strong> bởi hệ thống:</p>
+            <ul className="list-disc ml-4 mt-1 space-y-0.5">
+              <li><strong>Sắp mở → Đang hoạt động</strong>: khi đến ngày bắt đầu</li>
+              <li><strong>Đang hoạt động → Đã kết thúc</strong>: dùng nút "Kết thúc lớp" trong menu</li>
+            </ul>
+          </div>
         </div>
       )}
 
@@ -608,9 +604,16 @@ export function AdminClassesPage() {
 
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [viewingClass, setViewingClass] = useState<Class | null>(null);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [deletingClass, setDeletingClass] = useState<Class | null>(null);
   const [endingClass, setEndingClass] = useState<Class | null>(null);
+  const [studentListClass, setStudentListClass] = useState<Class | null>(null);
+
+  // ── Enrolled students query ──
+  const { data: enrolledStudents = [], isLoading: isLoadingStudents } = useEnrolledStudents(
+    studentListClass?.id ?? 0
+  );
 
   // ── Queries ──
   const { data: subjectOptsData = [] } = useSubjectOptionsWithPrice();
@@ -856,11 +859,11 @@ export function AdminClassesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setViewingClass(cls)}>
                             <Eye className="w-4 h-4 mr-2" />
                             Xem chi tiết
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setStudentListClass(cls)}>
                             <Users className="w-4 h-4 mr-2" />
                             Danh sách HV
                           </DropdownMenuItem>
@@ -1023,6 +1026,172 @@ export function AdminClassesPage() {
               Xác nhận kết thúc
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════════════
+         VIEW DETAIL DIALOG
+         ══════════════════════════════════════════════════════════════════ */}
+      <Dialog open={!!viewingClass} onOpenChange={(o) => !o && setViewingClass(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Chi tiết lớp học
+            </DialogTitle>
+          </DialogHeader>
+          {viewingClass && (
+            <div className="space-y-4 py-2">
+              {/* Tên lớp + Môn */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">{viewingClass.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{viewingClass.subject}</Badge>
+                    <ClassStatusBadge status={viewingClass.status} />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Giáo viên */}
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Giáo viên</p>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={viewingClass.teacher.avatar} />
+                  <AvatarFallback>{viewingClass.teacher.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium">{viewingClass.teacher.name}</span>
+              </div>
+
+              {/* Thông tin lớp */}
+              <Separator />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thông tin lớp</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Cơ sở</p>
+                  <p className="font-medium flex items-center gap-1"><MapPin className="w-3 h-3" />{viewingClass.facility}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Phòng</p>
+                  <p className="font-medium">{viewingClass.room}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Sĩ số</p>
+                  <p className="font-medium">{viewingClass.students}/{viewingClass.maxStudents}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Giá mỗi buổi</p>
+                  <p className="font-medium">{new Intl.NumberFormat("vi-VN").format(viewingClass.pricePerSession)}đ</p>
+                </div>
+              </div>
+
+              {/* Lịch học */}
+              <Separator />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lịch học</p>
+              <div className="px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
+                {viewingClass.schedule.map((s) => {
+                  const dayLabel = WEEKDAYS.find((w) => w.value === s.weekday)?.label ?? "?";
+                  return (
+                    <p key={s.weekday} className="text-sm">
+                      <span className="font-semibold text-primary w-8 inline-block">{dayLabel}</span>
+                      <span className="text-muted-foreground">{s.startTime} – {s.endTime}</span>
+                    </p>
+                  );
+                })}
+              </div>
+
+              {/* Thời gian */}
+              <Separator />
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Ngày bắt đầu</p>
+                  <p className="font-medium">{viewingClass.startDate}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Ngày kết thúc</p>
+                  <p className="font-medium">{viewingClass.endDate || "Chưa kết thúc"}</p>
+                </div>
+              </div>
+
+              {/* Mô tả */}
+              {viewingClass.description && (
+                <>
+                  <Separator />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mô tả</p>
+                  <p className="text-sm text-muted-foreground">{viewingClass.description}</p>
+                </>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== DIALOG: Danh sách học viên ===== */}
+      <Dialog open={!!studentListClass} onOpenChange={(open) => !open && setStudentListClass(null)}>
+        <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+          {studentListClass && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Danh sách học viên — {studentListClass.name}</DialogTitle>
+                <DialogDescription>
+                  Sĩ số: {studentListClass.students}/{studentListClass.maxStudents}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                {isLoadingStudents ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-sm text-muted-foreground">Đang tải...</span>
+                  </div>
+                ) : enrolledStudents.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Chưa có học viên nào đăng ký lớp này</p>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium">#</th>
+                          <th className="text-left px-3 py-2 font-medium">Họ tên</th>
+                          <th className="text-left px-3 py-2 font-medium">SĐT</th>
+                          <th className="text-left px-3 py-2 font-medium">Giới tính</th>
+                          <th className="text-left px-3 py-2 font-medium">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {enrolledStudents.map((student, idx) => (
+                          <tr key={student.id} className="border-t hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
+                            <td className="px-3 py-2 font-medium">{student.name}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{student.phone || "—"}</td>
+                            <td className="px-3 py-2 text-muted-foreground">
+                              {student.gender === "male" ? "Nam" : student.gender === "female" ? "Nữ" : "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                student.status === "active"
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                              }`}>
+                                {student.status === "active" ? "Đang học" : student.status === "inactive" ? "Ngưng" : student.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

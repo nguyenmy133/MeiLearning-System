@@ -91,6 +91,12 @@ public class ClassController {
     }
 
 
+    @GetMapping("/{id}/students")
+    @Operation(summary = "Lấy danh sách học viên đã đăng ký lớp")
+    public ResponseEntity<?> getEnrolledStudents(@PathVariable Long id) {
+        return ResponseEntity.ok(classService.getEnrolledStudents(id));
+    }
+
     @GetMapping("/stats")
     @Operation(summary = "Lấy thống kê lớp học")
     public ResponseEntity<ClassStatsResponse> getStats() {

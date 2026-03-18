@@ -67,6 +67,11 @@ public class ClassSession extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /** Optional: override room for this specific session (null = use class default) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_override_id")
+    private Room roomOverride;
+
     // â”€â”€ Relationships â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @OneToMany(mappedBy = "session")

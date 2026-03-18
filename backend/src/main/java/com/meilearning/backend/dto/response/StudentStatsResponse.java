@@ -5,6 +5,6 @@ import lombok.*;
 public class StudentStatsResponse {
     private long totalStudents;
     private long activeStudents;
-    private long paidTuitionCount;
-    private long inactiveStudents;
+    private long unpaidTuitionCount;     // pending + overdue (chưa đóng phí)
+    private long newStudentsThisMonth;   // tạo mới trong tháng hiện tại
 }

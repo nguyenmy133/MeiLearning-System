@@ -5,6 +5,8 @@ import com.meilearning.backend.dto.request.UpdateClassRequest;
 import com.meilearning.backend.dto.response.ClassResponse;
 import com.meilearning.backend.dto.response.ClassStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
+import java.util.List;
+import java.util.Map;
 
 public interface ClassService {
     PageResponse<ClassResponse> getAll(String search, String subject, String facility,
@@ -15,4 +17,5 @@ public interface ClassService {
     void delete(Long id);
     void endClass(Long id);
     ClassStatsResponse getStats();
+    List<Map<String, Object>> getEnrolledStudents(Long classId);
 }

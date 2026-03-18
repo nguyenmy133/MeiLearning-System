@@ -4,6 +4,7 @@ export {
   useClassDetail,
   useClassStats,
   useTeacherRefs,
+  useEnrolledStudents,
   useCreateClass,
   useUpdateClass,
   useDeleteClass,

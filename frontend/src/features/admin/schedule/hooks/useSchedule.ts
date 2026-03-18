@@ -6,7 +6,8 @@ import {
   getScheduleStats,
   getClassRefs,
   addSession,
-  cancelSession,
+  updateSession,
+  deleteSession,
 } from "../services";
 
 // ── Query key factory ─────────────────────────────────────────────────────────
@@ -21,10 +22,10 @@ export const scheduleKeys = {
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export function useWeekSessions(facilityId?: string, teacherId?: number) {
+export function useWeekSessions(facilityId?: string, teacherId?: number, weekStart?: string) {
   return useQuery({
-    queryKey: [...scheduleKeys.sessionsByFacility(facilityId), teacherId ?? null],
-    queryFn: () => getWeekSessions(facilityId, teacherId),
+    queryKey: [...scheduleKeys.sessionsByFacility(facilityId), teacherId ?? null, weekStart ?? "current"],
+    queryFn: () => getWeekSessions(facilityId, teacherId, weekStart),
   });
 }
 
@@ -59,16 +60,33 @@ export function useAddSession() {
   });
 }
 
-export function useCancelSession() {
+export function useUpdateSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => cancelSession(id),
+    mutationFn: (args: { id: number; dto: { date?: string; startTime?: string; endTime?: string; type?: string; notes?: string; roomId?: number } }) =>
+      updateSession(args.id, args.dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: scheduleKeys.all });
-      toast.success("Đã hủy buổi học");
+      toast.success("Đã cập nhật buổi học");
     },
     onError: (err: Error) => {
       toast.error(err.message);
     },
   });
 }
+
+export function useDeleteSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteSession(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: scheduleKeys.all });
+      toast.success("Đã xóa buổi học");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+

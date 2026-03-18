@@ -328,12 +328,21 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public StudentStatsResponse getStats() {
+        long total = studentRepository.count();
+        long active = studentRepository.countByStatus(StudentStatus.active);
+        long unpaid = studentRepository.countByTuitionStatus(TuitionStatus.pending)
+                    + studentRepository.countByTuitionStatus(TuitionStatus.overdue);
+
+        // First day of current month at 00:00 UTC
+        java.time.Instant startOfMonth = java.time.YearMonth.now()
+                .atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+        long newThisMonth = studentRepository.countCreatedSince(startOfMonth);
 
         return StudentStatsResponse.builder()
-                .totalStudents(studentRepository.count())
-                .activeStudents(studentRepository.countByStatus(StudentStatus.active))
-                .inactiveStudents(studentRepository.countByStatus(StudentStatus.inactive))
-                .paidTuitionCount(studentRepository.countByTuitionStatus(TuitionStatus.paid))
+                .totalStudents(total)
+                .activeStudents(active)
+                .unpaidTuitionCount(unpaid)
+                .newStudentsThisMonth(newThisMonth)
                 .build();
 
     }

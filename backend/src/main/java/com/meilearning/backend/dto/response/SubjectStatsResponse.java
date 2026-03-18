@@ -20,7 +20,6 @@ public class SubjectStatsResponse {
     private long total;
     private long active;
     private long inactive;
-    private long totalTeachers;
-    private long totalClasses;
+    private long totalCategories;   // số phân loại đang dùng
 
 }

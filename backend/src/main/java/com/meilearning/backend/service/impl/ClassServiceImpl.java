@@ -24,11 +24,13 @@ import com.meilearning.backend.entity.enums.ClassStatus;
 import com.meilearning.backend.exception.BusinessException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.ClassMapper;
+import com.meilearning.backend.repository.ClassEnrollmentRepository;
 import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.RoomRepository;
 import com.meilearning.backend.repository.SubjectRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.ClassService;
+import com.meilearning.backend.service.ScheduleService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collections;
@@ -44,7 +46,9 @@ public class ClassServiceImpl implements ClassService {
     private final SubjectRepository subjectRepository;
     private final TeacherRepository teacherRepository;
     private final RoomRepository roomRepository;
+    private final ClassEnrollmentRepository enrollmentRepository;
     private final ClassMapper classMapper;
+    private final ScheduleService scheduleService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -160,6 +164,14 @@ public class ClassServiceImpl implements ClassService {
         }
 
         entity = classRepository.save(entity);
+
+        // Auto-generate sessions from schedule
+        try {
+            scheduleService.generateSessions(entity.getId());
+        } catch (Exception e) {
+            // Log but don't fail class creation
+        }
+
         return classMapper.toResponse(entity);
     }
 
@@ -238,17 +250,8 @@ public class ClassServiceImpl implements ClassService {
             }
         }
 
-        // Nếu frontend gửi status thủ công (upcoming ↔ active), validate hợp lý
-        if (request.getStatus() != null && request.getStatus() != entity.getStatus()) {
-            ClassStatus newStatus = request.getStatus();
-            if (newStatus == ClassStatus.completed) {
-                throw new BusinessException("Không thể đổi trạng thái thành 'Đã kết thúc'. Dùng chức năng Kết thúc lớp.");
-            }
-            if (newStatus == ClassStatus.upcoming && !entity.getStartDate().isAfter(LocalDate.now())) {
-                throw new BusinessException("Không thể chuyển về 'Sắp mở' vì ngày bắt đầu đã qua.");
-            }
-            entity.setStatus(newStatus);
-        }
+        // Status được tự động quản lý bởi ClassStatusScheduler
+        // Không cho phép thay đổi status thủ công qua update API
 
         entity = classRepository.save(entity);
         return classMapper.toResponse(entity);
@@ -386,5 +389,26 @@ public class ClassServiceImpl implements ClassService {
             case 6 -> "Thứ 7";
             default -> "?";
         };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getEnrolledStudents(Long classId) {
+        classRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + classId));
+
+        return enrollmentRepository.findByClassEntityId(classId).stream().map(e -> {
+            var student = e.getStudent();
+            var user = student.getUser();
+            Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("id", student.getId());
+            map.put("name", user.getName());
+            map.put("phone", user.getPhone());
+            map.put("email", user.getEmail());
+            map.put("gender", student.getGender() != null ? student.getGender().name() : null);
+            map.put("status", student.getStatus().name());
+            map.put("enrolledAt", e.getEnrolledAt() != null ? e.getEnrolledAt().toString() : null);
+            return map;
+        }).toList();
     }
 }

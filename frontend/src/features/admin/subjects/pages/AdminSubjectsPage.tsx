@@ -55,6 +55,7 @@ import {
   Users,
   LayoutGrid,
   Loader2,
+  Ban,
 } from "lucide-react";
 import {
   useSubjects,
@@ -369,18 +370,18 @@ export function AdminSubjectsPage() {
       bg: "bg-primary/10",
     },
     {
-      label: "Tổng giáo viên",
-      value: stats?.totalTeachers,
-      icon: GraduationCap,
+      label: "Phân loại",
+      value: stats?.totalCategories,
+      icon: LayoutGrid,
       color: "text-primary",
       bg: "bg-primary/10",
     },
     {
-      label: "Tổng lớp học",
-      value: stats?.totalClasses,
-      icon: Users,
-      color: "text-primary",
-      bg: "bg-primary/10",
+      label: "Tạm ngừng",
+      value: stats?.inactive,
+      icon: Ban,
+      color: "text-muted-foreground",
+      bg: "bg-muted",
     },
   ];
 

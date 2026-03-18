@@ -126,8 +126,8 @@ export interface StudentQueryParams {
 export interface StudentStats {
   totalStudents: number;
   activeStudents: number;
-  paidTuitionCount: number;  // Đang học + đã đóng phí
-  inactiveStudents: number;
+  unpaidTuitionCount: number;     // pending + overdue
+  newStudentsThisMonth: number;   // created this month
 }
 
 // ==================== LABEL MAPS ====================

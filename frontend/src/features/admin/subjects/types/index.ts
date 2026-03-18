@@ -45,8 +45,7 @@ export interface SubjectStats {
   total: number;
   active: number;
   inactive: number;
-  totalTeachers: number;
-  totalClasses: number;
+  totalCategories: number;
 }
 
 export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {

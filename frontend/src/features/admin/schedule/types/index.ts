@@ -11,12 +11,14 @@ export interface ScheduledSession {
   facilityName: string;
   facilityShort: string;
   room: string;
+  roomId?: number;
   date: string; // "YYYY-MM-DD"
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
   students: number;
   status: SessionStatus;
   type: SessionType;
+  classStatus: "active" | "upcoming" | "completed";
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -25,6 +27,7 @@ export interface ScheduledSession {
 export interface ClassRef {
   id: number;            // FK → Class.id (numeric)
   name: string;
+  subjectName: string;
   teacherId: number;     // FK → Teacher.id
   teacherName: string;
   defaultStartTime: string;
@@ -46,10 +49,10 @@ export interface AddSessionDTO {
 }
 
 export interface ScheduleStats {
+  todaySessions: number;
   totalSessions: number;
-  activeClasses: number;
-  completedSessions: number;
-  activeTeachers: number;
+  upcomingSessions: number;
+  extraOrMakeupSessions: number;
 }
 
 export interface ConflictCheckResult {

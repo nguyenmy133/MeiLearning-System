@@ -36,4 +36,7 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     @Query("SELECT COUNT(s) FROM Student s WHERE s.status = :status AND s.tuitionStatus = :tuitionStatus")
     long countByStatusAndTuitionStatus(StudentStatus status, TuitionStatus tuitionStatus);
 
+    @Query("SELECT COUNT(s) FROM Student s WHERE s.createdAt >= :since")
+    long countCreatedSince(java.time.Instant since);
+
 }

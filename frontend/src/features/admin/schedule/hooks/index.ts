@@ -4,5 +4,6 @@ export {
   useScheduleStats,
   useClassRefs,
   useAddSession,
-  useCancelSession,
+  useUpdateSession,
+  useDeleteSession,
 } from "./useSchedule";

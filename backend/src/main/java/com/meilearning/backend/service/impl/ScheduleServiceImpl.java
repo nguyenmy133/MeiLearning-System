@@ -6,17 +6,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.meilearning.backend.dto.request.CreateSessionRequest;
+import com.meilearning.backend.dto.request.UpdateSessionRequest;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.ScheduleResponse;
 import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassSession;
-import com.meilearning.backend.entity.enums.ClassStatus;
+import com.meilearning.backend.entity.Room;
+import com.meilearning.backend.entity.enums.SessionStatus;
+import com.meilearning.backend.entity.enums.SessionType;
 import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.SessionMapper;
 import com.meilearning.backend.repository.ClassEnrollmentRepository;
 import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
+import com.meilearning.backend.repository.RoomRepository;
 import com.meilearning.backend.service.ScheduleService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -34,6 +39,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ClassRepository classRepository;
     private final ClassSessionRepository sessionRepository;
     private final ClassEnrollmentRepository enrollmentRepository;
+    private final RoomRepository roomRepository;
     private final SessionMapper sessionMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -117,9 +123,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     public void generateAllSessions() {
 
-        List<ClassEntity> activeClasses = classRepository.findByStatus(ClassStatus.active);
+        List<ClassEntity> classes = classRepository.findActiveAndUpcoming();
 
-        for (ClassEntity c : activeClasses) {
+        for (ClassEntity c : classes) {
             generateSessions(c.getId());
 
         }
@@ -129,16 +135,29 @@ public class ScheduleServiceImpl implements ScheduleService {
     // â”€â”€ Get Schedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Override
-    @Transactional(readOnly = true)
-    public ScheduleResponse getSchedule(String date, String view) {
+    public ScheduleResponse getSchedule(String date, String view, Long facilityId) {
 
         LocalDate baseDate = date != null ? LocalDate.parse(date) : LocalDate.now();
 
         var range = getDateRange(baseDate, view);
 
-        List<ClassSession> sessions = sessionRepository
+        // Auto-generate sessions for classes missing them
+        ensureSessionsGenerated();
 
+        List<ClassSession> sessions = sessionRepository
                 .findByDateBetween(range[0], range[1]);
+
+        // Filter by facility if specified
+        if (facilityId != null) {
+            sessions = sessions.stream().filter(s -> {
+                Room effectiveRoom = s.getRoomOverride() != null
+                        ? s.getRoomOverride()
+                        : s.getClassEntity().getRoom();
+                return effectiveRoom != null
+                        && effectiveRoom.getFacility() != null
+                        && facilityId.equals(effectiveRoom.getFacility().getId());
+            }).toList();
+        }
 
         return buildScheduleResponse(sessions, range[0], range[1], view);
 
@@ -274,6 +293,78 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         }
 
+    }
+
+    /** Auto-generate sessions for active/upcoming classes that have no sessions yet */
+    @Transactional
+    public void ensureSessionsGenerated() {
+        List<ClassEntity> classes = classRepository.findActiveAndUpcoming();
+        for (ClassEntity c : classes) {
+            if (c.getSchedule() != null && !c.getSchedule().isBlank()) {
+                long count = sessionRepository.countByClassEntityId(c.getId());
+                if (count == 0) {
+                    generateSessions(c.getId());
+                }
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public ClassSessionResponse addSession(CreateSessionRequest request) {
+        ClassEntity classEntity = classRepository.findById(request.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found: " + request.getClassId()));
+
+        ClassSession session = new ClassSession();
+        session.setClassEntity(classEntity);
+        session.setDate(LocalDate.parse(request.getDate()));
+        session.setStartTime(LocalTime.parse(request.getStartTime()));
+        session.setEndTime(LocalTime.parse(request.getEndTime()));
+        session.setStatus(SessionStatus.upcoming);
+        session.setType("extra".equals(request.getType()) ? SessionType.extra : SessionType.makeup);
+        session.setNotes(request.getNotes());
+
+        session = sessionRepository.save(session);
+        return sessionMapper.toResponse(session);
+    }
+
+    @Override
+    @Transactional
+    public ClassSessionResponse updateSession(Long id, UpdateSessionRequest request) {
+        ClassSession session = sessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
+
+        if (request.getDate() != null) {
+            session.setDate(LocalDate.parse(request.getDate()));
+        }
+        if (request.getStartTime() != null) {
+            session.setStartTime(LocalTime.parse(request.getStartTime()));
+        }
+        if (request.getEndTime() != null) {
+            session.setEndTime(LocalTime.parse(request.getEndTime()));
+        }
+        if (request.getType() != null) {
+            session.setType("extra".equals(request.getType()) ? SessionType.extra : SessionType.makeup);
+        }
+        if (request.getNotes() != null) {
+            session.setNotes(request.getNotes());
+        }
+        if (request.getRoomId() != null) {
+            Room room = roomRepository.findById(request.getRoomId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Room not found: " + request.getRoomId()));
+            session.setRoomOverride(room);
+        }
+
+        session = sessionRepository.save(session);
+        return sessionMapper.toResponse(session);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSession(Long id) {
+        ClassSession session = sessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
+        sessionRepository.delete(session);
     }
 
 }

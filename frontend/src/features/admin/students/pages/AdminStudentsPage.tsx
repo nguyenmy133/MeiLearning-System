@@ -121,8 +121,8 @@ function StatsCards() {
   const items = [
     { label: "Tổng học viên", value: stats?.totalStudents ?? 0, icon: Users, accent: "bg-primary/10 text-primary" },
     { label: "Đang học", value: stats?.activeStudents ?? 0, icon: UserCheck, accent: "bg-primary/10 text-primary" },
-    { label: "Đã đóng phí", value: stats?.paidTuitionCount ?? 0, icon: CreditCard, accent: "bg-primary/10 text-primary" },
-    { label: "Đã nghỉ học", value: stats?.inactiveStudents ?? 0, icon: UserMinus, accent: "bg-muted text-muted-foreground" },
+    { label: "Chưa đóng phí", value: stats?.unpaidTuitionCount ?? 0, icon: CreditCard, accent: "bg-destructive/10 text-destructive" },
+    { label: "HV mới tháng này", value: stats?.newStudentsThisMonth ?? 0, icon: Plus, accent: "bg-primary/10 text-primary" },
   ];
 
   return (
@@ -649,6 +649,7 @@ export function AdminStudentsPage() {
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [droppingStudent, setDroppingStudent] = useState<Student | null>(null);
@@ -939,7 +940,7 @@ export function AdminStudentsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setViewingStudent(student)}>
                             <Eye className="w-4 h-4 mr-2" />
                             Xem chi tiết
                           </DropdownMenuItem>
@@ -1183,6 +1184,91 @@ export function AdminStudentsPage() {
               Xác nhận đặt lại
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════════════════════════════════
+         VIEW DETAIL DIALOG
+         ══════════════════════════════════════════════════════════════════ */}
+      <Dialog open={!!viewingStudent} onOpenChange={(o) => !o && setViewingStudent(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Chi tiết học viên
+            </DialogTitle>
+          </DialogHeader>
+          {viewingStudent && (
+            <div className="space-y-4 py-2">
+              {/* Avatar + Name */}
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={viewingStudent.avatar} />
+                  <AvatarFallback>{viewingStudent.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-lg font-semibold">{viewingStudent.name}</p>
+                  <StudentStatusBadge status={viewingStudent.status} />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Thông tin cá nhân */}
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thông tin cá nhân</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Số điện thoại</p>
+                  <p className="font-medium flex items-center gap-1"><Phone className="w-3 h-3" />{viewingStudent.phone}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Email</p>
+                  <p className="font-medium flex items-center gap-1"><Mail className="w-3 h-3" />{viewingStudent.email || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">SĐT Phụ huynh</p>
+                  <p className="font-medium">{viewingStudent.parentPhone || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Ngày đăng ký</p>
+                  <p className="font-medium">{viewingStudent.enrollDate || "—"}</p>
+                </div>
+              </div>
+
+              {/* Lớp đăng ký */}
+              <Separator />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lớp đăng ký</p>
+              {viewingStudent.classes.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {viewingStudent.classes.map((c) => (
+                    <Badge key={c.classId} variant="secondary">{c.className}</Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Chưa đăng ký lớp nào</p>
+              )}
+
+              {/* Học phí */}
+              <Separator />
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Học phí</p>
+                <TuitionStatusBadge status={viewingStudent.tuitionStatus} />
+              </div>
+
+              {/* Thông tin nghỉ học (nếu có) */}
+              {viewingStudent.status === "inactive" && viewingStudent.dropDate && (
+                <>
+                  <Separator />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thông tin nghỉ học</p>
+                  <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm space-y-1">
+                    <p><span className="text-muted-foreground">Ngày nghỉ:</span> <span className="font-medium">{viewingStudent.dropDate}</span></p>
+                    {viewingStudent.dropReason && <p><span className="text-muted-foreground">Lý do:</span> <span className="font-medium">{viewingStudent.dropReason}</span></p>}
+                    {viewingStudent.dropNotes && <p><span className="text-muted-foreground">Ghi chú:</span> <span className="font-medium">{viewingStudent.dropNotes}</span></p>}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

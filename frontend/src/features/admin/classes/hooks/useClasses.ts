@@ -4,6 +4,7 @@ import {
   getClassById,
   getClassStats,
   getTeacherRefs,
+  getEnrolledStudents,
   createClass,
   updateClass,
   deleteClass,
@@ -25,6 +26,7 @@ export const classKeys = {
   detail: (id: number) => [...classKeys.details(), id] as const,
   stats: () => [...classKeys.all, "stats"] as const,
   teacherRefs: () => [...classKeys.all, "teacher-refs"] as const,
+  enrolledStudents: (classId: number) => [...classKeys.all, "enrolled-students", classId] as const,
 };
 
 // ==================== QUERIES ====================
@@ -54,6 +56,13 @@ export const useTeacherRefs = () =>
     queryKey: classKeys.teacherRefs(),
     queryFn: () => getTeacherRefs(),
     staleTime: 5 * 60 * 1000,
+  });
+
+export const useEnrolledStudents = (classId: number) =>
+  useQuery({
+    queryKey: classKeys.enrolledStudents(classId),
+    queryFn: () => getEnrolledStudents(classId),
+    enabled: classId > 0,
   });
 
 // ==================== MUTATIONS ====================

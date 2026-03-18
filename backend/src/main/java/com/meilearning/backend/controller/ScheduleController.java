@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.meilearning.backend.dto.request.CreateSessionRequest;
+import com.meilearning.backend.dto.request.UpdateSessionRequest;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.ScheduleResponse;
 import com.meilearning.backend.service.ScheduleService;
@@ -23,8 +25,9 @@ public class ScheduleController {
     @Operation(summary = "Lấy lịch tổng (admin)")
     public ResponseEntity<ScheduleResponse> getSchedule(
             @RequestParam(required = false) String date,
-            @RequestParam(defaultValue = "week") String view) {
-        return ResponseEntity.ok(scheduleService.getSchedule(date, view));
+            @RequestParam(defaultValue = "week") String view,
+            @RequestParam(required = false) Long facilityId) {
+        return ResponseEntity.ok(scheduleService.getSchedule(date, view, facilityId));
     }
 
     @GetMapping("/schedule/teacher/{teacherId}")
@@ -69,6 +72,30 @@ public class ScheduleController {
     @Operation(summary = "Generate sessions cho tất cả classes active")
     public ResponseEntity<Void> generateAllSessions() {
         scheduleService.generateAllSessions();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/sessions")
+    @Operation(summary = "Thêm buổi học bù / thêm")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<ClassSessionResponse> addSession(@RequestBody CreateSessionRequest request) {
+        return ResponseEntity.ok(scheduleService.addSession(request));
+    }
+
+    @PutMapping("/sessions/{id}")
+    @Operation(summary = "Chỉnh sửa buổi học")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<ClassSessionResponse> updateSession(
+            @PathVariable Long id,
+            @RequestBody UpdateSessionRequest request) {
+        return ResponseEntity.ok(scheduleService.updateSession(id, request));
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    @Operation(summary = "Xóa buổi học")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<Void> deleteSession(@PathVariable Long id) {
+        scheduleService.deleteSession(id);
         return ResponseEntity.ok().build();
     }
 }

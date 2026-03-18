@@ -5,6 +5,7 @@ import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.AttendanceResponse;
 import com.meilearning.backend.entity.AttendanceRecord;
 import com.meilearning.backend.entity.ClassSession;
+import com.meilearning.backend.entity.Room;
 import com.meilearning.backend.entity.enums.AttendanceStatus;
 @Component
 public class SessionMapper {
@@ -24,19 +25,29 @@ public class SessionMapper {
             }
         }
 
+        // Use roomOverride if set, otherwise fall back to class's default room
+        Room effectiveRoom = session.getRoomOverride() != null
+                ? session.getRoomOverride()
+                : session.getClassEntity().getRoom();
+
         return ClassSessionResponse.builder()
                 .id(session.getId())
                 .classId(session.getClassEntity().getId())
                 .className(session.getClassEntity().getName())
                 .subjectName(session.getClassEntity().getSubject().getName())
                 .teacherName(session.getClassEntity().getTeacher().getUser().getName())
-                .roomName(session.getClassEntity().getRoom() != null
-                        ? session.getClassEntity().getRoom().getName() : null)
+                .roomName(effectiveRoom != null ? effectiveRoom.getName() : null)
+                .roomId(effectiveRoom != null ? effectiveRoom.getId() : null)
+                .facilityName(effectiveRoom != null && effectiveRoom.getFacility() != null
+                        ? effectiveRoom.getFacility().getName() : null)
+                .facilityId(effectiveRoom != null && effectiveRoom.getFacility() != null
+                        ? effectiveRoom.getFacility().getId() : null)
                 .date(session.getDate().toString())
                 .startTime(session.getStartTime().toString())
                 .endTime(session.getEndTime().toString())
                 .status(session.getStatus().name())
                 .type(session.getType().name())
+                .classStatus(session.getClassEntity().getStatus().name())
                 .notes(session.getNotes())
                 .totalStudents(session.getClassEntity().getEnrollments() != null
                         ? session.getClassEntity().getEnrollments().size() : 0)

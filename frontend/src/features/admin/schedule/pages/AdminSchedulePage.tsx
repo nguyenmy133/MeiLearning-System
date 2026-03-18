@@ -22,7 +22,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Calendar,
+  CalendarCheck,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -36,12 +43,17 @@ import {
   Info,
   AlertTriangle,
   Loader2,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import {
   useWeekSessions,
   useScheduleStats,
   useClassRefs,
   useAddSession,
+  useUpdateSession,
+  useDeleteSession,
 } from "../hooks";
 import { checkConflict } from "../services";
 import type { ScheduledSession, AddSessionDTO } from "../types";
@@ -98,19 +110,61 @@ function buildWeekLabel(mondayStr: string): string {
 }
 
 // ── Session card ──────────────────────────────────────────────────────────────
-function SessionCard({ session }: { session: ScheduledSession }) {
+function SessionCard({
+  session,
+  onEdit,
+  onDelete,
+}: {
+  session: ScheduledSession;
+  onEdit: (session: ScheduledSession) => void;
+  onDelete: (id: number) => void;
+}) {
+  const isUpcoming = session.classStatus === "upcoming";
   return (
     <div
-      className={`p-2 rounded-lg border text-xs space-y-1 cursor-pointer hover:shadow-md transition-shadow ${
-        session.status === "completed"
-          ? "bg-muted/50 border-muted"
-          : "bg-primary/5 border-primary/20"
+      className={`p-2 rounded-lg border text-xs space-y-1 group relative ${
+        isUpcoming
+          ? "opacity-40 border-dashed border-amber-300 bg-amber-50/30"
+          : session.status === "completed"
+            ? "bg-muted/50 border-muted"
+            : "bg-primary/5 border-primary/20 hover:shadow-md transition-shadow"
       }`}
     >
+      {/* Action button — only for non-completed */}
+      {session.status !== "completed" && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => onEdit(session)}>
+              <Pencil className="w-3.5 h-3.5 mr-2" />
+              Chỉnh sửa buổi học
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete(session.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              Xóa buổi học
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <div className="flex items-center gap-1 text-muted-foreground">
         <Clock className="w-3 h-3 flex-shrink-0" />
         <span>{session.startTime} - {session.endTime}</span>
-        {session.type !== "regular" && (
+        {isUpcoming && (
+          <Badge className="ml-auto text-[9px] px-1 py-0 bg-amber-100 text-amber-700 border-0">
+            Sắp mở
+          </Badge>
+        )}
+        {!isUpcoming && session.type !== "regular" && (
           <Badge
             className={`ml-auto text-[9px] px-1 py-0 ${
               session.type === "makeup"
@@ -179,6 +233,7 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const [classId, setClassId] = useState<number>(0);
   const [teacherId, setTeacherId] = useState(0);
   const [teacherName, setTeacherName] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -193,10 +248,16 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
     if (found) {
       setTeacherId(found.teacherId);
       setTeacherName(found.teacherName);
+      setSelectedSubject(found.subjectName);
       setStartTime(found.defaultStartTime);
       setEndTime(found.defaultEndTime);
     }
   };
+
+  // Filter teachers by subject of selected class
+  const filteredTeachers = (teacherOptions ?? []).filter((t) =>
+    !selectedSubject || t.subjects?.some((s) => s.toLowerCase() === selectedSubject.toLowerCase())
+  );
 
   // Async conflict check
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
@@ -308,19 +369,26 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
             <Label>
               Giáo viên <span className="text-destructive">*</span>
             </Label>
-            {teacherName && (
+            {selectedSubject && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Info className="w-3 h-3" />
-                Tự điền từ lớp — có thể đổi nếu dạy thế
+                Lọc theo môn: {selectedSubject}
               </span>
             )}
           </div>
-          <Select value={teacherName} onValueChange={setTeacherName}>
+          <Select
+            value={teacherName}
+            onValueChange={(name) => {
+              setTeacherName(name);
+              const t = filteredTeachers.find((t) => t.name === name);
+              if (t) setTeacherId(t.id);
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Chọn giáo viên" />
             </SelectTrigger>
             <SelectContent>
-              {(teacherOptions ?? []).map((t) => (
+              {filteredTeachers.map((t) => (
                 <SelectItem key={t.id} value={t.name}>
                   <div className="flex items-center gap-2">
                     <span>{t.name}</span>
@@ -451,6 +519,116 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   );
 }
 
+// ── Edit session form ─────────────────────────────────────────────────────────
+interface EditSessionFormProps {
+  session: ScheduledSession;
+  onClose: () => void;
+  onSubmit: (dto: { date?: string; startTime?: string; endTime?: string; notes?: string; roomId?: number }) => void;
+  isPending: boolean;
+}
+
+function EditSessionForm({ session, onClose, onSubmit, isPending }: EditSessionFormProps) {
+  const [date, setDate] = useState(session.date);
+  const [startTime, setStartTime] = useState(session.startTime);
+  const [endTime, setEndTime] = useState(session.endTime);
+  const [notes, setNotes] = useState(session.notes ?? "");
+  const [facilityId, setFacilityId] = useState<string>(session.facilityId ?? "");
+  const [roomId, setRoomId] = useState<string>(session.roomId ? String(session.roomId) : "");
+
+  const { data: facilityOptions = [] } = useFacilityOptions();
+  const { data: roomOptions = [] } = useRoomsByFacility(facilityId || undefined);
+
+  // When facility changes, reset room
+  const handleFacilityChange = (val: string) => {
+    setFacilityId(val);
+    setRoomId("");
+  };
+
+  const handleSubmit = () => {
+    onSubmit({
+      date,
+      startTime,
+      endTime,
+      notes,
+      roomId: roomId ? Number(roomId) : undefined,
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Readonly class info */}
+      <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+        <p className="text-sm font-medium">{session.className}</p>
+        <p className="text-xs text-muted-foreground">{session.teacherName}</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Ngày</Label>
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Bắt đầu</Label>
+          <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>Kết thúc</Label>
+          <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Facility selector */}
+      <div className="space-y-2">
+        <Label>Cơ sở</Label>
+        <Select value={facilityId} onValueChange={handleFacilityChange}>
+          <SelectTrigger><SelectValue placeholder="Chọn cơ sở" /></SelectTrigger>
+          <SelectContent>
+            {facilityOptions.map((f) => (
+              <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Room selector */}
+      <div className="space-y-2">
+        <Label>Phòng</Label>
+        <Select value={roomId} onValueChange={setRoomId} disabled={!facilityId}>
+          <SelectTrigger><SelectValue placeholder={facilityId ? "Chọn phòng" : "Chọn cơ sở trước"} /></SelectTrigger>
+          <SelectContent>
+            {roomOptions.map((r) => (
+              <SelectItem key={r.id} value={String(r.id)}>
+                {r.name} ({r.capacity} chỗ)
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Ghi chú</Label>
+        <Textarea
+          placeholder="Ghi chú (tùy chọn)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+        />
+      </div>
+
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onClose} disabled={isPending}>
+          Hủy
+        </Button>
+        <Button onClick={handleSubmit} disabled={isPending}>
+          {isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+          Lưu thay đổi
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function AdminSchedulePage() {
   const [selectedFacilityId, setSelectedFacilityId] = useState("all");
@@ -459,10 +637,15 @@ export function AdminSchedulePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: sessions = [], isLoading: loadingSessions } = useWeekSessions(
-    selectedFacilityId !== "all" ? selectedFacilityId : undefined
+    selectedFacilityId !== "all" ? selectedFacilityId : undefined,
+    undefined,
+    weekStart
   );
   const { data: stats, isLoading: loadingStats } = useScheduleStats();
   const addMutation = useAddSession();
+  const updateMutation = useUpdateSession();
+  const deleteMutation = useDeleteSession();
+  const [editingSession, setEditingSession] = useState<ScheduledSession | null>(null);
 
   const weekDays = useMemo(() => buildWeekDays(weekStart), [weekStart]);
   const weekLabel = useMemo(() => buildWeekLabel(weekStart), [weekStart]);
@@ -480,10 +663,10 @@ export function AdminSchedulePage() {
   };
 
   const statCards = [
+    { label: "Buổi học hôm nay", value: stats?.todaySessions, icon: CalendarCheck },
     { label: "Buổi học tuần này", value: stats?.totalSessions, icon: Calendar },
-    { label: "Lớp đang dạy", value: stats?.activeClasses, icon: BookOpen },
-    { label: "Đã hoàn thành", value: stats?.completedSessions, icon: Clock },
-    { label: "Giáo viên", value: stats?.activeTeachers, icon: Users },
+    { label: "Sắp diễn ra", value: stats?.upcomingSessions, icon: Clock },
+    { label: "Buổi bù / thêm", value: stats?.extraOrMakeupSessions, icon: Sparkles },
   ];
 
   return (
@@ -570,7 +753,12 @@ export function AdminSchedulePage() {
                           </p>
                         ) : (
                           daySessions.map((session) => (
-                            <SessionCard key={session.id} session={session} />
+                            <SessionCard
+                              key={session.id}
+                              session={session}
+                              onEdit={(s) => setEditingSession(s)}
+                              onDelete={(id) => deleteMutation.mutate(id)}
+                            />
                           ))
                         )}
                       </div>
@@ -592,6 +780,28 @@ export function AdminSchedulePage() {
             onSubmit={handleAddSession}
             isPending={addMutation.isPending}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit session dialog */}
+      <Dialog open={!!editingSession} onOpenChange={(open) => { if (!open) setEditingSession(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa buổi học</DialogTitle>
+          </DialogHeader>
+          {editingSession && (
+            <EditSessionForm
+              session={editingSession}
+              onClose={() => setEditingSession(null)}
+              onSubmit={(dto) => {
+                updateMutation.mutate(
+                  { id: editingSession.id, dto },
+                  { onSuccess: () => setEditingSession(null) }
+                );
+              }}
+              isPending={updateMutation.isPending}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
