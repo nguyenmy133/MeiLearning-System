@@ -78,7 +78,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendNotification(SendNotificationRequest request) {
+    public void sendNotification(SendNotificationRequest request, String senderUsername) {
         NotificationSeverity severity = NotificationSeverity.LOW;
         if (request.getSeverity() != null) {
             try {
@@ -104,6 +104,11 @@ public class NotificationServiceImpl implements NotificationService {
             // Broadcast cho tất cả
             recipients = userRepository.findAll();
         }
+
+        // Loại bỏ người gửi ra khỏi danh sách người nhận
+        recipients = recipients.stream()
+                .filter(u -> !u.getUsername().equals(senderUsername))
+                .toList();
 
         for (User recipient : recipients) {
             notificationDispatcher.dispatch(

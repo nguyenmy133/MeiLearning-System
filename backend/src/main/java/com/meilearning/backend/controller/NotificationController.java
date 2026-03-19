@@ -50,8 +50,9 @@ public class NotificationController {
     @Operation(summary = "Admin gửi thông báo chủ động")
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<Map<String, String>> sendNotification(
+            Principal principal,
             @Valid @RequestBody SendNotificationRequest request) {
-        notificationService.sendNotification(request);
+        notificationService.sendNotification(request, principal.getName());
         return ResponseEntity.ok(Map.of("message", "Thông báo đã được gửi thành công"));
     }
 }

@@ -10,5 +10,5 @@ public interface NotificationService {
     List<NotificationResponse> getByUser(String username);
     void markAsRead(Long id);
     void markAllAsRead(String username);
-    void sendNotification(SendNotificationRequest request);
+    void sendNotification(SendNotificationRequest request, String senderUsername);
 }

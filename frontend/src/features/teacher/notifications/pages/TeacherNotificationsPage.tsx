@@ -1,146 +1,110 @@
-import { useState } from "react";
+import { useMemo } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Bell, 
-  Calendar,
+  CalendarClock,
   Users,
-  FileText,
-  AlertCircle,
-  CheckCircle,
-  Info,
-  Clock,
+  Wrench,
+  ShieldAlert,
   Check,
   Trash2
 } from "lucide-react";
 import { toast } from "sonner";
+import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { notificationService } from "@/features/user/notifications/services/notificationService";
 
-const notifications = [
-  {
-    id: 1,
-    type: "schedule",
-    title: "Lịch dạy đã được cập nhật",
-    content: "Lịch dạy lớp Toán 10A ngày 20/01 đã được đổi sang ngày 21/01 theo yêu cầu của bạn.",
-    time: "10 phút trước",
-    read: false,
-    icon: Calendar
-  },
-  {
-    id: 2,
-    type: "student",
-    title: "Học viên mới đăng ký",
-    content: "Học viên Nguyễn Thị D đã được thêm vào lớp Toán 11-Nâng cao.",
-    time: "1 giờ trước",
-    read: false,
-    icon: Users
-  },
-  {
-    id: 3,
-    type: "system",
-    title: "Nhắc nhở nhập điểm",
-    content: "Vui lòng nhập điểm kiểm tra 15 phút cho lớp Lý 10-B trước ngày 25/01.",
-    time: "2 giờ trước",
-    read: false,
-    icon: FileText
-  },
-  {
-    id: 4,
-    type: "alert",
-    title: "Học viên vắng nhiều",
-    content: "Học viên Hoàng Thị Em (Toán 10A) đã vắng 3 buổi liên tiếp. Vui lòng liên hệ phụ huynh.",
-    time: "5 giờ trước",
-    read: true,
-    icon: AlertCircle
-  },
-  {
-    id: 5,
-    type: "system",
-    title: "Yêu cầu đổi lịch được duyệt",
-    content: "Yêu cầu hủy buổi dạy lớp Lý 10-B ngày 20/01 đã được phê duyệt.",
-    time: "1 ngày trước",
-    read: true,
-    icon: CheckCircle
-  },
-  {
-    id: 6,
-    type: "info",
-    title: "Cập nhật hệ thống",
-    content: "Hệ thống sẽ bảo trì từ 22:00 - 24:00 ngày 25/01. Vui lòng hoàn thành công việc trước thời gian này.",
-    time: "2 ngày trước",
-    read: true,
-    icon: Info
-  },
-  {
-    id: 7,
-    type: "schedule",
-    title: "Buổi học sắp diễn ra",
-    content: "Lớp Toán 10A sẽ bắt đầu trong 30 phút tại phòng P.101.",
-    time: "3 ngày trước",
-    read: true,
-    icon: Clock
-  }
+type NotificationType = "system" | "schedule_change" | "leave_approved" | "leave_rejected" | "admin_broadcast" | string;
+
+const filters: Array<{ key: string; label: string }> = [
+  { key: "all", label: "Tất cả" },
+  { key: "unread", label: "Chưa đọc" },
+  { key: "schedule", label: "Lịch dạy" },
+  { key: "system", label: "Hệ thống" },
 ];
 
 export function TeacherNotificationsPage() {
-  const [notificationList, setNotificationList] = useState(notifications);
-  
-  const unreadCount = notificationList.filter(n => !n.read).length;
+  const queryClient = useQueryClient();
+  const { data: notifications = [], isLoading } = useNotifications();
 
-  const markAsRead = (id: number) => {
-    setNotificationList(prev =>
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
-  const markAllAsRead = () => {
-    setNotificationList(prev =>
-      prev.map(n => ({ ...n, read: true }))
-    );
-    toast.success("Đã đánh dấu tất cả là đã đọc");
-  };
+  // ── Mutations ──────────────────────────────────────────────────
 
-  const deleteNotification = (id: number) => {
-    setNotificationList(prev => prev.filter(n => n.id !== id));
-    toast.success("Đã xóa thông báo");
-  };
+  const markAllMutation = useMutation({
+    mutationFn: () => notificationService.markAllRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+      toast.success("Đã đánh dấu tất cả là đã đọc");
+    },
+  });
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "schedule":
-        return "bg-info/10 text-info";
-      case "student":
-        return "bg-primary/10 text-primary";
-      case "alert":
-        return "bg-destructive/10 text-destructive";
-      case "system":
-        return "bg-success/10 text-success";
-      default:
-        return "bg-accent text-muted-foreground";
-    }
-  };
+  const markReadMutation = useMutation({
+    mutationFn: (id: number) => notificationService.markRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+    },
+  });
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case "schedule":
-        return "Lịch dạy";
-      case "student":
-        return "Học viên";
-      case "alert":
-        return "Cảnh báo";
-      case "system":
-        return "Hệ thống";
-      default:
-        return "Thông tin";
-    }
-  };
+  // ── Helpers ────────────────────────────────────────────────────
 
   const filterNotifications = (filter: string) => {
-    if (filter === "all") return notificationList;
-    if (filter === "unread") return notificationList.filter(n => !n.read);
-    return notificationList.filter(n => n.type === filter);
+    if (filter === "all") return notifications;
+    if (filter === "unread") return notifications.filter((n) => !n.read);
+    const typeMap: Record<string, string[]> = {
+      schedule: ["schedule_change", "leave_approved", "leave_rejected"],
+      system: ["admin_broadcast", "system"],
+    };
+    const types = typeMap[filter] || [filter];
+    return notifications.filter((item) => types.includes(item.type || ""));
   };
+
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "schedule_change":
+        return { label: "Lịch dạy", className: "bg-info/10 text-info" };
+      case "leave_approved":
+        return { label: "Duyệt nghỉ", className: "bg-success/10 text-success" };
+      case "leave_rejected":
+        return { label: "Từ chối nghỉ", className: "bg-destructive/10 text-destructive" };
+      case "admin_broadcast":
+      case "system":
+        return { label: "Hệ thống", className: "bg-primary/10 text-primary" };
+      default:
+        return { label: "Thông báo", className: "bg-muted text-muted-foreground" };
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "schedule_change":
+        return CalendarClock;
+      case "leave_approved":
+      case "leave_rejected":
+        return Users;
+      case "admin_broadcast":
+      case "system":
+        return Wrench;
+      default:
+        return Bell;
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -151,7 +115,11 @@ export function TeacherNotificationsPage() {
             Bạn có <span className="text-primary font-medium">{unreadCount}</span> thông báo chưa đọc
           </p>
         </div>
-        <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
+        <Button
+          variant="outline"
+          onClick={() => markAllMutation.mutate()}
+          disabled={unreadCount === 0 || markAllMutation.isPending}
+        >
           <Check className="w-4 h-4 mr-2" />
           Đánh dấu tất cả đã đọc
         </Button>
@@ -159,74 +127,74 @@ export function TeacherNotificationsPage() {
 
       <Tabs defaultValue="all">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="all">
-            Tất cả
-            <Badge variant="secondary" className="ml-2">{notificationList.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="unread">
-            Chưa đọc
-            {unreadCount > 0 && (
-              <Badge className="ml-2 bg-destructive">{unreadCount}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="schedule">Lịch dạy</TabsTrigger>
-          <TabsTrigger value="student">Học viên</TabsTrigger>
-          <TabsTrigger value="alert">Cảnh báo</TabsTrigger>
+          {filters.map((filter) => (
+            <TabsTrigger key={filter.key} value={filter.key} className="gap-2">
+              {filter.label}
+              {filter.key === "all" && (
+                <Badge variant="secondary">{notifications.length}</Badge>
+              )}
+              {filter.key === "unread" && unreadCount > 0 && (
+                <Badge className="bg-destructive">{unreadCount}</Badge>
+              )}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        {["all", "unread", "schedule", "student", "alert"].map((filter) => (
-          <TabsContent key={filter} value={filter} className="space-y-3 mt-4">
-            {filterNotifications(filter).length > 0 ? (
-              filterNotifications(filter).map((notification) => {
-                const Icon = notification.icon;
+        {filters.map((filter) => (
+          <TabsContent key={filter.key} value={filter.key} className="space-y-3 mt-4">
+            {filterNotifications(filter.key).length > 0 ? (
+              filterNotifications(filter.key).map((item) => {
+                const meta = getTypeBadge(item.type || "");
+                const Icon = getTypeIcon(item.type || "");
+
                 return (
-                  <Card 
-                    key={notification.id} 
-                    className={`transition-colors hover:bg-accent/50 ${!notification.read ? "border-primary/30 bg-primary/5" : ""}`}
+                  <Card
+                    key={item.id}
+                    className={`transition-colors hover:bg-accent/50 ${
+                      !item.read ? "border-primary/30 bg-primary/5" : ""
+                    }`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getTypeColor(notification.type)}`}>
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${meta.className}`}
+                        >
                           <Icon className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className={`font-medium ${!notification.read ? "text-foreground" : "text-muted-foreground"}`}>
-                              {notification.title}
+                            <h4
+                              className={`font-medium ${
+                                !item.read ? "text-foreground" : "text-muted-foreground"
+                              }`}
+                            >
+                              {item.title}
                             </h4>
                             <Badge variant="outline" className="text-xs">
-                              {getTypeLabel(notification.type)}
+                              {meta.label}
                             </Badge>
-                            {!notification.read && (
+                            {!item.read && (
                               <span className="w-2 h-2 rounded-full bg-primary" />
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {notification.content}
+                            {item.content}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {notification.time}
+                            {item.date} {item.time}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          {!notification.read && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                          {!item.read && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8"
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={() => markReadMutation.mutate(item.id)}
                             >
                               <Check className="w-4 h-4" />
                             </Button>
                           )}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteNotification(notification.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
                       </div>
                     </CardContent>

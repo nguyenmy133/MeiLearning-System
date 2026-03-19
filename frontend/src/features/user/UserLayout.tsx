@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Calendar,
@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { notificationService } from "@/features/user/notifications/services/notificationService";
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 
@@ -99,6 +100,20 @@ export function UserLayout() {
   const avatarUrl = profile?.avatar ?? undefined;
 
   const queryClient = useQueryClient();
+
+  const markAllMutation = useMutation({
+    mutationFn: () => notificationService.markAllRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+    },
+  });
+
+  const handleBellClick = () => {
+    if (unreadCount > 0) {
+      markAllMutation.mutate();
+    }
+    navigate("/user/notifications");
+  };
 
   const handleLogout = () => {
     queryClient.clear();
@@ -251,7 +266,7 @@ export function UserLayout() {
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={() => navigate("/user/notifications")}
+              onClick={handleBellClick}
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (

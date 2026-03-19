@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Building2,
@@ -35,6 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { notificationService } from "@/features/user/notifications/services/notificationService";
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 
@@ -96,6 +97,9 @@ export function AdminLayout() {
   };
 
   const handleOpenNotifications = () => {
+    if (unreadNotifications > 0) {
+      markAllMutation.mutate();
+    }
     navigate("/admin/notifications");
   };
 
@@ -104,6 +108,13 @@ export function AdminLayout() {
   };
 
   const queryClient = useQueryClient();
+
+  const markAllMutation = useMutation({
+    mutationFn: () => notificationService.markAllRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+    },
+  });
 
   const handleLogout = () => {
     queryClient.clear();

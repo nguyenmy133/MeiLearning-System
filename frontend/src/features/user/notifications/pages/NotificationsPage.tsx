@@ -1,22 +1,25 @@
-import { useState } from "react";
-import { Bell, CheckCheck, Calendar, CreditCard, FileText, AlertCircle, Megaphone, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useMemo } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bell, CheckCheck, Calendar, CreditCard, FileText, Megaphone } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
-import { useEffect } from "react";
 import { useNotifications } from "../hooks/useNotifications";
-import type { NotificationItem } from "../types";
+import { notificationService } from "../services/notificationService";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case "announcement":
+    case "admin_broadcast":
       return <Megaphone className="h-5 w-5 text-info" />;
     case "payment":
+    case "tuition":
       return <CreditCard className="h-5 w-5 text-warning" />;
     case "schedule":
+    case "schedule_change":
       return <Calendar className="h-5 w-5 text-primary" />;
     case "document":
       return <FileText className="h-5 w-5 text-accent" />;
@@ -28,10 +31,13 @@ const getNotificationIcon = (type: string) => {
 const getNotificationBg = (type: string) => {
   switch (type) {
     case "announcement":
+    case "admin_broadcast":
       return "bg-info/10";
     case "payment":
+    case "tuition":
       return "bg-warning/10";
     case "schedule":
+    case "schedule_change":
       return "bg-primary/10";
     case "document":
       return "bg-accent/10";
@@ -41,37 +47,34 @@ const getNotificationBg = (type: string) => {
 };
 
 export function NotificationsPage() {
+  const queryClient = useQueryClient();
   const { data: notifications = [], isLoading } = useNotifications();
-  const [notifs, setNotifs] = useState<NotificationItem[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (notifications.length > 0 && notifs.length === 0) {
-      setNotifs(notifications);
-    }
-  }, [notifications, notifs.length]);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
-  const unreadCount = notifs.filter(n => !n.read).length;
+  // ── Mutations ──────────────────────────────────────────────────
 
-  const markAllAsRead = () => {
-    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
-    toast({
-      title: "Đã đánh dấu tất cả",
-      description: "Tất cả thông báo đã được đánh dấu là đã đọc",
-    });
-  };
+  const markAllMutation = useMutation({
+    mutationFn: () => notificationService.markAllRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+      toast({
+        title: "Đã đánh dấu tất cả",
+        description: "Tất cả thông báo đã được đánh dấu là đã đọc",
+      });
+    },
+  });
 
-  const markAsRead = (id: number) => {
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const deleteNotification = (id: number) => {
-    setNotifs(prev => prev.filter(n => n.id !== id));
-    toast({
-      title: "Đã xóa thông báo",
-      description: "Thông báo đã được xóa",
-    });
-  };
+  const markReadMutation = useMutation({
+    mutationFn: (id: number) => notificationService.markRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+    },
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -90,7 +93,12 @@ export function NotificationsPage() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" onClick={markAllAsRead} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => markAllMutation.mutate()}
+            disabled={markAllMutation.isPending}
+            className="gap-2"
+          >
             <CheckCheck className="h-4 w-4" />
             Đánh dấu tất cả đã đọc
           </Button>
@@ -102,7 +110,7 @@ export function NotificationsPage() {
         <TabsList>
           <TabsTrigger value="all">
             Tất cả
-            <Badge variant="secondary" className="ml-2 text-xs">{notifs.length}</Badge>
+            <Badge variant="secondary" className="ml-2 text-xs">{notifications.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="unread">
             Chưa đọc
@@ -119,15 +127,17 @@ export function NotificationsPage() {
                 <div className="p-12 text-center text-muted-foreground animate-pulse">
                   Đang tải...
                 </div>
-              ) : notifs.length === 0 ? (
+              ) : notifications.length === 0 ? (
                 <div className="p-12 text-center text-muted-foreground">
                   Không có thông báo nào.
                 </div>
               ) : (
-                notifs.map((notif) => (
+                notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  onClick={() => markAsRead(notif.id)}
+                  onClick={() => {
+                    if (!notif.read) markReadMutation.mutate(notif.id);
+                  }}
                   className={`p-4 hover:bg-secondary/50 transition-colors cursor-pointer ${
                     !notif.read ? "bg-primary/5" : ""
                   }`}
@@ -150,20 +160,9 @@ export function NotificationsPage() {
                           {!notif.read && (
                             <div className="w-2 h-2 rounded-full bg-primary" />
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteNotification(notif.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">{notif.time}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{notif.date} {notif.time}</p>
                     </div>
                   </div>
                 </div>
@@ -176,16 +175,16 @@ export function NotificationsPage() {
         <TabsContent value="unread" className="mt-4">
           <Card>
             <CardContent className="p-0 divide-y divide-border">
-              {notifs.filter(n => !n.read).length === 0 ? (
+              {notifications.filter(n => !n.read).length === 0 ? (
                 <div className="p-12 text-center">
                   <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">Không có thông báo chưa đọc</p>
                 </div>
               ) : (
-                notifs.filter(n => !n.read).map((notif) => (
+                notifications.filter(n => !n.read).map((notif) => (
                   <div
                     key={notif.id}
-                    onClick={() => markAsRead(notif.id)}
+                    onClick={() => markReadMutation.mutate(notif.id)}
                     className="p-4 bg-primary/5 hover:bg-secondary/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-start gap-4">
@@ -202,7 +201,7 @@ export function NotificationsPage() {
                           </div>
                           <div className="w-2 h-2 rounded-full bg-primary" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">{notif.time}</p>
+                        <p className="text-xs text-muted-foreground mt-2">{notif.date} {notif.time}</p>
                       </div>
                     </div>
                   </div>
