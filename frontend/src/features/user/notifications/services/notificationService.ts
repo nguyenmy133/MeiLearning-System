@@ -10,10 +10,26 @@ export interface SendNotificationPayload {
   severity?: string;
 }
 
+interface PageResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const notificationService = {
   async getNotifications(): Promise<NotificationItem[]> {
-    const { data } = await apiClient.get(API.NOTIFICATIONS.LIST);
-    return data;
+    // Backend: ApiResponse { data: PageResponse { data: [...], total, page, limit, totalPages }, message }
+    // Interceptor unwraps ApiResponse → we get { data: PageResponse, message }
+    // Destructuring { data } → pageResp = PageResponse
+    const { data: pageResp } = await apiClient.get(
+      API.NOTIFICATIONS.LIST,
+      { params: { page: 1, limit: 100 } }
+    );
+    // pageResp is PageResponse — extract the notification array
+    const items = (pageResp as PageResponse<NotificationItem>)?.data;
+    return Array.isArray(items) ? items : [];
   },
 
   async markRead(id: number): Promise<void> {

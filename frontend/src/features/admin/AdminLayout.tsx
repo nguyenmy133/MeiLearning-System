@@ -1,5 +1,6 @@
-﻿import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Building2,
@@ -33,6 +34,22 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
+import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
+
+interface ProfileData {
+  id: number;
+  name: string;
+  email: string;
+  avatar: string | null;
+  role: string;
+}
+
+const getInitials = (name?: string) => {
+  if (!name) return "AD";
+  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+};
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
@@ -55,7 +72,21 @@ export function AdminLayout() {
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const unreadNotifications = 5;
+  const { data: notifications = [] } = useNotifications();
+  const unreadNotifications = notifications.filter((n) => !n.read).length;
+
+  // Fetch profile data for sidebar + header
+  const { data: profile } = useQuery<ProfileData>({
+    queryKey: ["profile", "me"],
+    queryFn: async () => {
+      const { data } = await apiClient.get(API.PROFILE.ME);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const displayName = profile?.name ?? "Admin";
+  const avatarUrl = profile?.avatar ?? undefined;
 
   const getCurrentPageTitle = () => {
     if (location.pathname === "/admin/notifications") return "Thông báo";
@@ -72,7 +103,10 @@ export function AdminLayout() {
     navigate("/admin/profile");
   };
 
+  const queryClient = useQueryClient();
+
   const handleLogout = () => {
+    queryClient.clear();
     logout();
     navigate("/login", { replace: true });
   };
@@ -127,11 +161,11 @@ export function AdminLayout() {
           <div className="border-t border-border p-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100" />
-                <AvatarFallback>AD</AvatarFallback>
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">Admin</p>
+                <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
                 <p className="truncate text-xs text-muted-foreground">Quản trị viên</p>
               </div>
             </div>
@@ -217,10 +251,10 @@ export function AdminLayout() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100" />
-                    <AvatarFallback>AD</AvatarFallback>
+                    <AvatarImage src={avatarUrl} />
+                    <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden text-sm font-medium sm:block">Admin</span>
+                  <span className="hidden text-sm font-medium sm:block">{displayName}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>

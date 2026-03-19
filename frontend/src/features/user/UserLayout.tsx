@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Calendar,
@@ -27,14 +28,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
+import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/user/dashboard" },
@@ -54,16 +53,26 @@ const subRouteMap: Record<string, string> = {
 };
 
 function getPageTitle(pathname: string): string {
-  // Check explicit sub-route map first
   if (subRouteMap[pathname]) return subRouteMap[pathname];
-  // Exact match
   const exact = menuItems.find(item => item.href === pathname);
   if (exact) return exact.label;
-  // StartsWith match — sort by length desc to match most specific route first
   const sorted = [...menuItems].sort((a, b) => b.href.length - a.href.length);
   const partial = sorted.find(item => pathname.startsWith(item.href + "/"));
   return partial?.label ?? "Dashboard";
 }
+
+interface ProfileData {
+  id: number;
+  name: string;
+  email: string;
+  avatar: string | null;
+  role: string;
+}
+
+const getInitials = (name?: string) => {
+  if (!name) return "HV";
+  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+};
 
 export function UserLayout() {
   const location = useLocation();
@@ -72,7 +81,27 @@ export function UserLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Fetch profile data for sidebar + header
+  const { data: profile } = useQuery<ProfileData>({
+    queryKey: ["profile", "me"],
+    queryFn: async () => {
+      const { data } = await apiClient.get(API.PROFILE.ME);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch notification count
+  const { data: notifications = [] } = useNotifications();
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const displayName = profile?.name ?? "Học viên";
+  const avatarUrl = profile?.avatar ?? undefined;
+
+  const queryClient = useQueryClient();
+
   const handleLogout = () => {
+    queryClient.clear();
     logout();
     navigate("/login", { replace: true });
   };
@@ -132,11 +161,11 @@ export function UserLayout() {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100" />
-                <AvatarFallback>NV</AvatarFallback>
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">Nguyễn Văn A</p>
+                <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                 <p className="text-xs text-muted-foreground truncate">Học viên</p>
               </div>
             </div>
@@ -215,56 +244,32 @@ export function UserLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
             <ThemeToggle />
-            
-            {/* Notifications */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
-                    3
-                  </Badge>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-0">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                  <p className="font-semibold text-sm">Thông báo</p>
-                  <Badge variant="secondary" className="text-xs">3 mới</Badge>
-                </div>
-                <ul className="divide-y divide-border">
-                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
-                    <p className="text-sm font-medium">Lịch học thay đổi</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Buổi Toán 10A ngày 25/3 được dời sang 28/3</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">1 giờ trước</p>
-                  </li>
-                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
-                    <p className="text-sm font-medium">Học phí tháng 3</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Hóa đơn tháng 3/2026 đã được tạo. Hạn nộp: 05/04/2026</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">3 giờ trước</p>
-                  </li>
-                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
-                    <p className="text-sm font-medium">Đơn xin nghỉ được duyệt</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Giáo viên đã duyệt đơn xin nghỉ ngày 12/3</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">Hôm qua</p>
-                  </li>
-                </ul>
-                <div className="px-4 py-2 border-t border-border">
-                  <p className="text-xs text-center text-muted-foreground">Không có thông báo cũ hơn</p>
-                </div>
-              </PopoverContent>
-            </Popover>
+
+            {/* Notification bell — real data */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => navigate("/user/notifications")}
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
+                  {unreadCount}
+                </Badge>
+              )}
+            </Button>
 
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100" />
-                    <AvatarFallback>NV</AvatarFallback>
+                    <AvatarImage src={avatarUrl} />
+                    <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium hidden sm:block">Nguyễn Văn A</span>
+                  <span className="text-sm font-medium hidden sm:block">{displayName}</span>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>

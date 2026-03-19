@@ -25,10 +25,16 @@ RUN echo 'server { \
     listen 80; \
     root /usr/share/nginx/html; \
     index index.html; \
+    client_max_body_size 10M; \
     location / { \
         try_files $uri $uri/ /index.html; \
     } \
     location /api/ { \
+        proxy_pass http://backend:8080; \
+        proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+    } \
+    location /uploads/ { \
         proxy_pass http://backend:8080; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \

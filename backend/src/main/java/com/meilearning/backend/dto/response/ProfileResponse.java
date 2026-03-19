@@ -20,4 +20,6 @@ public class ProfileResponse {
     private String joinDate;
     private String avatar;
     private String role;
+    private String gender;
+    private String bio;
 }

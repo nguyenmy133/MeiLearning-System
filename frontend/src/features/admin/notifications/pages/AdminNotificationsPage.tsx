@@ -239,7 +239,6 @@ export function AdminNotificationsPage() {
                       </SelectItem>
                       <SelectItem value="student">Học viên</SelectItem>
                       <SelectItem value="teacher">Giáo viên</SelectItem>
-                      <SelectItem value="admin">Quản trị viên</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

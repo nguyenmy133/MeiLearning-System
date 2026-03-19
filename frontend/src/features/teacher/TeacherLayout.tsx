@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Calendar,
@@ -26,14 +27,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
+import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/teacher/dashboard" },
@@ -49,14 +48,25 @@ const menuItems = [
 ];
 
 function getPageTitle(pathname: string): string {
-  // Exact match first
   const exact = menuItems.find(item => item.href === pathname);
   if (exact) return exact.label;
-  // StartsWith match — sort by length desc to match most specific route first
   const sorted = [...menuItems].sort((a, b) => b.href.length - a.href.length);
   const partial = sorted.find(item => pathname.startsWith(item.href + "/"));
   return partial?.label ?? "Dashboard";
 }
+
+interface ProfileData {
+  id: number;
+  name: string;
+  email: string;
+  avatar: string | null;
+  role: string;
+}
+
+const getInitials = (name?: string) => {
+  if (!name) return "GV";
+  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+};
 
 export function TeacherLayout() {
   const location = useLocation();
@@ -65,7 +75,27 @@ export function TeacherLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Fetch profile data for sidebar + header
+  const { data: profile } = useQuery<ProfileData>({
+    queryKey: ["profile", "me"],
+    queryFn: async () => {
+      const { data } = await apiClient.get(API.PROFILE.ME);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // cache 5 min
+  });
+
+  // Fetch notification count
+  const { data: notifications = [] } = useNotifications();
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const displayName = profile?.name ?? "Giáo viên";
+  const avatarUrl = profile?.avatar ?? undefined;
+
+  const queryClient = useQueryClient();
+
   const handleLogout = () => {
+    queryClient.clear();
     logout();
     navigate("/login", { replace: true });
   };
@@ -124,12 +154,12 @@ export function TeacherLayout() {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100" />
-                <AvatarFallback>GV</AvatarFallback>
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">Nguyễn Văn An</p>
-                <p className="text-xs text-muted-foreground truncate">Giáo viên Toán</p>
+                <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+                <p className="text-xs text-muted-foreground truncate">Giáo viên</p>
               </div>
             </div>
           </div>
@@ -199,47 +229,30 @@ export function TeacherLayout() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
-                    2
-                  </Badge>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-0">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                  <p className="font-semibold text-sm">Thông báo</p>
-                  <Badge variant="secondary" className="text-xs">2 mới</Badge>
-                </div>
-                <ul className="divide-y divide-border">
-                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
-                    <p className="text-sm font-medium">Yêu cầu đổi lịch được duyệt</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Lớp Toán 10A — Admin đã chấp thuận</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">5 phút trước</p>
-                  </li>
-                  <li className="px-4 py-3 hover:bg-accent/50 transition-colors">
-                    <p className="text-sm font-medium">Đơn xin nghỉ mới</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Nguyễn Văn An xin nghỉ buổi họ Toán 10A</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">20 phút trước</p>
-                  </li>
-                </ul>
-                <div className="px-4 py-2 border-t border-border">
-                  <p className="text-xs text-center text-muted-foreground">Không có thông báo cũ hơn</p>
-                </div>
-              </PopoverContent>
-            </Popover>
+
+            {/* Notification bell — real data */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => navigate("/teacher/notifications")}
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
+                  {unreadCount}
+                </Badge>
+              )}
+            </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100" />
-                    <AvatarFallback>GV</AvatarFallback>
+                    <AvatarImage src={avatarUrl} />
+                    <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium hidden sm:block">Thầy An</span>
+                  <span className="text-sm font-medium hidden sm:block">{displayName}</span>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>

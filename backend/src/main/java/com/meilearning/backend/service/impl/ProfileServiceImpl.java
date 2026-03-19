@@ -1,5 +1,6 @@
 package com.meilearning.backend.service.impl;
 
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,11 +53,18 @@ public class ProfileServiceImpl implements ProfileService {
         if (user.getRole() == User.Role.teacher) {
             teacherRepository.findByUserId(user.getId()).ifPresent(teacher -> {
                 if (request.getAddress() != null) teacher.setAddress(request.getAddress());
+                if (request.getBio() != null) teacher.setBio(request.getBio());
+                if (request.getDob() != null && !request.getDob().isBlank()) {
+                    teacher.setDateOfBirth(LocalDate.parse(request.getDob()));
+                }
                 teacherRepository.save(teacher);
             });
         } else if (user.getRole() == User.Role.student) {
             studentRepository.findByUserId(user.getId()).ifPresent(student -> {
                 if (request.getAddress() != null) student.setAddress(request.getAddress());
+                if (request.getDob() != null && !request.getDob().isBlank()) {
+                    student.setDateOfBirth(LocalDate.parse(request.getDob()));
+                }
                 studentRepository.save(student);
             });
         }
@@ -92,6 +100,8 @@ public class ProfileServiceImpl implements ProfileService {
         String address = null;
         String dob = null;
         String joinDate = null;
+        String gender = null;
+        String bio = null;
 
         if (user.getRole() == User.Role.teacher) {
             Teacher teacher = teacherRepository.findByUserId(user.getId()).orElse(null);
@@ -99,6 +109,8 @@ public class ProfileServiceImpl implements ProfileService {
                 address = teacher.getAddress();
                 dob = teacher.getDateOfBirth() != null ? teacher.getDateOfBirth().toString() : null;
                 joinDate = teacher.getJoinDate() != null ? teacher.getJoinDate().toString() : null;
+                gender = teacher.getGender() != null ? teacher.getGender().name() : null;
+                bio = teacher.getBio();
             }
         } else if (user.getRole() == User.Role.student) {
             Student student = studentRepository.findByUserId(user.getId()).orElse(null);
@@ -106,6 +118,7 @@ public class ProfileServiceImpl implements ProfileService {
                 address = student.getAddress();
                 dob = student.getDateOfBirth() != null ? student.getDateOfBirth().toString() : null;
                 joinDate = student.getEnrollDate() != null ? student.getEnrollDate().toString() : null;
+                gender = student.getGender() != null ? student.getGender().name() : null;
             }
         }
 
@@ -119,6 +132,8 @@ public class ProfileServiceImpl implements ProfileService {
                 .joinDate(joinDate)
                 .avatar(user.getAvatar())
                 .role(user.getRole().name())
+                .gender(gender)
+                .bio(bio)
                 .build();
     }
 }

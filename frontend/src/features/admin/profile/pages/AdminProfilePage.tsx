@@ -1,4 +1,5 @@
-﻿import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,52 +7,304 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Building2, Camera, Lock, Mail, MapPin, Phone, Save, ShieldCheck, User } from "lucide-react";
+import {
+  Camera,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Phone,
+  Save,
+  ShieldCheck,
+  User,
+  CalendarDays,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 
-const adminProfile = {
-  fullName: "Admin MeiLearning",
-  email: "admin@meilearning.vn",
-  phone: "0901 234 567",
-  office: "Trụ sở Quận 1, TP.HCM",
-  role: "Quản trị viên hệ thống",
-  department: "Phòng vận hành",
-  bio: "Quản lý vận hành hệ thống đào tạo, duyệt lịch học và theo dõi chất lượng dữ liệu.",
-  avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200",
-};
+// ── Types ────────────────────────────────────────────────────────
+
+interface ProfileData {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  address: string | null;
+  dob: string | null;
+  joinDate: string | null;
+  avatar: string | null;
+  role: string;
+}
+
+interface ProfileFormData {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+interface PasswordFormData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// ── Service helpers ──────────────────────────────────────────────
+
+async function fetchProfile(): Promise<ProfileData> {
+  const { data } = await apiClient.get(API.PROFILE.ME);
+  return data;
+}
+
+async function updateProfile(payload: ProfileFormData): Promise<ProfileData> {
+  const { data } = await apiClient.put(API.PROFILE.UPDATE, payload);
+  return data;
+}
+
+async function uploadAvatar(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("avatar", file);
+  const { data } = await apiClient.post(API.PROFILE.AVATAR, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.avatarUrl;
+}
+
+async function changePassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  await apiClient.put(API.AUTH.CHANGE_PASSWORD, payload);
+}
+
+// ── Component ────────────────────────────────────────────────────
 
 export function AdminProfilePage() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: adminProfile.fullName,
-    email: adminProfile.email,
-    phone: adminProfile.phone,
-    office: adminProfile.office,
-    role: adminProfile.role,
-    department: adminProfile.department,
-    bio: adminProfile.bio,
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Profile query ────────────────────────────────────────────
+  const {
+    data: profile,
+    isLoading,
+    isError,
+  } = useQuery<ProfileData>({
+    queryKey: ["profile", "me"],
+    queryFn: fetchProfile,
   });
 
-  const saveProfile = () => {
-    setIsEditing(false);
-    toast.success("Đã cập nhật hồ sơ quản trị");
+  // ── Edit profile state ───────────────────────────────────────
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<ProfileFormData>({
+    name: "",
+    email: "",
+    phone: "",
+  });
+
+  // Sync form when profile loads or changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        name: profile.name ?? "",
+        email: profile.email ?? "",
+        phone: profile.phone ?? "",
+      });
+    }
+  }, [profile]);
+
+  // ── Password state ──────────────────────────────────────────
+  const [passwordData, setPasswordData] = useState<PasswordFormData>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // ── Mutations ───────────────────────────────────────────────
+
+  const updateMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => {
+      toast.success("Đã cập nhật hồ sơ thành công!");
+      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+    },
+    onError: () => {
+      toast.error("Cập nhật hồ sơ thất bại. Vui lòng thử lại.");
+    },
+  });
+
+  const avatarMutation = useMutation({
+    mutationFn: uploadAvatar,
+    onSuccess: () => {
+      toast.success("Đã cập nhật ảnh đại diện!");
+      queryClient.invalidateQueries({ queryKey: ["profile", "me"] });
+    },
+    onError: () => {
+      toast.error("Tải ảnh lên thất bại. Vui lòng thử lại.");
+    },
+  });
+
+  const passwordMutation = useMutation({
+    mutationFn: changePassword,
+    onSuccess: () => {
+      toast.success("Đã đổi mật khẩu thành công!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    },
+    onError: () => {
+      // Error toast is already handled by api-client interceptor
+    },
+  });
+
+  // ── Handlers ────────────────────────────────────────────────
+
+  const handleSaveProfile = () => {
+    if (!formData.name.trim()) {
+      toast.error("Họ và tên không được để trống");
+      return;
+    }
+    updateMutation.mutate(formData);
   };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (profile) {
+      setFormData({
+        name: profile.name ?? "",
+        email: profile.email ?? "",
+        phone: profile.phone ?? "",
+      });
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file ảnh (JPG, PNG, ...)");
+      return;
+    }
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ảnh không được lớn hơn 5MB");
+      return;
+    }
+
+    avatarMutation.mutate(file);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleChangePassword = () => {
+    if (!passwordData.currentPassword.trim()) {
+      toast.error("Vui lòng nhập mật khẩu hiện tại");
+      return;
+    }
+    if (!passwordData.newPassword.trim()) {
+      toast.error("Vui lòng nhập mật khẩu mới");
+      return;
+    }
+    if (passwordData.newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("Mật khẩu mới và xác nhận mật khẩu không khớp");
+      return;
+    }
+
+    passwordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+    });
+  };
+
+  // ── Helpers ─────────────────────────────────────────────────
+
+  const getInitials = (name?: string) => {
+    if (!name) return "AD";
+    return name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
+  const getRoleLabel = (role?: string) => {
+    switch (role) {
+      case "admin":
+        return "Quản trị viên";
+      case "teacher":
+        return "Giáo viên";
+      case "student":
+        return "Học viên";
+      default:
+        return role ?? "";
+    }
+  };
+
+  // ── Loading / Error states ──────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (isError || !profile) {
+    return (
+      <div className="rounded-lg border border-dashed p-10 text-center">
+        <p className="text-muted-foreground">
+          Không thể tải thông tin hồ sơ. Vui lòng thử lại sau.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Render ──────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Hồ sơ quản trị</h1>
-          <p className="text-muted-foreground">Cập nhật thông tin liên hệ và quyền hạn hiển thị</p>
+          <h1 className="text-2xl font-display font-bold text-foreground">
+            Hồ sơ cá nhân
+          </h1>
+          <p className="text-muted-foreground">
+            Cập nhật thông tin cá nhân và bảo mật tài khoản
+          </p>
         </div>
         {isEditing ? (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
+            <Button variant="outline" onClick={handleCancelEdit}>
               Hủy
             </Button>
-            <Button onClick={saveProfile}>
-              <Save className="mr-2 h-4 w-4" />
+            <Button
+              onClick={handleSaveProfile}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
               Lưu thay đổi
             </Button>
           </div>
@@ -62,42 +315,65 @@ export function AdminProfilePage() {
         )}
       </div>
 
+      {/* Avatar card */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={adminProfile.avatar} />
-                <AvatarFallback>AD</AvatarFallback>
+                <AvatarImage src={profile.avatar ?? undefined} />
+                <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
               </Avatar>
-              {isEditing && (
-                <Button size="icon" className="absolute bottom-0 right-0 h-8 w-8 rounded-full">
+              <Button
+                size="icon"
+                className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                onClick={handleAvatarClick}
+                disabled={avatarMutation.isPending}
+              >
+                {avatarMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
                   <Camera className="h-4 w-4" />
-                </Button>
-              )}
+                )}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
 
             <div className="flex-1 text-center sm:text-left">
-              <h2 className="text-xl font-display font-semibold text-foreground">{formData.fullName}</h2>
-              <p className="text-sm text-muted-foreground">{formData.department}</p>
+              <h2 className="text-xl font-display font-semibold text-foreground">
+                {profile.name}
+              </h2>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
               <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
-                <Badge className="bg-primary/10 text-primary">{formData.role}</Badge>
-                <Badge variant="outline">
-                  <ShieldCheck className="mr-1 h-3 w-3" />
-                  Toàn quyền
+                <Badge className="bg-primary/10 text-primary">
+                  {getRoleLabel(profile.role)}
                 </Badge>
+                {profile.role === "admin" && (
+                  <Badge variant="outline">
+                    <ShieldCheck className="mr-1 h-3 w-3" />
+                    Toàn quyền
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Tabs */}
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile">Thông tin</TabsTrigger>
           <TabsTrigger value="security">Bảo mật</TabsTrigger>
         </TabsList>
 
+        {/* ── Tab: Thông tin ──────────────────────────────────── */}
         <TabsContent value="profile">
           <Card>
             <CardHeader>
@@ -105,6 +381,7 @@ export function AdminProfilePage() {
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-5 md:grid-cols-2">
+                {/* Họ và tên */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <User className="h-4 w-4 text-primary" />
@@ -112,11 +389,17 @@ export function AdminProfilePage() {
                   </Label>
                   <Input
                     disabled={!isEditing}
-                    value={formData.fullName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                   />
                 </div>
 
+                {/* Email */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-primary" />
@@ -125,10 +408,16 @@ export function AdminProfilePage() {
                   <Input
                     disabled={!isEditing}
                     value={formData.email}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
                   />
                 </div>
 
+                {/* Số điện thoại */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-primary" />
@@ -137,48 +426,42 @@ export function AdminProfilePage() {
                   <Input
                     disabled={!isEditing}
                     value={formData.phone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    Bộ phận
-                  </Label>
-                  <Input
-                    disabled={!isEditing}
-                    value={formData.department}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))}
-                  />
-                </div>
+                {/* Ngày sinh (read-only) */}
+                {profile.dob && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      Ngày sinh
+                    </Label>
+                    <Input disabled value={profile.dob} />
+                  </div>
+                )}
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    Văn phòng
-                  </Label>
-                  <Input
-                    disabled={!isEditing}
-                    value={formData.office}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, office: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Mô tả</Label>
-                  <Textarea
-                    disabled={!isEditing}
-                    value={formData.bio}
-                    rows={4}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
-                  />
-                </div>
+                {/* Ngày tham gia (read-only) */}
+                {profile.joinDate && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      Ngày tham gia
+                    </Label>
+                    <Input disabled value={profile.joinDate} />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ── Tab: Bảo mật ───────────────────────────────────── */}
         <TabsContent value="security">
           <Card>
             <CardHeader>
@@ -188,19 +471,110 @@ export function AdminProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="max-w-md space-y-4">
+              {/* Mật khẩu hiện tại */}
               <div className="space-y-2">
                 <Label>Mật khẩu hiện tại</Label>
-                <Input type="password" placeholder="Nhập mật khẩu hiện tại" />
+                <div className="relative">
+                  <Input
+                    type={showCurrent ? "text" : "password"}
+                    placeholder="Nhập mật khẩu hiện tại"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        currentPassword: e.target.value,
+                      }))
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                  >
+                    {showCurrent ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
+
+              {/* Mật khẩu mới */}
               <div className="space-y-2">
                 <Label>Mật khẩu mới</Label>
-                <Input type="password" placeholder="Nhập mật khẩu mới" />
+                <div className="relative">
+                  <Input
+                    type={showNew ? "text" : "password"}
+                    placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        newPassword: e.target.value,
+                      }))
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                    onClick={() => setShowNew(!showNew)}
+                  >
+                    {showNew ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
+
+              {/* Nhập lại mật khẩu mới */}
               <div className="space-y-2">
                 <Label>Nhập lại mật khẩu mới</Label>
-                <Input type="password" placeholder="Nhập lại mật khẩu mới" />
+                <div className="relative">
+                  <Input
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="Nhập lại mật khẩu mới"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                  >
+                    {showConfirm ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
-              <Button onClick={() => toast.success("Đã đổi mật khẩu thành công")}>Cập nhật mật khẩu</Button>
+
+              <Button
+                onClick={handleChangePassword}
+                disabled={passwordMutation.isPending}
+              >
+                {passwordMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Lock className="mr-2 h-4 w-4" />
+                )}
+                Cập nhật mật khẩu
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
