@@ -205,4 +205,23 @@ public class RescheduleServiceImpl implements RescheduleService {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<RescheduleRequestResponse> getByTeacherUsername(String username) {
+        Teacher teacher = teacherRepository.findByUserUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + username));
+        return rescheduleRepository.findByTeacherId(teacher.getId())
+                .stream().map(mapper::toRescheduleResponse).toList();
+    }
+
+    @Override
+    public RescheduleRequestResponse createByUsername(String username, CreateRescheduleRequest req) {
+        Teacher teacher = teacherRepository.findByUserUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + username));
+
+        // Override teacherId từ JWT — bảo mật, FE không thể giả mạo
+        req.setTeacherId(teacher.getId());
+        return create(req);
+    }
+
 }

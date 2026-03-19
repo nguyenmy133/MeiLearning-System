@@ -7,6 +7,7 @@ import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
+import com.meilearning.backend.dto.response.ExamStatisticsResponse;
 import com.meilearning.backend.entity.*;
 import com.meilearning.backend.entity.enums.ExamStatus;
 import com.meilearning.backend.exception.BusinessException;
@@ -232,20 +233,50 @@ public class ExamServiceImpl implements ExamService {
     }
 
     private Exam findExam(Long id) {
-
         return examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found: " + id));
-
     }
 
     private ExamResponse toResponseWithStats(Exam exam) {
-
         int count = (int) resultRepository.countByExamId(exam.getId());
-
         double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
-
         return mapper.toExamResponse(exam, count, avg);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ExamStatisticsResponse getStatistics(Long examId) {
+        Exam exam = findExam(examId);
+        int total = (int) resultRepository.countByExamId(examId);
+        double avg  = total > 0 ? resultRepository.averageScoreByExamId(examId) : 0;
+        double max  = total > 0 ? resultRepository.maxScoreByExamId(examId) : 0;
+        double min  = total > 0 ? resultRepository.minScoreByExamId(examId) : 0;
+        long passed = resultRepository.countByExamIdAndPassedTrue(examId);
+        double passRate = total > 0 ? (double) passed / total * 100 : 0;
+
+        return ExamStatisticsResponse.builder()
+                .examId(examId)
+                .examTitle(exam.getTitle())
+                .totalSubmissions(total)
+                .avgScore(Math.round(avg * 100.0) / 100.0)
+                .passRate(Math.round(passRate * 100.0) / 100.0)
+                .maxScore(max)
+                .minScore(min)
+                .totalQuestions(exam.getTotalQuestions() != null ? exam.getTotalQuestions() : 0)
+                .duration(exam.getDuration() != null ? exam.getDuration() : 0)
+                .build();
+    }
+
+    @Override
+    public ExamResponse archive(Long id) {
+        Exam exam = findExam(id);
+        if (exam.getStatus() == ExamStatus.draft) {
+            throw new com.meilearning.backend.exception.BusinessException(
+                    "Chỉ có thể lưu trữ bài thi đã published.");
+        }
+        exam.setStatus(ExamStatus.archived);
+        exam = examRepository.save(exam);
+        return toResponseWithStats(exam);
     }
 
 }

@@ -46,11 +46,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLeaveRequests, useLeaveStats, useApproveLeave, useRejectLeave } from "../hooks";
 import type { StudentLeaveRequest } from "../types";
 import { useClasses } from "@/features/admin/classes/hooks";
-import { authService } from "@/features/shared/auth/authService";
-
-const TEACHER_ID = authService.getCurrentTeacherId();
-
-// Mock data has been removed and uses service layer directly
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -120,8 +115,8 @@ export function TeacherLeaveApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
 
   // ── Service layer hooks ──────────────────────────────────────────────────
-  const { data: classPage } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
-  const myClasses = classPage?.data ?? [];
+  const { data: classes = [] } = useClasses({ limit: 50 });
+  const myClasses = classes;
 
   const { data: leaveRequests = [], isLoading } = useLeaveRequests({
     classId: filterClass !== "all" ? filterClass : undefined,

@@ -14,6 +14,7 @@ import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.Room;
+import com.meilearning.backend.entity.Teacher;
 import com.meilearning.backend.entity.enums.SessionStatus;
 import com.meilearning.backend.entity.enums.SessionType;
 import com.meilearning.backend.exception.ResourceNotFoundException;
@@ -22,6 +23,7 @@ import com.meilearning.backend.repository.ClassEnrollmentRepository;
 import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.RoomRepository;
+import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.ScheduleService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -41,6 +43,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ClassEnrollmentRepository enrollmentRepository;
     private final RoomRepository roomRepository;
     private final SessionMapper sessionMapper;
+    private final TeacherRepository teacherRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // â”€â”€ Generate Sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -177,6 +180,15 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         return buildScheduleResponse(sessions, range[0], range[1], view);
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ScheduleResponse getMyTeacherSchedule(String username, String date, String view) {
+        Teacher teacher = teacherRepository.findByUserUsername(username)
+                .orElseThrow(() -> new com.meilearning.backend.exception.ResourceNotFoundException(
+                        "Không tìm thấy giáo viên ướng với tài khoản: " + username));
+        return getTeacherSchedule(teacher.getId(), date, view);
     }
 
     @Override

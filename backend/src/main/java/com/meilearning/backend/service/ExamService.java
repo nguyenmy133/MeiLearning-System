@@ -4,6 +4,7 @@ import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
+import com.meilearning.backend.dto.response.ExamStatisticsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import java.util.List;
 
@@ -17,4 +18,10 @@ public interface ExamService {
     ExamResultResponse submit(Long examId, SubmitExamResultRequest request);
     List<ExamResultResponse> getResults(Long examId);
     ExamResultResponse getStudentResult(Long examId, Long studentId);
+
+    /** Thống kê tổng hợp bài thi: avg, pass rate, min/max */
+    ExamStatisticsResponse getStatistics(Long examId);
+
+    /** Lưu trữ bài thi (đổi status sang archived) */
+    ExamResponse archive(Long id);
 }

@@ -10,9 +10,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateLeaveRequest;
 import com.meilearning.backend.dto.response.LeaveRequestResponse;
+import com.meilearning.backend.dto.response.LeaveStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.entity.User;
+import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.LeaveService;
+import java.security.Principal;
 import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/leave")
 @RequiredArgsConstructor
@@ -21,6 +26,7 @@ import java.util.List;
 public class LeaveController {
 
     private final LeaveService leaveService;
+    private final UserRepository userRepository;
 
     @GetMapping
     @Operation(summary = "Danh sách đơn nghỉ phép")
@@ -30,6 +36,30 @@ public class LeaveController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         return ResponseEntity.ok(leaveService.getAll(status, requesterType, page, limit));
+    }
+
+    /**
+     * Thống kê số lượng đơn theo trạng thái.
+     * Teacher gọi với requesterType=student để xem đơn của học viên trong lớp.
+     */
+    @GetMapping("/stats")
+    @Operation(summary = "Thống kê đơn theo trạng thái")
+    public ResponseEntity<LeaveStatsResponse> getStats(
+            @RequestParam(required = false) String requesterType) {
+        return ResponseEntity.ok(leaveService.getStats(requesterType));
+    }
+
+    /**
+     * Lấy đơn nghỉ phép trong các buổi học của teacher đang đăng nhập.
+     * Backend resolve teacher từ JWT — không cần truyền teacherId.
+     */
+    @GetMapping("/teacher/me")
+    @Operation(summary = "Đơn nghỉ phép thuộc lớp của giáo viên đang đăng nhập")
+    @PreAuthorize("hasRole('teacher')")
+    public ResponseEntity<List<LeaveRequestResponse>> getMyTeacherLeaves(
+            Principal principal,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(leaveService.getByTeacherUsername(principal.getName(), status));
     }
 
     @GetMapping("/requester/{requesterId}")
@@ -46,22 +76,34 @@ public class LeaveController {
         return ResponseEntity.status(HttpStatus.CREATED).body(leaveService.create(request));
     }
 
+    /**
+     * Duyệt đơn — teacher/admin duyệt.
+     * reviewerId resolve từ JWT để tránh FE truyền sai ID.
+     */
     @PatchMapping("/{id}/approve")
-    @Operation(summary = "Duyệt đơn (Admin)")
-    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "Duyệt đơn (Teacher/Admin)")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
     public ResponseEntity<LeaveRequestResponse> approve(
-            @PathVariable Long id,
-            @RequestParam Long reviewerId) {
-        return ResponseEntity.ok(leaveService.approve(id, reviewerId));
+            Principal principal,
+            @PathVariable Long id) {
+        User reviewer = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new com.meilearning.backend.exception.ResourceNotFoundException("Reviewer not found"));
+        return ResponseEntity.ok(leaveService.approve(id, reviewer.getId()));
     }
 
+    /**
+     * Từ chối đơn — teacher/admin từ chối.
+     * reviewerId resolve từ JWT.
+     */
     @PatchMapping("/{id}/reject")
-    @Operation(summary = "Từ chối đơn (Admin)")
-    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "Từ chối đơn (Teacher/Admin)")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
     public ResponseEntity<LeaveRequestResponse> reject(
+            Principal principal,
             @PathVariable Long id,
-            @RequestParam Long reviewerId,
             @RequestParam String reason) {
-        return ResponseEntity.ok(leaveService.reject(id, reviewerId, reason));
+        User reviewer = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new com.meilearning.backend.exception.ResourceNotFoundException("Reviewer not found"));
+        return ResponseEntity.ok(leaveService.reject(id, reviewer.getId(), reason));
     }
 }

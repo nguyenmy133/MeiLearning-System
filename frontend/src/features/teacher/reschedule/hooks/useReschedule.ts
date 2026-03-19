@@ -4,7 +4,7 @@ import { authService } from "@/features/shared/auth/authService";
 import type { CreateRescheduleDTO, RescheduleQueryParams } from "../types";
 import { getRescheduleRequests, createRescheduleRequest } from "../services";
 
-const teacherId = () => authService.getCurrentTeacherId();
+const teacherId = () => authService.getCurrentTeacherIdSafe();
 
 export const rescheduleKeys = {
     all: ["teacher-reschedule"] as const,

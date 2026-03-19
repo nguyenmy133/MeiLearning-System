@@ -12,6 +12,7 @@ import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
+import com.meilearning.backend.dto.response.ExamStatisticsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.ExamService;
 import java.util.List;
@@ -91,11 +92,21 @@ public class ExamController {
     @GetMapping("/{id}/results/{studentId}")
     @Operation(summary = "Kết quả 1 học viên")
     public ResponseEntity<ExamResultResponse> getStudentResult(
-
             @PathVariable Long id,
             @PathVariable Long studentId) {
         return ResponseEntity.ok(examService.getStudentResult(id, studentId));
+    }
 
+    @GetMapping("/{id}/statistics")
+    @Operation(summary = "Thống kê tổng hợp bài thi (Teacher)")
+    public ResponseEntity<ExamStatisticsResponse> getStatistics(@PathVariable Long id) {
+        return ResponseEntity.ok(examService.getStatistics(id));
+    }
+
+    @PatchMapping("/{id}/archive")
+    @Operation(summary = "Lưu trữ bài thi (Teacher)")
+    public ResponseEntity<ExamResponse> archive(@PathVariable Long id) {
+        return ResponseEntity.ok(examService.archive(id));
     }
 
 }

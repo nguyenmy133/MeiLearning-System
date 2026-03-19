@@ -15,6 +15,7 @@ export const authService = {
   /**
    * Lấy teacherId từ user đang đăng nhập.
    * Trả về user.id nếu role = teacher, throw error nếu không phải teacher.
+   * ⚠️ Không gọi từ top-level component render — dùng getCurrentTeacherIdSafe() thay thế.
    */
   getCurrentTeacherId(): number {
     const user = this.getCurrentUser();
@@ -26,6 +27,20 @@ export const authService = {
     }
     return user.id;
   },
+
+  /**
+   * Phiên bản an toàn — không throw khi chưa login, trả về -1.
+   * Dùng trong hooks/services để tránh crash component khi session hết hạn.
+   * React Query sẽ disable request khi id <= 0 (với enabled: id > 0).
+   */
+  getCurrentTeacherIdSafe(): number {
+    try {
+      return this.getCurrentTeacherId();
+    } catch {
+      return -1;
+    }
+  },
+
 
   getCurrentRole(): CurrentUser["role"] | null {
     return this.getCurrentUser()?.role ?? null;

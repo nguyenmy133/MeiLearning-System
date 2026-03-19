@@ -1,38 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { authService } from "@/features/shared/auth/authService";
 import type { SaveAttendanceDTO, AttendanceQueryParams } from "../types";
 import {
-    getTeacherSessions,
+    getMyTeacherSessions,
     getSessionAttendance,
     saveAttendance,
     getAttendanceStats,
 } from "../services";
 
-const teacherId = () => authService.getCurrentTeacherId();
-
 // ── Query key factory ─────────────────────────────────────────────────────────
 export const attendanceKeys = {
     all: ["teacher-attendance"] as const,
-    sessions: (params?: AttendanceQueryParams) =>
-        [...attendanceKeys.all, "sessions", params] as const,
+    sessions: (date?: string) =>
+        [...attendanceKeys.all, "sessions", date ?? "today"] as const,
     session: (sessionId: number) => [...attendanceKeys.all, "session", sessionId] as const,
     stats: (sessionId: number) => [...attendanceKeys.all, "stats", sessionId] as const,
 };
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
-export function useTeacherSessions(params?: AttendanceQueryParams) {
+/**
+ * Lấy danh sách buổi dạy của teacher đang đăng nhập.
+ * Không cần teacherId — backend resolve từ JWT.
+ */
+export function useTeacherSessions(date?: string, params?: AttendanceQueryParams) {
     return useQuery({
-        queryKey: attendanceKeys.sessions(params),
-        queryFn: () => getTeacherSessions(teacherId(), params),
+        queryKey: attendanceKeys.sessions(date),
+        queryFn: () => getMyTeacherSessions(date, params),
     });
 }
 
 export function useSessionAttendance(sessionId: number) {
     return useQuery({
         queryKey: attendanceKeys.session(sessionId),
-        queryFn: () => getSessionAttendance(sessionId, teacherId()),
+        queryFn: () => getSessionAttendance(sessionId),
         enabled: sessionId > 0,
     });
 }
@@ -50,8 +51,8 @@ export function useAttendanceStats(sessionId: number) {
 export function useSaveAttendance() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (dto: SaveAttendanceDTO) => saveAttendance(teacherId(), dto),
-        onSuccess: (data, dto) => {
+        mutationFn: (dto: SaveAttendanceDTO) => saveAttendance(0, dto),
+        onSuccess: (_data, dto) => {
             qc.invalidateQueries({ queryKey: attendanceKeys.session(dto.sessionId) });
             qc.invalidateQueries({ queryKey: attendanceKeys.stats(dto.sessionId) });
             qc.invalidateQueries({ queryKey: attendanceKeys.sessions() });

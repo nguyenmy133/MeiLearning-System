@@ -5,8 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class CreateRescheduleRequest {
-    @NotNull
+    // Optional khi dùng endpoint /reschedule/me — backend resolve từ JWT
     private Long teacherId;
+
     @NotNull
     private Long classId;
     private Long sessionId;

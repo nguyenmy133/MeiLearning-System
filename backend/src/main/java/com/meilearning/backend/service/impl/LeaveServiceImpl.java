@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.meilearning.backend.dto.request.CreateLeaveRequest;
 import com.meilearning.backend.dto.response.LeaveRequestResponse;
+import com.meilearning.backend.dto.response.LeaveStatsResponse;
 import com.meilearning.backend.entity.*;
 import com.meilearning.backend.entity.enums.*;
 import com.meilearning.backend.exception.BusinessException;
@@ -30,6 +31,7 @@ public class LeaveServiceImpl implements LeaveService {
     private final LeaveRequestRepository leaveRepository;
     private final UserRepository userRepository;
     private final ClassSessionRepository sessionRepository;
+    private final TeacherRepository teacherRepository;
     private final AcademicMapper mapper;
     private final NotificationDispatcher notificationDispatcher;
 
@@ -181,10 +183,55 @@ public class LeaveServiceImpl implements LeaveService {
     }
 
     private LeaveRequest findLeave(Long id) {
-
         return leaveRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Leave request not found: " + id));
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public LeaveStatsResponse getStats(String requesterType) {
+        RequesterType rType = requesterType != null ? RequesterType.valueOf(requesterType) : null;
+
+        long pending, approved, rejected, total;
+        if (rType != null) {
+            pending  = leaveRepository.countByRequesterTypeAndStatus(rType, RequestStatus.pending);
+            approved = leaveRepository.countByRequesterTypeAndStatus(rType, RequestStatus.approved);
+            rejected = leaveRepository.countByRequesterTypeAndStatus(rType, RequestStatus.rejected);
+        } else {
+            pending  = leaveRepository.countByStatus(RequestStatus.pending);
+            approved = leaveRepository.countByStatus(RequestStatus.approved);
+            rejected = leaveRepository.countByStatus(RequestStatus.rejected);
+        }
+        total = pending + approved + rejected;
+
+        return LeaveStatsResponse.builder()
+                .total(total)
+                .pending(pending)
+                .approved(approved)
+                .rejected(rejected)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeaveRequestResponse> getByTeacherUsername(String username, String status) {
+        Teacher teacher = teacherRepository.findByUserUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + username));
+
+        // Lấy tất cả session ID tườ ng ứng với teacher
+        List<Long> sessionIds = sessionRepository
+                .findByClassEntityTeacherId(teacher.getId())
+                .stream().map(ClassSession::getId).toList();
+
+        if (sessionIds.isEmpty()) return List.of();
+
+        List<LeaveRequest> list = leaveRepository.findBySessionIdIn(sessionIds);
+
+        if (status != null && !status.isBlank()) {
+            RequestStatus rs = RequestStatus.valueOf(status);
+            list = list.stream().filter(lr -> lr.getStatus() == rs).toList();
+        }
+        return list.stream().map(mapper::toLeaveResponse).toList();
     }
 
 }

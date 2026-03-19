@@ -17,10 +17,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useWeekSessions } from "@/features/admin/schedule/hooks";
-
-import { authService } from "@/features/shared/auth/authService";
-
+import { useTeacherSchedule } from "@/features/teacher/schedule/hooks/useTeacherSchedule";
+import { useAuth } from "@/features/shared/auth/auth-context";
 import { usePendingTasks, useAttendanceRate } from "../hooks/useDashboard";
 
 const jsDay2Index = (d: number) => (d === 0 ? 6 : d - 1);
@@ -52,9 +50,8 @@ function getTimeStatus(startTime: string, endTime: string, nowMin: number): Sess
 
 export function TeacherDashboard() {
   const navigate = useNavigate();
-  const TEACHER_ID = authService.getCurrentTeacherId();
-  const user = authService.getCurrentUser();
-  const { data: sessions = [], isLoading } = useWeekSessions(undefined, TEACHER_ID);
+  const { user } = useAuth();
+  const { data: sessions = [], isLoading } = useTeacherSchedule();
   
   const { data: pendingTasks = [], isLoading: isTasksLoading } = usePendingTasks();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -24,6 +24,10 @@ public interface ScheduleService {
 
     ScheduleResponse getTeacherSchedule(Long teacherId, String date, String view);
 
+    /** Lấy lịch của teacher hiện tại (resolve từ JWT principal) */
+
+    ScheduleResponse getMyTeacherSchedule(String username, String date, String view);
+
     /** Lấy lịch theo student */
 
     ScheduleResponse getStudentSchedule(Long studentId, String date, String view);

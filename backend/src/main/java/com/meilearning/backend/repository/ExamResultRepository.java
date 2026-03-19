@@ -27,4 +27,10 @@ public interface ExamResultRepository extends JpaRepository<ExamResult, Long> {
     @Query("SELECT COALESCE(AVG(er.timeSpent), 0) FROM ExamResult er WHERE er.exam.id = :examId")
     double averageTimeSpentByExamId(Long examId);
 
+    @Query("SELECT COALESCE(MAX(er.score), 0) FROM ExamResult er WHERE er.exam.id = :examId")
+    double maxScoreByExamId(Long examId);
+
+    @Query("SELECT COALESCE(MIN(er.score), 0) FROM ExamResult er WHERE er.exam.id = :examId")
+    double minScoreByExamId(Long examId);
+
 }

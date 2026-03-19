@@ -16,10 +16,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useWeekSessions } from "@/features/admin/schedule/hooks";
-
-// MOCK: current logged-in teacher ID — swap for auth context when BE is ready
-const CURRENT_TEACHER_ID = 1;
+import { useTeacherSchedule } from "../hooks/useTeacherSchedule";
+import { SessionStatus } from "@/features/admin/schedule/types";
 
 const weekDays = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
 
@@ -54,8 +52,11 @@ type AttendanceStatus = "done" | "missed" | "ongoing" | "upcoming" | "future";
 function getSessionStatus(
   sessionDate: string,
   startTime: string,
-  endTime: string
+  endTime: string,
+  apiStatus: SessionStatus
 ): AttendanceStatus {
+  if (apiStatus === "completed") return "done";
+
   const todayMidnight = new Date();
   todayMidnight.setHours(0, 0, 0, 0);
 
@@ -65,8 +66,8 @@ function getSessionStatus(
   const diff = sDate.getTime() - todayMidnight.getTime();
 
   if (diff < 0) {
-    // Past days — mock: ID divisible by 5 = missed, rest = done
-    return Number(sessionDate.replace(/-/g, "")) % 5 === 0 ? "missed" : "done";
+    // Past days and not completed = missed
+    return "missed";
   }
 
   if (diff === 0) {
@@ -76,7 +77,7 @@ function getSessionStatus(
     const endMin = toMinutes(endTime);
     if (nowMin < startMin) return "upcoming";
     if (nowMin <= endMin) return "ongoing";
-    return "done";
+    return "missed";
   }
 
   return "future";
@@ -134,7 +135,7 @@ export function TeacherSchedulePage() {
 
   const todayDayIndex = jsDay2Index(new Date().getDay());
 
-  const { data: sessions = [], isLoading } = useWeekSessions(undefined, CURRENT_TEACHER_ID);
+  const { data: sessions = [], isLoading } = useTeacherSchedule();
 
   // Filter sessions to the selected week
   const weekEnd = useMemo(() => {
@@ -267,7 +268,7 @@ export function TeacherSchedulePage() {
                     <CardContent className="p-3 pt-0 space-y-2">
                       {(byDay[index] ?? []).length > 0 ? (
                         (byDay[index] ?? []).map((cls) => {
-                          const status = getSessionStatus(cls.date, cls.startTime, cls.endTime);
+                          const status = getSessionStatus(cls.date, cls.startTime, cls.endTime, cls.status);
                           const cfg = statusConfig[status];
                           return (
                             <div
@@ -338,7 +339,7 @@ export function TeacherSchedulePage() {
                   )
                   .map((cls) => {
                     const dayIdx = jsDay2Index(new Date(cls.date).getDay());
-                    const status = getSessionStatus(cls.date, cls.startTime, cls.endTime);
+                    const status = getSessionStatus(cls.date, cls.startTime, cls.endTime, cls.status);
                     const cfg = statusConfig[status];
                     const isMissed = status === "missed";
 

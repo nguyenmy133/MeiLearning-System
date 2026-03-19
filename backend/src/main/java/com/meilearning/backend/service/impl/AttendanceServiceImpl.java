@@ -9,6 +9,7 @@ import com.meilearning.backend.dto.response.AttendanceStatsResponse;
 import com.meilearning.backend.entity.AttendanceRecord;
 import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.entity.Teacher;
 import com.meilearning.backend.entity.enums.AttendanceStatus;
 import com.meilearning.backend.entity.enums.CheckInMethod;
 import com.meilearning.backend.entity.enums.SessionStatus;
@@ -18,6 +19,7 @@ import com.meilearning.backend.mapper.SessionMapper;
 import com.meilearning.backend.repository.AttendanceRecordRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.StudentRepository;
+import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.AttendanceService;
 import com.meilearning.backend.service.NotificationDispatcher;
 import java.time.LocalDate;
@@ -35,6 +37,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final StudentRepository studentRepository;
     private final SessionMapper sessionMapper;
     private final NotificationDispatcher notificationDispatcher;
+    private final TeacherRepository teacherRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -164,6 +167,21 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .attendanceRate(Math.round(rate * 100.0) / 100.0)
                 .build();
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.meilearning.backend.dto.response.ClassSessionResponse> getSessionsByTeacherUsername(String username, String date) {
+        Teacher teacher = teacherRepository.findByUserUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy giáo viên: " + username));
+
+        LocalDate targetDate = date != null ? LocalDate.parse(date) : LocalDate.now();
+
+        List<ClassSession> sessions = sessionRepository
+                .findByClassEntityTeacherIdAndDate(teacher.getId(), targetDate);
+
+        return sessions.stream().map(sessionMapper::toResponse).toList();
     }
 
 }

@@ -1,62 +1,69 @@
 import { apiClient } from "@/lib/api-client";
-import { authService } from "@/features/shared/auth/authService";
+import { ClipboardList, AlertCircle, Calendar } from "lucide-react";
 import type { PendingTask } from "../types";
-import { MOCK_PENDING_TASKS, MOCK_ATTENDANCE_RATE } from "../data/mockData";
+
+/** Map backend PendingTaskResponse → frontend PendingTask */
+function mapTask(t: any, index: number): PendingTask {
+  const typeIconMap: Record<string, any> = {
+    leave: AlertCircle,
+    attendance: Calendar,
+    exam: ClipboardList,
+  };
+  const typeClassMap: Record<string, string> = {
+    leave: "bg-amber-100 text-amber-700",
+    attendance: "bg-blue-100 text-blue-700",
+    exam: "bg-purple-100 text-purple-700",
+  };
+  const typeLinkMap: Record<string, string> = {
+    leave: "/teacher/leave",
+    attendance: "/teacher/attendance",
+    exam: "/teacher/exams",
+  };
+
+  return {
+    id: index,
+    type: (t.type === "leave" ? "leave" : t.type === "exam" ? "exam" : "absent") as PendingTask["type"],
+    label: t.title ?? "",
+    sub: t.description ?? "",
+    href: typeLinkMap[t.type] ?? "/teacher",
+    icon: typeIconMap[t.type] ?? ClipboardList,
+    badgeClass: typeClassMap[t.type] ?? "bg-gray-100 text-gray-700",
+    urgent: t.urgent ?? false,
+  };
+}
 
 /**
- * Teacher Dashboard Service — hybrid approach.
- * Gọi real API, fallback mock khi BE chưa có dedicated endpoint.
+ * Teacher Dashboard Service.
+ * Gọi real API — backend resolve teacher từ JWT.
  */
 export const dashboardService = {
+  /**
+   * Lấy danh sách pending tasks thực từ backend.
+   * GET /api/v1/teachers/me/pending-tasks
+   */
   async getPendingTasks(): Promise<PendingTask[]> {
-    // BE chưa có dedicated pending-tasks endpoint → dùng mock
-    // Khi BE có /api/v1/teachers/{id}/pending-tasks, sẽ chuyển sang API
-    return MOCK_PENDING_TASKS;
+    try {
+      const { data } = await apiClient.get("/teachers/me/pending-tasks");
+      if (!Array.isArray(data)) return [];
+      return data.map(mapTask);
+    } catch {
+      return [];
+    }
   },
 
+  /**
+   * Tỷ lệ điểm danh của teacher.
+   * GET /api/v1/attendance/stats
+   */
   async getAttendanceRate(): Promise<number> {
     try {
-      const teacherId = authService.getCurrentTeacherId();
-      const { data } = await apiClient.get("/attendance/stats", {
-        params: { teacherId },
-      });
+      const { data } = await apiClient.get("/attendance/stats");
       if (data?.attendanceRate !== undefined) return data.attendanceRate;
     } catch { /* fallback */ }
-    return MOCK_ATTENDANCE_RATE;
-  },
-
-  async getTeacherStats() {
-    try {
-      const teacherId = authService.getCurrentTeacherId();
-      const [classesRes, examsRes] = await Promise.allSettled([
-        apiClient.get("/classes", { params: { teacherId, limit: 1 } }),
-        apiClient.get("/exams", { params: { teacherId, status: "draft" } }),
-      ]);
-
-      return {
-        pendingTasks: MOCK_PENDING_TASKS,
-        attendanceRate: MOCK_ATTENDANCE_RATE,
-        totalClasses:
-          classesRes.status === "fulfilled"
-            ? classesRes.value.data?.totalElements ?? 0
-            : 0,
-        pendingExams:
-          examsRes.status === "fulfilled"
-            ? Array.isArray(examsRes.value.data) ? examsRes.value.data.length : 0
-            : 0,
-      };
-    } catch {
-      return {
-        pendingTasks: MOCK_PENDING_TASKS,
-        attendanceRate: MOCK_ATTENDANCE_RATE,
-        totalClasses: 0,
-        pendingExams: 0,
-      };
-    }
+    return 0;
   },
 };
 
-// Also export for direct usage
-export function getTeacherDashboard(teacherId: number) {
-  return dashboardService.getTeacherStats();
+export function getTeacherDashboard() {
+  return dashboardService.getPendingTasks();
 }

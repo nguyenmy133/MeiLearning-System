@@ -22,13 +22,23 @@ public class DocumentController {
 
     private final DocumentService documentService;
 
+    /**
+     * Lấy danh sách tài liệu.
+     *
+     * Logic hiển thị (RBAC):
+     * - TEACHER: chỉ thấy tài liệu của chính mình (uploadedBy = current user)
+     *   + filter thêm classId nếu có
+     * - ADMIN: thấy tất cả (không filter theo uploadedBy)
+     * - STUDENT: thấy tài liệu của lớp mình (filter classId) — gọi qua endpoint khác
+     */
     @GetMapping
     @Operation(summary = "Lấy danh sách tài liệu")
     public ResponseEntity<PageResponse<DocumentResponse>> getAll(
+            Principal principal,
             @RequestParam(required = false) Long classId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return ResponseEntity.ok(documentService.getAll(classId, page, limit));
+        return ResponseEntity.ok(documentService.getAll(principal.getName(), classId, page, limit));
     }
 
     @GetMapping("/{id}")
@@ -51,10 +61,10 @@ public class DocumentController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Xóa tài liệu")
+    @Operation(summary = "Xóa tài liệu (chỉ owner hoặc admin)")
     @PreAuthorize("hasAnyRole('admin', 'teacher')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        documentService.delete(id);
+    public ResponseEntity<Void> delete(Principal principal, @PathVariable Long id) {
+        documentService.delete(principal.getName(), id);
         return ResponseEntity.noContent().build();
     }
 }

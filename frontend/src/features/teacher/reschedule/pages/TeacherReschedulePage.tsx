@@ -38,8 +38,6 @@ import { authService } from "@/features/shared/auth/authService";
 
 const TEACHER_ID = authService.getCurrentTeacherId();
 
-const dummy = `// Removed static mock data`;
-
 export function TeacherReschedulePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestType, setRequestType] = useState<"reschedule" | "makeup">("reschedule");
@@ -49,8 +47,8 @@ export function TeacherReschedulePage() {
   const [newTime, setNewTime] = useState("");
   const [reason, setReason] = useState("");
 
-  const { data: classPage } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
-  const myClasses = classPage?.data ?? [];
+  // Lấy danh sách lớp của giáo viên này — useClasses service trả Class[] trực tiếp
+  const { data: myClasses = [] } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
 
   const { data: requests = [] } = useRescheduleRequests();
   const createReschedule = useCreateReschedule();

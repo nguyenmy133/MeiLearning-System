@@ -35,23 +35,19 @@ import {
 
 import { useClassStudents } from "../hooks/useTeacherClasses";
 
-// MOCK: current logged-in teacher ID — swap for auth context when BE is ready
-const CURRENT_TEACHER_ID = 1;
-
 export function TeacherClassesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: classPage, isLoading } = useClasses({
-    teacherId: CURRENT_TEACHER_ID,
     search: searchTerm || undefined,
     limit: 50,
   });
 
   const { data: students = [], isLoading: isLoadingStudents } = useClassStudents(selectedClassId);
 
-  const classes = classPage?.data ?? [];
+  const classes = classPage ?? [];
   const totalStudents = classes.reduce((s, c) => s + c.students, 0);
 
   return (

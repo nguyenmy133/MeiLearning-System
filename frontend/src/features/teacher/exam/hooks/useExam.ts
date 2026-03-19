@@ -1,18 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authService } from "@/features/shared/auth/authService";
-import type { CreateExamDTO, UpdateExamDTO, ExamQueryParams } from "../types";
+import type { CreateExamDTO, ExamQueryParams } from "../types";
 import {
     getTeacherExams,
     getExamById,
     getExamStats,
     createExam,
-    updateExam,
     deleteExam,
     archiveExam,
+    publishExam,
+    getExamStatistics,
+    getStudentResults,
+    getQuestionAnalysis,
+    getStudentExamResult,
 } from "../services";
 
-const teacherId = () => authService.getCurrentTeacherId();
+const teacherId = () => authService.getCurrentTeacherIdSafe();
 
 export const examKeys = {
     all: ["teacher-exams"] as const,
@@ -24,24 +28,29 @@ export const examKeys = {
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 export function useTeacherExams(params?: ExamQueryParams) {
+    const tid = teacherId();
     return useQuery({
         queryKey: examKeys.lists(params),
-        queryFn: () => getTeacherExams(teacherId(), params),
+        queryFn: () => getTeacherExams(tid, params),
+        enabled: tid > 0,
     });
 }
 
 export function useExamDetail(id: number) {
     return useQuery({
         queryKey: examKeys.detail(id),
-        queryFn: () => getExamById(id, teacherId()),
+        queryFn: () => getExamById(id),
         enabled: id > 0,
     });
 }
 
 export function useExamStats() {
+    const tid = teacherId();
     return useQuery({
         queryKey: examKeys.stats(),
-        queryFn: () => getExamStats(teacherId()),
+        // getExamStats đã được sửa: tính từ list, không gọi endpoint riêng
+        queryFn: () => getExamStats(tid),
+        enabled: tid > 0,
     });
 }
 
@@ -59,23 +68,10 @@ export function useCreateExam() {
     });
 }
 
-export function useUpdateExam() {
-    const qc = useQueryClient();
-    return useMutation({
-        mutationFn: ({ id, dto }: { id: number; dto: UpdateExamDTO }) =>
-            updateExam(id, teacherId(), dto),
-        onSuccess: (exam) => {
-            qc.invalidateQueries({ queryKey: examKeys.all });
-            toast.success(`Đã cập nhật bài thi "${exam.title}"`);
-        },
-        onError: (err: Error) => toast.error(err.message),
-    });
-}
-
 export function useDeleteExam() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (id: number) => deleteExam(id, teacherId()),
+        mutationFn: (id: number) => deleteExam(id),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: examKeys.all });
             toast.success("Đã xóa bài thi");
@@ -87,7 +83,7 @@ export function useDeleteExam() {
 export function useArchiveExam() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (id: number) => archiveExam(id, teacherId()),
+        mutationFn: (id: number) => archiveExam(id),
         onSuccess: (exam) => {
             qc.invalidateQueries({ queryKey: examKeys.all });
             toast.success(`Đã lưu trữ bài thi "${exam.title}"`);
@@ -96,23 +92,19 @@ export function useArchiveExam() {
     });
 }
 
-// ── Exam Results Hooks ────────────────────────────────────────────────────────
-
-import {
-    getExamInfo,
-    getExamStatistics,
-    getStudentResults,
-    getQuestionAnalysis,
-    getStudentExamResult,
-} from "../services";
-
-export function useExamInfo(id: number) {
-    return useQuery({
-        queryKey: [...examKeys.all, "info", id],
-        queryFn: () => getExamInfo(id),
-        enabled: id > 0,
+export function usePublishExam() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => publishExam(id),
+        onSuccess: (exam) => {
+            qc.invalidateQueries({ queryKey: examKeys.all });
+            toast.success(`Đã publish bài thi "${exam.title}"`);
+        },
+        onError: (err: Error) => toast.error(err.message),
     });
 }
+
+// ── Exam Results Hooks ────────────────────────────────────────────────────────
 
 export function useExamStatistics(id: number) {
     return useQuery({

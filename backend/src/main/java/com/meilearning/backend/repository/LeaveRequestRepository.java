@@ -26,4 +26,6 @@ public interface LeaveRequestRepository
 
     long countByRequesterTypeAndStatus(RequesterType requesterType, RequestStatus status);
 
+    List<LeaveRequest> findBySessionIdIn(List<Long> sessionIds);
+
 }

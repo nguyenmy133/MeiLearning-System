@@ -4,7 +4,7 @@ import { authService } from "@/features/shared/auth/authService";
 import type { GradeQueryParams, UpdateCommentDTO } from "../types";
 import { getClassGrades, getGradeStats, updateComment } from "../services";
 
-const teacherId = () => authService.getCurrentTeacherId();
+const teacherId = () => authService.getCurrentTeacherIdSafe();
 
 export const gradeKeys = {
     all: ["teacher-grades"] as const,
@@ -32,11 +32,13 @@ export function useGradeStats(classId: number) {
 export function useUpdateComment() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (dto: UpdateCommentDTO) => updateComment(teacherId(), dto),
-        onSuccess: (student) => {
-            qc.invalidateQueries({ queryKey: gradeKeys.all });
-            toast.success(`Đã cập nhật nhận xét cho ${student.name}`);
+        mutationFn: (dto: UpdateCommentDTO) =>
+            updateComment(dto.classId, Number(dto.studentId), dto.comment),
+        onSuccess: (_data, dto) => {
+            qc.invalidateQueries({ queryKey: gradeKeys.list(dto.classId) });
+            toast.success("Đã cập nhật nhận xét thành công");
         },
         onError: (err: Error) => toast.error(err.message),
     });
 }
+

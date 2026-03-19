@@ -32,8 +32,10 @@ public interface ClassSessionRepository
 
     List<ClassSession> findByClassEntityTeacherIdAndDate(Long teacherId, LocalDate date);
 
-    /** Lấy sessions của 1 teacher trong tuáº§n */
+    /** Lấy tất cả sessions của 1 teacher (dùng để lấy session IDs) */
+    List<ClassSession> findByClassEntityTeacherId(Long teacherId);
 
+    /** Lấy sessions của 1 teacher trong tuần */
     List<ClassSession> findByClassEntityTeacherIdAndDateBetween(Long teacherId, LocalDate startDate, LocalDate endDate);
 
 }

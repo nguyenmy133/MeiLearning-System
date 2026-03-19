@@ -11,6 +11,7 @@ import com.meilearning.backend.dto.request.UpdateSessionRequest;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.ScheduleResponse;
 import com.meilearning.backend.service.ScheduleService;
+import java.security.Principal;
 import java.util.List;
 @RestController
 @RequestMapping("/api/v1")
@@ -30,8 +31,19 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getSchedule(date, view, facilityId));
     }
 
+    @GetMapping("/schedule/teacher/me")
+    @Operation(summary = "Lấy lịch dạy của giáo viên đang đăng nhập")
+    @PreAuthorize("hasRole('teacher')")
+    public ResponseEntity<ScheduleResponse> getMyTeacherSchedule(
+            Principal principal,
+            @RequestParam(required = false) String date,
+            @RequestParam(defaultValue = "week") String view) {
+        return ResponseEntity.ok(scheduleService.getMyTeacherSchedule(principal.getName(), date, view));
+    }
+
     @GetMapping("/schedule/teacher/{teacherId}")
-    @Operation(summary = "Lấy lịch giáo viên")
+    @Operation(summary = "Lấy lịch giáo viên (by ID, dành cho admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<ScheduleResponse> getTeacherSchedule(
             @PathVariable Long teacherId,
             @RequestParam(required = false) String date,

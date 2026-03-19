@@ -122,7 +122,7 @@ const getInitials = (name: string) =>
 
 export function TeacherGradesPage() {
   const navigate = useNavigate();
-  const [selectedClassId, setSelectedClassId] = useState(1);
+  const [selectedClassId, setSelectedClassId] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Comment dialog
@@ -131,20 +131,23 @@ export function TeacherGradesPage() {
   const [newComment, setNewComment] = useState("");
 
   // ── Service layer hooks ──────────────────────────────────────────────────
-  const { data: classPage } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
-  const myClasses = classPage?.data ?? [];
+  // useClasses service đã handle PageResponse → trả Class[] trực tiếp
+  const { data: myClasses = [] } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
 
-  const { data: students = [], isLoading: studentsLoading } = useClassGrades(selectedClassId, {
+  // Auto-select first class khi danh sách load xong
+  const effectiveClassId = selectedClassId || (myClasses.length > 0 ? myClasses[0].id : 0);
+
+  const { data: students = [], isLoading: studentsLoading } = useClassGrades(effectiveClassId, {
     search: searchTerm || undefined,
   });
-  const { data: gradeStatsData } = useGradeStats(selectedClassId);
+  const { data: gradeStatsData } = useGradeStats(effectiveClassId);
   const updateComment = useUpdateComment();
 
   // Derive exam columns from student data
   const completedExams = students[0]?.examScores ?? [];
 
-  // Computed grade distribution
-  const classAvg = gradeStatsData?.averageScore ?? 0;
+  // Computed grade distribution — backend trả avg/pass/fail/total
+  const classAvg = (gradeStatsData as any)?.avg ?? (gradeStatsData as any)?.averageScore ?? 0;
   const gioi = students.filter((s) => s.avgScore >= 8).length;
   const kha = students.filter((s) => s.avgScore >= 6.5 && s.avgScore < 8).length;
   const tb = students.filter((s) => s.avgScore >= 5 && s.avgScore < 6.5).length;
@@ -181,16 +184,23 @@ export function TeacherGradesPage() {
             Điểm tự động từ kết quả bài thi • Giáo viên thêm nhận xét
           </p>
         </div>
-        <Select value={String(selectedClassId)} onValueChange={(v) => setSelectedClassId(Number(v))}>
+        <Select
+          value={String(effectiveClassId || "")}
+          onValueChange={(v) => setSelectedClassId(Number(v))}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Chọn lớp" />
           </SelectTrigger>
           <SelectContent>
-            {myClasses.map((cls) => (
-              <SelectItem key={cls.id} value={String(cls.id)}>
-                {cls.name}
-              </SelectItem>
-            ))}
+            {myClasses.length === 0 ? (
+              <SelectItem value="0" disabled>Chưa có lớp</SelectItem>
+            ) : (
+              myClasses.map((cls: any) => (
+                <SelectItem key={cls.id} value={String(cls.id)}>
+                  {cls.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
