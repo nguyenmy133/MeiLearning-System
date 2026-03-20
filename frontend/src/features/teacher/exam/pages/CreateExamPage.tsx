@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useCreateExam, usePublishExam } from "../hooks";
+import { useCreateExam, usePublishExam, useExamDetail, useUpdateExam } from "../hooks";
 import { authService } from "@/features/shared/auth/authService";
 import { classService } from "@/features/teacher/classes/services/classService";
 
@@ -66,13 +66,17 @@ const STEPS = [
 export function CreateExamPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isEdit = searchParams.get("id") !== null;
+  const { id: editIdParam } = useParams<{ id: string }>();
+  const editId = editIdParam ? Number(editIdParam) : null; // null = create mode
+  const duplicateFromId = searchParams.get("duplicate");
 
   const [step, setStep] = useState(1);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
   // ── API hooks ─────────────────────────────────────────────────────────────
   const createExam = useCreateExam();
+  const updateExam = useUpdateExam();
   const publishExamMutation = usePublishExam();
 
   // ── Load teacher's classes ────────────────────────────────────────────────
@@ -97,6 +101,87 @@ export function CreateExamPage() {
 
   // Step 2: Questions
   const [questions, setQuestions] = useState<Question[]>([]);
+
+  // ── Fetch exam when EDITING an existing exam ─────────────────────────────
+  const { data: editExam, isSuccess: editLoaded } = useExamDetail(editId ?? 0);
+
+  // Redirect if the exam is not a draft (can't edit published/ended exams via this page)
+  useEffect(() => {
+    if (!editId || !editLoaded || !editExam) return;
+    if (editExam.status !== "draft") {
+      toast.error("Chỉ có thể chỉnh sửa bài thi đang ở trạng thái Nháp.");
+      navigate(`/teacher/exams/detail/${editId}`, { replace: true });
+    }
+  }, [editId, editLoaded, editExam, navigate]);
+
+  // Pre-fill form once when edit exam loads
+  useEffect(() => {
+    if (!editId || !editLoaded || !editExam || prefilled) return;
+    setExamInfo({
+      title: editExam.title,
+      subject: editExam.subject ?? "",
+      classIds: editExam.classIds ?? [],
+      duration: editExam.duration ?? 60,
+      startTime: editExam.startTime ? editExam.startTime.slice(0, 16) : "",
+      endTime: editExam.endTime ? editExam.endTime.slice(0, 16) : "",
+      maxAttempts: 1,
+      passingScore: 70,
+      description: editExam.description ?? "",
+    });
+    if (editExam.questions && editExam.questions.length > 0) {
+      const mapped: Question[] = editExam.questions.map((q, idx) => ({
+        id: `edit-${idx}`,
+        type: (q.type as any) ?? "multiple-choice",
+        question: q.question,
+        options: q.options
+          ? (() => { try { return JSON.parse(q.options!); } catch { return []; } })()
+          : [],
+        correctAnswer: q.correctAnswer ?? "",
+        points: q.points ?? 1,
+        explanation: q.explanation ?? "",
+      }));
+      setQuestions(mapped);
+    }
+    setPrefilled(true);
+  }, [editId, editLoaded, editExam, prefilled]);
+
+  // ── Fetch source exam when DUPLICATING ────────────────────────────────
+  const { data: sourceExam, isSuccess: sourceLoaded } = useExamDetail(
+    duplicateFromId ? Number(duplicateFromId) : 0
+  );
+
+  // Once source exam loads, pre-fill the form (runs only once)
+  useEffect(() => {
+    if (!sourceLoaded || !sourceExam || prefilled) return;
+    setExamInfo({
+      title: `Copy of ${sourceExam.title}`,
+      subject: sourceExam.subject ?? "",
+      classIds: [],          // intentionally clear — teacher picks new class
+      duration: sourceExam.duration ?? 60,
+      startTime: "",         // clear timing — must set new schedule
+      endTime: "",
+      maxAttempts: 1,
+      passingScore: 70,
+      description: sourceExam.description ?? "",
+    });
+    // Pre-fill questions from source exam
+    if (sourceExam.questions && sourceExam.questions.length > 0) {
+      const mapped: Question[] = sourceExam.questions.map((q, idx) => ({
+        id: `dup-${idx}`,
+        type: (q.type as any) ?? "multiple-choice",
+        question: q.question,
+        options: q.options
+          ? (() => { try { return JSON.parse(q.options!); } catch { return []; } })()
+          : [],
+        correctAnswer: q.correctAnswer ?? "",
+        points: q.points ?? 1,
+        explanation: q.explanation ?? "",
+      }));
+      setQuestions(mapped);
+    }
+    setPrefilled(true);
+  }, [sourceLoaded, sourceExam, prefilled]);
+
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [questionForm, setQuestionForm] = useState<Question>({
     id: "",
@@ -195,10 +280,23 @@ export function CreateExamPage() {
     title: examInfo.title.trim(),
     subject: effectiveSubject,
     classIds: examInfo.classIds,
-    duration: examInfo.duration,
+    duration: Number(examInfo.duration),
     startTime: examInfo.startTime || undefined,
     endTime: examInfo.endTime || undefined,
+    description: examInfo.description,
+    maxAttempts: examInfo.maxAttempts,
+    passingScore: examInfo.passingScore,
+    totalQuestions: questions.length,
+    questions: questions.map((q) => ({
+      type: q.type,
+      question: q.question,
+      options: q.options ? JSON.stringify(q.options) : undefined,
+      correctAnswer: q.correctAnswer,
+      points: q.points,
+      explanation: q.explanation,
+    })),
   });
+
 
   const handleSaveDraft = () => {
     if (!step1Valid) {
@@ -207,11 +305,18 @@ export function CreateExamPage() {
       return;
     }
 
-    createExam.mutate(buildPayload(), {
-      onSuccess: () => {
-        navigate("/teacher/exams");
-      },
-    });
+    if (editId) {
+      // ── EDIT mode: Update existing exam ─────────────────────────────────
+      updateExam.mutate(
+        { id: editId, data: buildPayload() },
+        { onSuccess: () => navigate("/teacher/exams") }
+      );
+    } else {
+      // ── CREATE mode: New exam ────────────────────────────────────────────
+      createExam.mutate(buildPayload(), {
+        onSuccess: () => navigate("/teacher/exams"),
+      });
+    }
   };
 
   const handlePublish = () => {
@@ -228,21 +333,41 @@ export function CreateExamPage() {
       return;
     }
 
-    createExam.mutate(buildPayload(), {
-      onSuccess: (exam) => {
-        // After creating draft, immediately publish
-        publishExamMutation.mutate(exam.id, {
+    if (editId) {
+      // ── EDIT mode: update first, then publish ─────────────────────────
+      updateExam.mutate(
+        { id: editId, data: buildPayload() },
+        {
           onSuccess: () => {
-            setPublishDialogOpen(false);
-            navigate("/teacher/exams");
+            publishExamMutation.mutate(editId, {
+              onSuccess: () => {
+                setPublishDialogOpen(false);
+                navigate("/teacher/exams");
+              },
+            });
           },
-        });
-      },
-    });
+        }
+      );
+    } else {
+      // ── CREATE mode: create draft then publish ────────────────────────
+      createExam.mutate(buildPayload(), {
+        onSuccess: (exam) => {
+          publishExamMutation.mutate(exam.id, {
+            onSuccess: () => {
+              setPublishDialogOpen(false);
+              navigate("/teacher/exams");
+            },
+          });
+        },
+      });
+    }
   };
 
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
-  const isMutating = createExam.isPending || publishExamMutation.isPending;
+  const isMutating =
+    createExam.isPending ||
+    updateExam.isPending ||
+    publishExamMutation.isPending;
 
   return (
     <div className="space-y-6 pb-6">
@@ -258,7 +383,7 @@ export function CreateExamPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {isEdit ? "Chỉnh sửa bài thi" : "Tạo bài thi mới"}
+              {editId ? "Chỉnh sửa bài thi" : duplicateFromId ? "Nhân bản bài thi" : "Tạo bài thi mới"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {STEPS[step - 1].label}
@@ -690,7 +815,7 @@ export function CreateExamPage() {
               <div className="grid sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Môn học</p>
-                  <p className="font-semibold">{examInfo.subject}</p>
+                  <p className="font-semibold">{effectiveSubject}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Thời gian</p>

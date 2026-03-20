@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
+import com.meilearning.backend.dto.request.UpdateExamRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
 import com.meilearning.backend.dto.response.ExamStatisticsResponse;
@@ -35,6 +36,7 @@ public class ExamServiceImpl implements ExamService {
 
     private final ExamRepository examRepository;
     private final ExamResultRepository resultRepository;
+    private final ExamQuestionRepository questionRepository;
     private final TeacherRepository teacherRepository;
     private final ClassRepository classRepository;
     private final StudentRepository studentRepository;
@@ -61,25 +63,84 @@ public class ExamServiceImpl implements ExamService {
 
         if (req.getClassIds() != null) {
             List<ClassEntity> classes = classRepository.findAllById(req.getClassIds());
-
             exam.setClasses(classes);
-
         }
 
         exam = examRepository.save(exam);
 
-        return mapper.toExamResponse(exam, 0, 0);
+        // Save questions cascade
+        if (req.getQuestions() != null && !req.getQuestions().isEmpty()) {
+            final Exam savedExam = exam;
+            final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
+            List<ExamQuestion> questions = req.getQuestions().stream().map(qr -> {
+                ExamQuestion q = new ExamQuestion();
+                q.setExam(savedExam);
+                q.setOrderIndex(idx.getAndIncrement());
+                q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
+                q.setQuestionText(qr.getQuestion());
+                q.setOptions(qr.getOptions());
+                q.setCorrectAnswer(qr.getCorrectAnswer());
+                q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
+                q.setExplanation(qr.getExplanation());
+                return q;
+            }).toList();
+            questionRepository.saveAll(questions);
+            exam.setTotalQuestions(questions.size());
+            exam = examRepository.save(exam);
+        }
 
+        return mapper.toExamResponse(exam, 0, 0);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ExamResponse getById(Long id) {
-
         Exam exam = findExam(id);
+        int count = (int) resultRepository.countByExamId(exam.getId());
+        double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
+        return mapper.toExamResponseWithQuestions(exam, count, avg);
+    }
 
-        return toResponseWithStats(exam);
+    @Override
+    public ExamResponse update(Long id, UpdateExamRequest req) {
+        Exam exam = findExam(id);
+        boolean isDraft = exam.getStatus() == ExamStatus.draft;
 
+        if (req.getTitle() != null) exam.setTitle(req.getTitle());
+        if (req.getDuration() != null) exam.setDuration(req.getDuration());
+        if (req.getStartTime() != null) exam.setStartTime(parseFlexibleInstant(req.getStartTime()));
+        if (req.getEndTime() != null) exam.setEndTime(parseFlexibleInstant(req.getEndTime()));
+
+        // Questions & classes chỉ được update khi còn là draft
+        if (isDraft) {
+            if (req.getClassIds() != null) {
+                exam.setClasses(classRepository.findAllById(req.getClassIds()));
+            }
+            if (req.getQuestions() != null) {
+                questionRepository.deleteByExamId(exam.getId());
+                final Exam savedExam = exam;
+                final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
+                List<ExamQuestion> questions = req.getQuestions().stream().map(qr -> {
+                    ExamQuestion q = new ExamQuestion();
+                    q.setExam(savedExam);
+                    q.setOrderIndex(idx.getAndIncrement());
+                    q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
+                    q.setQuestionText(qr.getQuestion());
+                    q.setOptions(qr.getOptions());
+                    q.setCorrectAnswer(qr.getCorrectAnswer());
+                    q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
+                    q.setExplanation(qr.getExplanation());
+                    return q;
+                }).toList();
+                questionRepository.saveAll(questions);
+                exam.setTotalQuestions(questions.size());
+            }
+        }
+
+        exam = examRepository.save(exam);
+        int count = (int) resultRepository.countByExamId(exam.getId());
+        double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
+        return mapper.toExamResponseWithQuestions(exam, count, avg);
     }
 
     @Override

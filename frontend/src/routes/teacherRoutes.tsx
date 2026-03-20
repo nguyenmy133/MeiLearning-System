@@ -42,6 +42,10 @@ const TeacherStudentExamResult = lazyNamed(
   () => import("@/features/teacher/exam/pages/TeacherStudentExamResult"),
   "TeacherStudentExamResult",
 );
+const ExamDetailPage = lazyNamed(
+  () => import("@/features/teacher/exam/pages/ExamDetailPage"),
+  "ExamDetailPage",
+);
 const TeacherGradesPage = lazyNamed(
   () => import("@/features/teacher/grade/pages/TeacherGradesPage"),
   "TeacherGradesPage",
@@ -82,6 +86,7 @@ export function teacherRoutes() {
       <Route path="exams" element={<TeacherExamManagement />} />
       <Route path="exams/create" element={<CreateExamPage />} />
       <Route path="exams/edit/:id" element={<CreateExamPage />} />
+      <Route path="exams/detail/:id" element={<ExamDetailPage />} />
       <Route path="exams/results/:examId" element={<TeacherExamResults />} />
       <Route
         path="exams/results/:examId/student/:studentId"

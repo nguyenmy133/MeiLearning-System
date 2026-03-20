@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   Select,
   SelectContent,
@@ -20,16 +22,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Plus, 
-  Clock, 
-  Calendar, 
-  MapPin,
+import {
+  Plus,
+  Clock,
+  Calendar,
   Send,
   CheckCircle,
   XCircle,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useClasses } from "@/features/admin/classes/hooks";
@@ -40,8 +41,7 @@ export function TeacherReschedulePage() {
   const [requestType, setRequestType] = useState<"reschedule" | "makeup">("reschedule");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [originalDate, setOriginalDate] = useState("");
-  const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("");
+  const [newDateTime, setNewDateTime] = useState<Date | undefined>(undefined);
   const [reason, setReason] = useState("");
 
   // Backend tự filter lớp theo teacher từ JWT
@@ -81,8 +81,8 @@ export function TeacherReschedulePage() {
       toast.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
-    
-    if (requestType === "reschedule" && (!newDate || !newTime)) {
+
+    if (requestType === "reschedule" && !newDateTime) {
       toast.error("Vui lòng chọn ngày và giờ mới!");
       return;
     }
@@ -92,9 +92,13 @@ export function TeacherReschedulePage() {
         classId: Number(selectedClassId),
         type: requestType,
         originalDate,
-        originalTime: "14:00 - 16:00", // Would be selected dynamically based on class schedule in a full app
-        requestedDate: requestType === "reschedule" ? newDate : undefined,
-        requestedTime: requestType === "reschedule" ? newTime : undefined,
+        originalTime: "",
+        requestedDate: requestType === "reschedule" && newDateTime
+          ? format(newDateTime, "yyyy-MM-dd")
+          : undefined,
+        requestedTime: requestType === "reschedule" && newDateTime
+          ? format(newDateTime, "HH:mm")
+          : undefined,
         reason,
       },
       {
@@ -102,8 +106,7 @@ export function TeacherReschedulePage() {
           setIsDialogOpen(false);
           setSelectedClassId("");
           setOriginalDate("");
-          setNewDate("");
-          setNewTime("");
+          setNewDateTime(undefined);
           setReason("");
         },
       }
@@ -172,32 +175,17 @@ export function TeacherReschedulePage() {
               </div>
 
               {requestType === "reschedule" && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Ngày mới</label>
-                    <Input
-                      type="date"
-                      value={newDate}
-                      onChange={(e) => setNewDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Giờ mới</label>
-                    <Select value={newTime} onValueChange={setNewTime}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn giờ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="08:00 - 10:00">08:00 - 10:00</SelectItem>
-                        <SelectItem value="10:00 - 12:00">10:00 - 12:00</SelectItem>
-                        <SelectItem value="14:00 - 16:00">14:00 - 16:00</SelectItem>
-                        <SelectItem value="16:00 - 18:00">16:00 - 18:00</SelectItem>
-                        <SelectItem value="18:00 - 20:00">18:00 - 20:00</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Ngày &amp; giờ mới
+                  </label>
+                  <DateTimePicker
+                    value={newDateTime}
+                    onChange={setNewDateTime}
+                    placeholder="Chọn ngày & giờ mới"
+                    fromDate={new Date()}
+                  />
+                </div>
               )}
 
               <div className="space-y-2">

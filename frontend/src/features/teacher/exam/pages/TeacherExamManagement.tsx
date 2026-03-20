@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDateTime } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -234,7 +235,7 @@ export function TeacherExamManagement() {
                         <p className="font-semibold text-foreground">{exam.duration} phút</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Học viên</p>
+                        <p className="text-muted-foreground">Đã nộp bài</p>
                         <p className="font-semibold text-foreground">
                           {exam.completedStudents}/{exam.totalStudents}
                         </p>
@@ -249,7 +250,7 @@ export function TeacherExamManagement() {
 
                     {exam.startTime && (
                       <p className="text-xs text-muted-foreground">
-                        Thời gian: {exam.startTime} - {exam.endTime}
+                        🕐 {formatDateTime(exam.startTime)}{exam.endTime ? ` – ${formatDateTime(exam.endTime)}` : ""}
                       </p>
                     )}
                   </div>
@@ -275,11 +276,9 @@ export function TeacherExamManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {exam.status === "draft" && (
-                          <DropdownMenuItem onClick={() => navigate(`/teacher/exams/edit/${exam.id}`)}>
-                            <Edit className="w-4 h-4 mr-2" />Chỉnh sửa
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem onClick={() => navigate(`/teacher/exams/detail/${exam.id}`)}>
+                          <Edit className="w-4 h-4 mr-2" />{exam.status === "draft" ? "Chỉnh sửa" : "Xem chi tiết"}
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/teacher/exams/create?duplicate=${exam.id}`)}>
                           <Copy className="w-4 h-4 mr-2" />Nhân bản
                         </DropdownMenuItem>
@@ -288,14 +287,12 @@ export function TeacherExamManagement() {
                             <Archive className="w-4 h-4 mr-2" />Lưu trữ
                           </DropdownMenuItem>
                         )}
-                        {exam.status === "draft" && (
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(exam.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />Xóa
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(exam.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />Xóa
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

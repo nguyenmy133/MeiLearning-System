@@ -7,6 +7,7 @@ export {
     useDeleteExam,
     useArchiveExam,
     usePublishExam,
+    useUpdateExam,
     useExamStatistics,
     useStudentResults,
     useQuestionAnalysis,

@@ -1,5 +1,21 @@
 export type ExamStatus = "draft" | "published" | "ongoing" | "ended" | "archived";
-export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
+export type QuestionType = "multiple-choice" | "essay";
+
+export interface QuestionOption {
+  id: string;
+  text: string;
+}
+
+export interface QuestionDTO {
+  id?: number;
+  orderIndex?: number;
+  type: QuestionType;
+  question: string;
+  options?: string; // JSON string from backend; or parsed to QuestionOption[] in detail page
+  correctAnswer?: string;
+  points: number;
+  explanation?: string;
+}
 
 export interface TeacherExam {
     id: number;
@@ -19,6 +35,8 @@ export interface TeacherExam {
     passRate: number;           // 0-100
     createdAt: string;
     updatedAt: string;
+    description?: string;
+    questions?: QuestionDTO[];
 }
 
 export interface CreateExamDTO {
@@ -28,6 +46,18 @@ export interface CreateExamDTO {
     duration: number;
     startTime?: string;
     endTime?: string;
+    description?: string;
+    maxAttempts?: number;
+    passingScore?: number;
+    totalQuestions?: number;
+    questions?: {
+        type: string;
+        question: string;
+        options: string; // JSON string
+        correctAnswer?: string;
+        points: number;
+        explanation?: string;
+    }[];
 }
 
 export interface UpdateExamDTO {

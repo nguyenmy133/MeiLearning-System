@@ -20,5 +20,11 @@ public class CreateExamRequest {
     private String startTime;          // ISO-8601
     private String endTime;
     private List<Long> classIds;       // classes tham gia
+    private String description;
+    private Integer maxAttempts;
+    private Integer passingScore;
 
+    /** Danh sách câu hỏi gửi kèm khi tạo bài thi */
+    private List<QuestionRequest> questions;
 }
+

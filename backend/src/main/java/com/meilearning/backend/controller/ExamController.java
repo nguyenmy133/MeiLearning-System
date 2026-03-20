@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
+import com.meilearning.backend.dto.request.UpdateExamRequest;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
 import com.meilearning.backend.dto.response.ExamStatisticsResponse;
@@ -78,6 +79,15 @@ public class ExamController {
 
         return ResponseEntity.ok(examService.publish(id));
 
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Cập nhật bài kiểm tra (Teacher)")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    public ResponseEntity<ExamResponse> update(
+            @PathVariable Long id,
+            @RequestBody UpdateExamRequest request) {
+        return ResponseEntity.ok(examService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

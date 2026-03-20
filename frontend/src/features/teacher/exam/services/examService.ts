@@ -18,18 +18,20 @@ function mapExam(raw: any): TeacherExam {
     title: raw.title ?? "",
     subject: raw.subject ?? "",
     classIds: raw.classIds ?? [],
-    classNames: raw.classNames ?? [],       // backend chưa trả — hiển thị empty
+    classNames: raw.classNames ?? [],
     duration: raw.duration ?? 0,
     totalQuestions: raw.totalQuestions ?? 0,
     startTime: raw.startTime ?? "",
     endTime: raw.endTime ?? "",
     status: raw.status ?? "draft",
-    totalStudents: raw.totalStudents ?? raw.submittedCount ?? 0,
+    totalStudents: raw.totalStudents ?? 0,
     completedStudents: raw.submittedCount ?? raw.completedStudents ?? 0,
     averageScore: raw.avgScore ?? raw.averageScore ?? 0,
     passRate: raw.passRate ?? 0,
     createdAt: raw.createdAt ?? "",
     updatedAt: raw.updatedAt ?? raw.createdAt ?? "",
+    description: raw.description ?? "",
+    questions: raw.questions ?? [],
   };
 }
 
@@ -91,6 +93,11 @@ export async function archiveExam(id: number): Promise<TeacherExam> {
 
 export async function publishExam(id: number): Promise<TeacherExam> {
   const { data } = await apiClient.patch(`/exams/${id}/publish`);
+  return mapExam(data);
+}
+
+export async function updateExam(id: number, dto: Partial<import('../types').CreateExamDTO>): Promise<TeacherExam> {
+  const { data } = await apiClient.put(`/exams/${id}`, dto);
   return mapExam(data);
 }
 

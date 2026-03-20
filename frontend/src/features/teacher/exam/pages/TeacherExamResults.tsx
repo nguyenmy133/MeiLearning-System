@@ -35,8 +35,8 @@ import { useExamDetail, useExamStatistics, useStudentResults, useQuestionAnalysi
 
 export function TeacherExamResults() {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const examId = Number(id);
+  const { examId: idParam } = useParams();
+  const examId = Number(idParam);
 
   // Thay useExamInfo → useExamDetail (gọi GET /exams/{id})
   const { data: examInfo, isLoading: isLoadingInfo } = useExamDetail(examId);

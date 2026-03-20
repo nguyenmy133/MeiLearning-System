@@ -9,6 +9,7 @@ import {
     deleteExam,
     archiveExam,
     publishExam,
+    updateExam,
     getExamStatistics,
     getStudentResults,
     getQuestionAnalysis,
@@ -91,6 +92,19 @@ export function usePublishExam() {
         onSuccess: (exam) => {
             qc.invalidateQueries({ queryKey: examKeys.all });
             toast.success(`Đã publish bài thi "${exam.title}"`);
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+}
+
+export function useUpdateExam() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => updateExam(id, data),
+        onSuccess: (exam) => {
+            qc.invalidateQueries({ queryKey: examKeys.all });
+            qc.invalidateQueries({ queryKey: examKeys.detail(exam.id) });
+            toast.success("Cập nhật bài thi thành công");
         },
         onError: (err: Error) => toast.error(err.message),
     });

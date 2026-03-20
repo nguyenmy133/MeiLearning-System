@@ -16,7 +16,14 @@ public class ExamResponse {
     private String endTime;
     private String status;
     private List<Long> classIds;
+    private List<String> classNames;
     private int submittedCount;
     private double avgScore;
     private Instant createdAt;
+    private Integer totalStudents;
+    private String description;
+    /** Danh sách câu hỏi — chỉ populate khi gọi GET /exams/{id} */
+    private List<QuestionResponse> questions;
 }
+
+

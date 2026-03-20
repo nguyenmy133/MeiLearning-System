@@ -7,6 +7,10 @@ import com.meilearning.backend.entity.*;
 public class AcademicMapper {
 
     public ExamResponse toExamResponse(Exam exam, int submittedCount, double avgScore) {
+        // Count total enrolled students across all classes of this exam
+        int totalStudents = exam.getClasses().stream()
+                .mapToInt(c -> c.getEnrollments() != null ? c.getEnrollments().size() : 0)
+                .sum();
         return ExamResponse.builder()
                 .id(exam.getId())
                 .title(exam.getTitle())
@@ -19,11 +23,34 @@ public class AcademicMapper {
                 .endTime(exam.getEndTime() != null ? exam.getEndTime().toString() : null)
                 .status(exam.getStatus().name())
                 .classIds(exam.getClasses().stream().map(ClassEntity::getId).toList())
+                .classNames(exam.getClasses().stream().map(ClassEntity::getName).toList())
                 .submittedCount(submittedCount)
                 .avgScore(avgScore)
                 .createdAt(exam.getCreatedAt())
+                .totalStudents(totalStudents)
                 .build();
     }
+
+    /** Dùng cho GET /exams/{id} — trả về kèm danh sách câu hỏi */
+    public ExamResponse toExamResponseWithQuestions(Exam exam, int submittedCount, double avgScore) {
+        ExamResponse resp = toExamResponse(exam, submittedCount, avgScore);
+        resp.setQuestions(exam.getQuestions().stream().map(this::toQuestionResponse).toList());
+        return resp;
+    }
+
+    public QuestionResponse toQuestionResponse(ExamQuestion q) {
+        return QuestionResponse.builder()
+                .id(q.getId())
+                .orderIndex(q.getOrderIndex())
+                .type(q.getType())
+                .question(q.getQuestionText())
+                .options(q.getOptions())
+                .correctAnswer(q.getCorrectAnswer())
+                .points(q.getPoints())
+                .explanation(q.getExplanation())
+                .build();
+    }
+
 
     public ExamResultResponse toResultResponse(ExamResult result) {
         return ExamResultResponse.builder()
