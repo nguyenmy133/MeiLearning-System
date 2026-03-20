@@ -25,6 +25,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 @Service
 @RequiredArgsConstructor
@@ -43,6 +45,7 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public ExamResponse create(CreateExamRequest req) {
 
+        // Controller đã resolve teacher từ JWT → req.getTeacherId() = teachers.id (entity PK)
         Teacher teacher = teacherRepository.findById(req.getTeacherId())
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + req.getTeacherId()));
 
@@ -52,8 +55,8 @@ public class ExamServiceImpl implements ExamService {
                 .subject(req.getSubject())
                 .duration(req.getDuration())
                 .totalQuestions(req.getTotalQuestions() != null ? req.getTotalQuestions() : 0)
-                .startTime(req.getStartTime() != null ? Instant.parse(req.getStartTime()) : null)
-                .endTime(req.getEndTime() != null ? Instant.parse(req.getEndTime()) : null)
+                .startTime(parseFlexibleInstant(req.getStartTime()))
+                .endTime(parseFlexibleInstant(req.getEndTime()))
                 .build();
 
         if (req.getClassIds() != null) {
@@ -86,6 +89,7 @@ public class ExamServiceImpl implements ExamService {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
         Specification<Exam> spec = SpecHelper.empty();
         if (teacherId != null) {
+            // Controller đã resolve từ JWT → teacherId = teachers.id (entity PK)
             spec = spec.and((root, q, cb) -> cb.equal(root.get("teacher").get("id"), teacherId));
         }
         if (status != null && !status.isBlank()) {
@@ -277,6 +281,23 @@ public class ExamServiceImpl implements ExamService {
         exam.setStatus(ExamStatus.archived);
         exam = examRepository.save(exam);
         return toResponseWithStats(exam);
+    }
+
+
+    /**
+     * Parse datetime string linh hoạt:
+     *  - "2026-03-20T10:00"       → từ datetime-local input (browser)
+     *  - "2026-03-20T10:00:00"    → ISO-8601 không có timezone
+     *  - "2026-03-20T10:00:00Z"   → ISO-8601 đầy đủ
+     */
+    private Instant parseFlexibleInstant(String text) {
+        if (text == null || text.isBlank()) return null;
+        try {
+            return Instant.parse(text);
+        } catch (Exception e) {
+            // datetime-local format: "2026-03-20T10:00" hoặc "2026-03-20T10:00:00"
+            return LocalDateTime.parse(text).toInstant(ZoneOffset.UTC);
+        }
     }
 
 }

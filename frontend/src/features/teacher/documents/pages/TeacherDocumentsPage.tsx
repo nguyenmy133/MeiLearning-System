@@ -58,10 +58,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDocuments, useUploadDocument, useDeleteDocument } from "../hooks/useDocuments";
 import { useClasses } from "@/features/admin/classes/hooks";
 import { formatFileSize } from "../services/documentService";
+import { formatDate } from "@/lib/dateUtils";
 import type { TeacherDocument, UploadDocumentDTO } from "../types";
-import { authService } from "@/features/shared/auth/authService";
-
-const CURRENT_USER_ID = authService.getCurrentTeacherIdSafe();
 
 // ── File icon helpers ──────────────────────────────────────────────────────────
 
@@ -87,15 +85,6 @@ function getFileTypeLabel(type: string): string {
     ppt: "PowerPoint",
   };
   return map[type] ?? "Tệp";
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("vi-VN");
-  } catch {
-    return iso;
-  }
 }
 
 // ── Upload Form state ─────────────────────────────────────────────────────────
@@ -129,8 +118,8 @@ export function TeacherDocumentsPage() {
 
   const classFilter = selectedClassId !== "all" ? Number(selectedClassId) : undefined;
   const { data: documents = [], isLoading } = useDocuments({ classId: classFilter });
-  // Chỉ lấy lớp của teacher này (phục vụ dropdown filter và form upload)
-  const { data: classes = [] } = useClasses({ teacherId: CURRENT_USER_ID, limit: 100 });
+  // Backend tự filter lớp theo teacher từ JWT
+  const { data: classes = [] } = useClasses({ limit: 100 });
   const uploadMutation = useUploadDocument();
   const deleteMutation = useDeleteDocument();
 
@@ -310,7 +299,7 @@ export function TeacherDocumentsPage() {
                 <DocumentCard
                   key={doc.id}
                   doc={doc}
-                  canDelete={!doc.uploadedById || doc.uploadedById === CURRENT_USER_ID}
+                  canDelete={true}
                   onPreview={() => setPreviewDoc(doc)}
                   onDelete={() => setDeleteTarget(doc)}
                 />
@@ -336,7 +325,7 @@ export function TeacherDocumentsPage() {
                   <DocumentRow
                     key={doc.id}
                     doc={doc}
-                    canDelete={!doc.uploadedById || doc.uploadedById === CURRENT_USER_ID}
+                    canDelete={true}
                     onPreview={() => setPreviewDoc(doc)}
                     onDelete={() => setDeleteTarget(doc)}
                   />

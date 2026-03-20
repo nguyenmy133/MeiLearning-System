@@ -13,7 +13,11 @@ import com.meilearning.backend.dto.request.PayTuitionRequest;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
+import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.service.TuitionService;
+import com.meilearning.backend.util.SecurityUtils;
+import java.security.Principal;
 import java.util.List;
 @RestController
 @RequestMapping("/api/v1/tuition")
@@ -23,6 +27,7 @@ import java.util.List;
 public class TuitionController {
 
     private final TuitionService tuitionService;
+    private final StudentRepository studentRepository;
 
     @GetMapping
     @Operation(summary = "Lấy danh sách hóa đơn (Admin)")
@@ -42,9 +47,20 @@ public class TuitionController {
         return ResponseEntity.ok(tuitionService.getById(id));
     }
 
+    /**
+     * Hóa đơn của student đang đăng nhập — resolve từ JWT.
+     */
+    @GetMapping("/me")
+    @Operation(summary = "Hóa đơn của học viên đang đăng nhập")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<List<TuitionInvoiceResponse>> getMyInvoices(Principal principal) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(tuitionService.getByStudent(student.getId()));
+    }
+
     @GetMapping("/student/{studentId}")
-    @Operation(summary = "Hóa đơn của học viên")
-    @PreAuthorize("hasAnyRole('admin', 'student')")
+    @Operation(summary = "Hóa đơn của học viên (admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<List<TuitionInvoiceResponse>> getByStudent(
             @PathVariable Long studentId) {
         return ResponseEntity.ok(tuitionService.getByStudent(studentId));

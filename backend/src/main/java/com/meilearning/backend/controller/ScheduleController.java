@@ -10,7 +10,10 @@ import com.meilearning.backend.dto.request.CreateSessionRequest;
 import com.meilearning.backend.dto.request.UpdateSessionRequest;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.ScheduleResponse;
+import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.service.ScheduleService;
+import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
 @RestController
@@ -21,6 +24,7 @@ import java.util.List;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final StudentRepository studentRepository;
 
     @GetMapping("/schedule")
     @Operation(summary = "Lấy lịch tổng (admin)")
@@ -51,8 +55,23 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getTeacherSchedule(teacherId, date, view));
     }
 
+    /**
+     * Lịch học của student đang đăng nhập — resolve từ JWT.
+     */
+    @GetMapping("/schedule/student/me")
+    @Operation(summary = "Lịch học của học viên đang đăng nhập")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<ScheduleResponse> getMyStudentSchedule(
+            Principal principal,
+            @RequestParam(required = false) String date,
+            @RequestParam(defaultValue = "week") String view) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(scheduleService.getStudentSchedule(student.getId(), date, view));
+    }
+
     @GetMapping("/schedule/student/{studentId}")
-    @Operation(summary = "Lấy lịch học viên")
+    @Operation(summary = "Lịch học viên (admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<ScheduleResponse> getStudentSchedule(
             @PathVariable Long studentId,
             @RequestParam(required = false) String date,

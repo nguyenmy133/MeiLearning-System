@@ -15,6 +15,11 @@ public interface ExamRepository extends JpaRepository<Exam, Long>, JpaSpecificat
 
     List<Exam> findByTeacherIdAndStatus(Long teacherId, ExamStatus status);
 
+    // Lookup by user.id (frontend gửi userId từ login, không phải teacher PK)
+    List<Exam> findByTeacherUserId(Long userId);
+
+    List<Exam> findByTeacherUserIdAndStatus(Long userId, ExamStatus status);
+
     long countByStatus(ExamStatus status);
 
     long countByTeacherId(Long teacherId);

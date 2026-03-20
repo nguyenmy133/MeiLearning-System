@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDateTime } from "@/lib/dateUtils";
 import {
   Clock,
   Calendar,
@@ -357,7 +358,7 @@ export function LeavePage() {
                             <User className="w-3 h-3" />
                             {request.status === "approved" ? "Duyệt bởi" : "Từ chối bởi"}:{" "}
                             <span className="font-medium text-foreground">{request.reviewedByName}</span>
-                            {request.reviewedAt && <span> — {new Date(request.reviewedAt).toLocaleDateString("vi-VN")}</span>}
+                            {request.reviewedAt && <span> — {formatDateTime(request.reviewedAt)}</span>}
                           </p>
                         )}
 
@@ -372,7 +373,7 @@ export function LeavePage() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(request.createdAt).toLocaleDateString("vi-VN")}
+                        {formatDateTime(request.createdAt)}
                       </span>
                       {request.status === "pending" && (
                         <Button

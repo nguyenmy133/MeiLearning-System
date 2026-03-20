@@ -10,7 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.UpdateGradeRequest;
 import com.meilearning.backend.dto.response.GradeResponse;
 import com.meilearning.backend.dto.response.GradeStatsResponse;
+import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.service.GradeService;
+import com.meilearning.backend.util.SecurityUtils;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +26,7 @@ import java.util.Map;
 public class GradeController {
 
     private final GradeService gradeService;
+    private final StudentRepository studentRepository;
 
     @GetMapping
     @Operation(summary = "Điểm theo lớp")
@@ -35,8 +40,20 @@ public class GradeController {
         return ResponseEntity.ok(gradeService.getStatsByClass(classId));
     }
 
+    /**
+     * Điểm của student đang đăng nhập — resolve từ JWT.
+     */
+    @GetMapping("/me")
+    @Operation(summary = "Điểm của học viên đang đăng nhập")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<List<GradeResponse>> getMyGrades(Principal principal) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(gradeService.getByStudent(student.getId()));
+    }
+
     @GetMapping("/student/{studentId}")
-    @Operation(summary = "Điểm của học viên")
+    @Operation(summary = "Điểm của học viên (admin/teacher)")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
     public ResponseEntity<List<GradeResponse>> getByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(gradeService.getByStudent(studentId));
     }

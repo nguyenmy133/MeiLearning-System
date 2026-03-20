@@ -49,10 +49,7 @@ import {
 import { useClassGrades, useGradeStats, useUpdateComment } from "../hooks";
 import type { StudentGrade } from "../types";
 import { useClasses } from "@/features/admin/classes/hooks";
-import { authService } from "@/features/shared/auth/authService";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const TEACHER_ID = authService.getCurrentTeacherId();
 
 // ── Data ─────────────────────────────────────────────────────────────────
 // Exams that have ended → grades are auto-generated from student submissions
@@ -131,8 +128,8 @@ export function TeacherGradesPage() {
   const [newComment, setNewComment] = useState("");
 
   // ── Service layer hooks ──────────────────────────────────────────────────
-  // useClasses service đã handle PageResponse → trả Class[] trực tiếp
-  const { data: myClasses = [] } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
+  // Backend tự filter lớp theo teacher từ JWT
+  const { data: myClasses = [] } = useClasses({ limit: 50 });
 
   // Auto-select first class khi danh sách load xong
   const effectiveClassId = selectedClassId || (myClasses.length > 0 ? myClasses[0].id : 0);

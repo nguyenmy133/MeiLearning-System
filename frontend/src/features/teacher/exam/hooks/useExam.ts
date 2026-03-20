@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { authService } from "@/features/shared/auth/authService";
 import type { CreateExamDTO, ExamQueryParams } from "../types";
 import {
     getTeacherExams,
@@ -16,8 +15,6 @@ import {
     getStudentExamResult,
 } from "../services";
 
-const teacherId = () => authService.getCurrentTeacherIdSafe();
-
 export const examKeys = {
     all: ["teacher-exams"] as const,
     lists: (params?: ExamQueryParams) => [...examKeys.all, "list", params] as const,
@@ -28,11 +25,9 @@ export const examKeys = {
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 export function useTeacherExams(params?: ExamQueryParams) {
-    const tid = teacherId();
     return useQuery({
         queryKey: examKeys.lists(params),
-        queryFn: () => getTeacherExams(tid, params),
-        enabled: tid > 0,
+        queryFn: () => getTeacherExams(params),
     });
 }
 
@@ -45,12 +40,9 @@ export function useExamDetail(id: number) {
 }
 
 export function useExamStats() {
-    const tid = teacherId();
     return useQuery({
         queryKey: examKeys.stats(),
-        // getExamStats đã được sửa: tính từ list, không gọi endpoint riêng
-        queryFn: () => getExamStats(tid),
-        enabled: tid > 0,
+        queryFn: () => getExamStats(),
     });
 }
 
@@ -59,7 +51,7 @@ export function useExamStats() {
 export function useCreateExam() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (dto: CreateExamDTO) => createExam(teacherId(), dto),
+        mutationFn: (dto: CreateExamDTO) => createExam(dto),
         onSuccess: (exam) => {
             qc.invalidateQueries({ queryKey: examKeys.all });
             toast.success(`Đã tạo bài thi "${exam.title}"`);

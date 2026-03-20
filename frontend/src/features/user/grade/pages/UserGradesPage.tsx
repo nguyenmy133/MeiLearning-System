@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyGrades } from "@/features/user/grade/hooks";
+import { formatDate } from "@/lib/dateUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -280,7 +281,7 @@ export function UserGradesPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{es.examTitle}</p>
                           <p className="text-[11px] text-muted-foreground">
-                            {new Date(es.date).toLocaleDateString("vi-VN")}
+                            {formatDate(es.date)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
+import {
   ArrowLeft,
   ArrowRight,
   Save,
@@ -33,8 +35,16 @@ import {
   Plus,
   Trash2,
   GripVertical,
-  Eye
+  Eye,
+  Check,
+  FileText,
+  HelpCircle,
+  ClipboardCheck,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useCreateExam, usePublishExam } from "../hooks";
+import { authService } from "@/features/shared/auth/authService";
+import { classService } from "@/features/teacher/classes/services/classService";
 
 interface Question {
   id: string;
@@ -46,19 +56,37 @@ interface Question {
   explanation?: string;
 }
 
+// ── Step definitions ──────────────────────────────────────────────────────────
+const STEPS = [
+  { number: 1, label: "Thông tin cơ bản", icon: FileText },
+  { number: 2, label: "Thêm câu hỏi", icon: HelpCircle },
+  { number: 3, label: "Xem trước & Xuất bản", icon: ClipboardCheck },
+] as const;
+
 export function CreateExamPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isEdit = searchParams.get("id") !== null;
-  
+
   const [step, setStep] = useState(1);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+
+  // ── API hooks ─────────────────────────────────────────────────────────────
+  const createExam = useCreateExam();
+  const publishExamMutation = usePublishExam();
+
+  // ── Load teacher's classes ────────────────────────────────────────────────
+  // Backend tự filter theo teacher từ JWT
+  const { data: teacherClasses = [] } = useQuery({
+    queryKey: ["teacher", "classes"],
+    queryFn: () => classService.getTeacherClasses(),
+  });
 
   // Step 1: Basic Info
   const [examInfo, setExamInfo] = useState({
     title: "",
     subject: "",
-    classes: [] as string[],
+    classIds: [] as number[],
     duration: 60,
     startTime: "",
     endTime: "",
@@ -85,21 +113,57 @@ export function CreateExamPage() {
     explanation: "",
   });
 
+  // Normalise: backend may return paginated or flat array
+  const classList: { id: number; name: string; subject: string }[] = useMemo(() => {
+    const raw = Array.isArray(teacherClasses)
+      ? teacherClasses
+      : (teacherClasses as any)?.data ?? (teacherClasses as any)?.content ?? [];
+    return raw.map((c: any) => ({
+      id: c.id ?? c.classId,
+      name: c.name ?? c.className ?? `Lớp ${c.id}`,
+      subject: c.subject ?? "",
+    }));
+  }, [teacherClasses]);
+
+  // Auto-detect subject from selected classes
+  const detectedSubject = useMemo(() => {
+    if (examInfo.classIds.length === 0) return "";
+    const subjects = new Set(
+      examInfo.classIds
+        .map((id) => classList.find((c) => c.id === id)?.subject)
+        .filter(Boolean)
+    );
+    return subjects.size === 1 ? [...subjects][0]! : "";
+  }, [examInfo.classIds, classList]);
+
+  // ── Validation ────────────────────────────────────────────────────────────
+  const effectiveSubject = examInfo.subject || detectedSubject;
+  const step1Valid = !!(examInfo.title.trim() && effectiveSubject && examInfo.duration > 0);
+
+  const toggleClassId = (classId: number) => {
+    setExamInfo((prev) => ({
+      ...prev,
+      classIds: prev.classIds.includes(classId)
+        ? prev.classIds.filter((id) => id !== classId)
+        : [...prev.classIds, classId],
+    }));
+  };
+
   const handleAddQuestion = () => {
     if (!questionForm.question) return;
-    
+
     const newQuestion = {
       ...questionForm,
       id: Date.now().toString(),
     };
-    
+
     if (editingQuestion) {
-      setQuestions(questions.map(q => q.id === editingQuestion.id ? newQuestion : q));
+      setQuestions(questions.map((q) => (q.id === editingQuestion.id ? newQuestion : q)));
       setEditingQuestion(null);
     } else {
       setQuestions([...questions, newQuestion]);
     }
-    
+
     // Reset form
     setQuestionForm({
       id: "",
@@ -123,21 +187,62 @@ export function CreateExamPage() {
   };
 
   const handleDeleteQuestion = (id: string) => {
-    setQuestions(questions.filter(q => q.id !== id));
+    setQuestions(questions.filter((q) => q.id !== id));
   };
 
+  // ── API Handlers ──────────────────────────────────────────────────────────
+  const buildPayload = () => ({
+    title: examInfo.title.trim(),
+    subject: effectiveSubject,
+    classIds: examInfo.classIds,
+    duration: examInfo.duration,
+    startTime: examInfo.startTime || undefined,
+    endTime: examInfo.endTime || undefined,
+  });
+
   const handleSaveDraft = () => {
-    console.log("Save draft:", { examInfo, questions });
-    navigate("/teacher/exams");
+    if (!step1Valid) {
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc (tên, môn học, thời gian).");
+      setStep(1);
+      return;
+    }
+
+    createExam.mutate(buildPayload(), {
+      onSuccess: () => {
+        navigate("/teacher/exams");
+      },
+    });
   };
 
   const handlePublish = () => {
-    console.log("Publish exam:", { examInfo, questions });
-    setPublishDialogOpen(false);
-    navigate("/teacher/exams");
+    if (!step1Valid) {
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc.");
+      setPublishDialogOpen(false);
+      setStep(1);
+      return;
+    }
+    if (questions.length === 0) {
+      toast.error("Vui lòng thêm ít nhất 1 câu hỏi trước khi xuất bản.");
+      setPublishDialogOpen(false);
+      setStep(2);
+      return;
+    }
+
+    createExam.mutate(buildPayload(), {
+      onSuccess: (exam) => {
+        // After creating draft, immediately publish
+        publishExamMutation.mutate(exam.id, {
+          onSuccess: () => {
+            setPublishDialogOpen(false);
+            navigate("/teacher/exams");
+          },
+        });
+      },
+    });
   };
 
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+  const isMutating = createExam.isPending || publishExamMutation.isPending;
 
   return (
     <div className="space-y-6 pb-6">
@@ -156,39 +261,90 @@ export function CreateExamPage() {
               {isEdit ? "Chỉnh sửa bài thi" : "Tạo bài thi mới"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Bước {step}/3: {step === 1 ? "Thông tin cơ bản" : step === 2 ? "Thêm câu hỏi" : "Xem trước & Xuất bản"}
+              {STEPS[step - 1].label}
             </p>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSaveDraft} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            className="gap-2"
+            disabled={isMutating}
+          >
             <Save className="w-4 h-4" />
             Lưu nháp
           </Button>
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="flex items-center justify-center gap-2">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                s === step
-                  ? "bg-primary text-primary-foreground"
-                  : s < step
-                  ? "bg-success text-success-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {s}
-            </div>
-            {s < 3 && (
-              <div className={`w-16 h-1 ${s < step ? "bg-success" : "bg-muted"}`} />
-            )}
-          </div>
-        ))}
+      {/* ── Professional Step Indicator ─────────────────────────────────────── */}
+      <div className="w-full max-w-2xl mx-auto">
+        <div className="flex items-center">
+          {STEPS.map((s, idx) => {
+            const StepIcon = s.icon;
+            const isCompleted = step > s.number;
+            const isCurrent = step === s.number;
+            const isLast = idx === STEPS.length - 1;
+
+            return (
+              <div key={s.number} className={`flex items-center ${isLast ? "" : "flex-1"}`}>
+                {/* Step circle + label */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Allow going back but not forward past completed steps
+                      if (s.number <= step) setStep(s.number);
+                    }}
+                    className={`
+                      w-11 h-11 rounded-full flex items-center justify-center
+                      font-semibold text-sm transition-all duration-300 cursor-pointer
+                      ring-2 ring-offset-2 ring-offset-background
+                      ${
+                        isCompleted
+                          ? "bg-emerald-500 text-white ring-emerald-500 shadow-lg shadow-emerald-500/25"
+                          : isCurrent
+                          ? "bg-primary text-primary-foreground ring-primary shadow-lg shadow-primary/25"
+                          : "bg-muted text-muted-foreground ring-muted"
+                      }
+                    `}
+                  >
+                    {isCompleted ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <StepIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                  <span
+                    className={`text-xs font-medium text-center whitespace-nowrap transition-colors duration-300 ${
+                      isCurrent
+                        ? "text-primary"
+                        : isCompleted
+                        ? "text-emerald-600"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+
+                {/* Connector line */}
+                {!isLast && (
+                  <div className="flex-1 mx-3 mt-[-1.5rem]">
+                    <div className="h-1 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-in-out"
+                        style={{ width: isCompleted ? "100%" : "0%" }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Step 1: Basic Info */}
@@ -210,19 +366,74 @@ export function CreateExamPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subject">Môn học *</Label>
-                <Select value={examInfo.subject} onValueChange={(v) => setExamInfo({ ...examInfo, subject: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn môn học" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Toán">Toán</SelectItem>
-                    <SelectItem value="Vật Lý">Vật Lý</SelectItem>
-                    <SelectItem value="Hóa Học">Hóa Học</SelectItem>
-                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Môn học</Label>
+                {effectiveSubject ? (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/50">
+                    <Badge variant="secondary">{effectiveSubject}</Badge>
+                    <span className="text-xs text-muted-foreground">Tự động từ lớp đã chọn</span>
+                  </div>
+                ) : examInfo.classIds.length > 0 ? (
+                  <p className="text-sm text-amber-600">Các lớp đã chọn thuộc nhiều môn khác nhau. Vui lòng chọn môn:</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Chọn lớp tham gia để tự động xác định môn học</p>
+                )}
+                {!effectiveSubject && examInfo.classIds.length > 0 && (
+                  <Select value={examInfo.subject} onValueChange={(v) => setExamInfo({ ...examInfo, subject: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn môn học" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...new Set(classList.map((c) => c.subject).filter(Boolean))].map((subj) => (
+                        <SelectItem key={subj} value={subj}>{subj}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
+            </div>
+
+            {/* ── Class Picker (multi-select via checkboxes) ─────────────── */}
+            <div className="space-y-2">
+              <Label>Lớp tham gia</Label>
+              {classList.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">
+                  Không tìm thấy lớp nào. Vui lòng tạo lớp trước.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {classList.map((cls) => {
+                    const checked = examInfo.classIds.includes(cls.id);
+                    return (
+                      <label
+                        key={cls.id}
+                        className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                          checked
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/50 hover:bg-accent/50"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleClassId(cls.id)}
+                        />
+                        <span className="text-sm font-medium truncate">{cls.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {examInfo.classIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {examInfo.classIds.map((id) => {
+                    const cls = classList.find((c) => c.id === id);
+                    return (
+                      <Badge key={id} variant="secondary" className="gap-1">
+                        {cls?.name ?? `Lớp ${id}`}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4">
@@ -232,7 +443,7 @@ export function CreateExamPage() {
                   id="duration"
                   type="number"
                   value={examInfo.duration}
-                  onChange={(e) => setExamInfo({ ...examInfo, duration: parseInt(e.target.value) })}
+                  onChange={(e) => setExamInfo({ ...examInfo, duration: parseInt(e.target.value) || 0 })}
                 />
               </div>
 
@@ -242,7 +453,7 @@ export function CreateExamPage() {
                   id="maxAttempts"
                   type="number"
                   value={examInfo.maxAttempts}
-                  onChange={(e) => setExamInfo({ ...examInfo, maxAttempts: parseInt(e.target.value) })}
+                  onChange={(e) => setExamInfo({ ...examInfo, maxAttempts: parseInt(e.target.value) || 1 })}
                 />
               </div>
 
@@ -252,7 +463,7 @@ export function CreateExamPage() {
                   id="passingScore"
                   type="number"
                   value={examInfo.passingScore}
-                  onChange={(e) => setExamInfo({ ...examInfo, passingScore: parseInt(e.target.value) })}
+                  onChange={(e) => setExamInfo({ ...examInfo, passingScore: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -369,7 +580,7 @@ export function CreateExamPage() {
                     id="points"
                     type="number"
                     value={questionForm.points}
-                    onChange={(e) => setQuestionForm({ ...questionForm, points: parseInt(e.target.value) })}
+                    onChange={(e) => setQuestionForm({ ...questionForm, points: parseInt(e.target.value) || 0 })}
                   />
                 </div>
               </div>
@@ -491,6 +702,18 @@ export function CreateExamPage() {
                 </div>
               </div>
 
+              {examInfo.classIds.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Lớp tham gia</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {examInfo.classIds.map((id) => {
+                      const cls = classList.find((c) => c.id === id);
+                      return <Badge key={id} variant="secondary">{cls?.name ?? `Lớp ${id}`}</Badge>;
+                    })}
+                  </div>
+                </div>
+              )}
+
               <Separator />
 
               <div className="space-y-4">
@@ -517,8 +740,8 @@ export function CreateExamPage() {
         </Card>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
+      {/* ── Navigation Buttons ─────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between pt-2">
         <Button
           variant="outline"
           onClick={() => setStep(step - 1)}
@@ -532,8 +755,13 @@ export function CreateExamPage() {
         <div className="flex gap-2">
           {step < 3 ? (
             <Button
-              onClick={() => setStep(step + 1)}
-              disabled={step === 1 && !examInfo.title}
+              onClick={() => {
+                if (step === 1 && !step1Valid) {
+                  toast.error("Vui lòng điền tên bài thi, môn học và thời gian.");
+                  return;
+                }
+                setStep(step + 1);
+              }}
               className="gap-2"
             >
               Tiếp theo
@@ -542,7 +770,7 @@ export function CreateExamPage() {
           ) : (
             <Button
               onClick={() => setPublishDialogOpen(true)}
-              disabled={questions.length === 0}
+              disabled={questions.length === 0 || isMutating}
               className="gap-2"
             >
               <Send className="w-4 h-4" />
@@ -562,8 +790,10 @@ export function CreateExamPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePublish}>Xuất bản</AlertDialogAction>
+            <AlertDialogCancel disabled={isMutating}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePublish} disabled={isMutating}>
+              {isMutating ? "Đang xử lý..." : "Xuất bản"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

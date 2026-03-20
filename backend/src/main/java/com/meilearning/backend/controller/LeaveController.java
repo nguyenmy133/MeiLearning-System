@@ -15,6 +15,7 @@ import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.entity.User;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.LeaveService;
+import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
 
@@ -62,17 +63,35 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getByTeacherUsername(principal.getName(), status));
     }
 
+    /**
+     * Đơn nghỉ của user đang đăng nhập — resolve từ JWT.
+     */
+    @GetMapping("/me")
+    @Operation(summary = "Đơn nghỉ phép của người dùng đang đăng nhập")
+    public ResponseEntity<List<LeaveRequestResponse>> getMyLeaves(Principal principal) {
+        User user = SecurityUtils.getCurrentUser(userRepository);
+        return ResponseEntity.ok(leaveService.getByRequester(user.getId()));
+    }
+
     @GetMapping("/requester/{requesterId}")
-    @Operation(summary = "Đơn theo người gửi")
+    @Operation(summary = "Đơn theo người gửi (admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<List<LeaveRequestResponse>> getByRequester(
             @PathVariable Long requesterId) {
         return ResponseEntity.ok(leaveService.getByRequester(requesterId));
     }
 
+    /**
+     * Tạo đơn nghỉ phép — resolve requesterId từ JWT.
+     */
     @PostMapping
     @Operation(summary = "Tạo đơn nghỉ phép")
     public ResponseEntity<LeaveRequestResponse> create(
+            Principal principal,
             @Valid @RequestBody CreateLeaveRequest request) {
+        // Override requesterId từ JWT — chống giả mạo
+        User user = SecurityUtils.getCurrentUser(userRepository);
+        request.setRequesterId(user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(leaveService.create(request));
     }
 

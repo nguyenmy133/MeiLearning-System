@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { formatDateTime } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -159,7 +160,7 @@ export function ExamList() {
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Calendar className="w-4 h-4" />
-                          <span>{new Date(exam.startAt).toLocaleDateString("vi-VN")}</span>
+                          <span>{formatDateTime(exam.startAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -211,7 +212,7 @@ export function ExamList() {
                           <div>
                             <p className="text-sm text-muted-foreground">Nộp lúc</p>
                             <p className="text-sm font-medium text-foreground">
-                              {new Date(exam.submittedAt).toLocaleDateString("vi-VN")}
+                              {formatDateTime(exam.submittedAt)}
                             </p>
                           </div>
                         )}
@@ -243,7 +244,7 @@ export function ExamList() {
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">{exam.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Ngày thi: {new Date(exam.startAt).toLocaleDateString("vi-VN")}
+                        Ngày thi: {formatDateTime(exam.startAt)}
                       </p>
                     </div>
                     {getStatusBadge(exam)}

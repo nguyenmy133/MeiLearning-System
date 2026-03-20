@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDate, formatTime } from "@/lib/dateUtils";
 import { ClipboardCheck, CheckCircle, XCircle, AlertCircle, Calendar, TrendingUp, Filter, BadgeCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -212,12 +213,7 @@ export function AttendancePage() {
                     <div>
                       <p className="font-medium text-foreground">{record.className}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(record.date).toLocaleDateString("vi-VN", {
-                          weekday: "short",
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
+                        {formatDate(record.date)}
                         {" "}• {record.sessionTime}
                       </p>
                     </div>
@@ -231,10 +227,7 @@ export function AttendancePage() {
                     </p>
                     {record.checkedInAt && (
                       <p className="text-xs text-muted-foreground">
-                        Check-in: {new Date(record.checkedInAt).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        Check-in: {formatTime(record.checkedInAt)}
                       </p>
                     )}
                   </div>

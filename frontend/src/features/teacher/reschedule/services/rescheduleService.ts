@@ -6,7 +6,6 @@ import type { RescheduleRequest, CreateRescheduleDTO, RescheduleQueryParams } fr
  * GET /reschedule/teacher/me — backend resolve từ JWT, KHÔNG cần teacherId.
  */
 export async function getRescheduleRequests(
-  _teacherId?: number,
   params?: RescheduleQueryParams
 ): Promise<RescheduleRequest[]> {
   const { data } = await apiClient.get("/reschedule/teacher/me", {
@@ -22,7 +21,6 @@ export async function getRescheduleRequests(
  * FE không cần gửi teacherId.
  */
 export async function createRescheduleRequest(
-  _teacherId: number,
   dto: CreateRescheduleDTO
 ): Promise<RescheduleRequest> {
   const { data } = await apiClient.post("/reschedule/teacher/me", dto);

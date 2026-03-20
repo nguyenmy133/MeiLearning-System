@@ -2,7 +2,6 @@ import { apiClient } from "@/lib/api-client";
 import type { StudentLeaveRequest, LeaveQueryParams, ReviewLeaveDTO } from "../types";
 
 export async function getLeaveRequests(
-  _teacherId?: number,
   params?: LeaveQueryParams
 ): Promise<StudentLeaveRequest[]> {
   // Gọi /leave/teacher/me — backend tự resolve teacher từ JWT
@@ -46,7 +45,6 @@ export async function approveLeaveRequest(id: string): Promise<StudentLeaveReque
  */
 export async function rejectLeaveRequest(
   id: string,
-  _teacherId: number,
   dto: ReviewLeaveDTO
 ): Promise<StudentLeaveRequest> {
   const { data } = await apiClient.patch(`/leave/${id}/reject`, null, {

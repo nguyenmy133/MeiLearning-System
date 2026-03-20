@@ -145,7 +145,7 @@ export function TeacherLayout() {
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
               return (
                 <li key={item.href}>
                   <Link
@@ -208,7 +208,7 @@ export function TeacherLayout() {
         <nav className="py-4 px-3">
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
               return (
                 <li key={item.href}>
                   <Link

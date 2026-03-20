@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDateTime } from "@/lib/dateUtils";
 import { CreditCard, Receipt, CheckCircle, AlertCircle, QrCode, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,7 @@ export function TuitionPage() {
                           </p>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Hạn thanh toán: {new Date(invoice.dueDate).toLocaleDateString("vi-VN")}
+                          Hạn thanh toán: {formatDateTime(invoice.dueDate)}
                         </p>
                       </div>
 
@@ -173,7 +174,7 @@ export function TuitionPage() {
                             <p className="font-medium text-foreground">{invoice.className}</p>
                             <p className="text-xs text-muted-foreground">
                               Tháng {invoice.month.split("-").reverse().join("/")}
-                              {invoice.paidAt && ` • Thanh toán ${new Date(invoice.paidAt).toLocaleDateString("vi-VN")}`}
+                              {invoice.paidAt && ` • Thanh toán ${formatDateTime(invoice.paidAt)}`}
                             </p>
                           </div>
                         </div>

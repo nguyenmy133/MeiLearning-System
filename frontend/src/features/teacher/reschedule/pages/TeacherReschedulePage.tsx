@@ -34,9 +34,6 @@ import {
 import { toast } from "sonner";
 import { useClasses } from "@/features/admin/classes/hooks";
 import { useRescheduleRequests, useCreateReschedule } from "../hooks";
-import { authService } from "@/features/shared/auth/authService";
-
-const TEACHER_ID = authService.getCurrentTeacherId();
 
 export function TeacherReschedulePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -47,8 +44,8 @@ export function TeacherReschedulePage() {
   const [newTime, setNewTime] = useState("");
   const [reason, setReason] = useState("");
 
-  // Lấy danh sách lớp của giáo viên này — useClasses service trả Class[] trực tiếp
-  const { data: myClasses = [] } = useClasses({ teacherId: TEACHER_ID, limit: 50 });
+  // Backend tự filter lớp theo teacher từ JWT
+  const { data: myClasses = [] } = useClasses({ limit: 50 });
 
   const { data: requests = [] } = useRescheduleRequests();
   const createReschedule = useCreateReschedule();

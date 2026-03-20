@@ -19,6 +19,7 @@ import {
 
 // useExamInfo đã xóa → dùng useExamDetail (GET /exams/{id})
 import { useExamDetail, useStudentExamResult } from "../hooks";
+import { formatDateTime } from "@/lib/dateUtils";
 
 export function TeacherStudentExamResult() {
   const navigate = useNavigate();
@@ -261,7 +262,7 @@ export function TeacherStudentExamResult() {
               Nộp lúc:{" "}
               <span className="font-medium text-foreground">
                 {examResult.submittedAt
-                  ? new Date(examResult.submittedAt).toLocaleString("vi-VN")
+                  ? formatDateTime(examResult.submittedAt)
                   : "—"}
               </span>
             </p>

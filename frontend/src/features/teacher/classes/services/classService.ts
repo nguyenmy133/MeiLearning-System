@@ -1,8 +1,9 @@
 import { apiClient } from "@/lib/api-client";
 
 export const classService = {
-  async getTeacherClasses(teacherId: number) {
-    const { data } = await apiClient.get("/classes", { params: { teacherId } });
+  async getTeacherClasses() {
+    // Backend tự filter theo teacher từ JWT
+    const { data } = await apiClient.get("/classes");
     return data;
   },
 

@@ -44,14 +44,11 @@ import {
 } from "../hooks";
 import type { AttendanceQueryParams } from "../types";
 import { useClassOptions } from "@/hooks/useClassOptions";
+import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
 // ── Format helpers ────────────────────────────────────────────────────────────
-function formatDate(iso: string): string {
-  // "YYYY-MM-DD" → "DD/MM/YYYY"
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
+// formatDate imported from @/lib/dateUtils
 
 // ── Table skeleton ────────────────────────────────────────────────────────────
 function TableSkeleton() {

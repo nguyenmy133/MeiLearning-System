@@ -1,10 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { authService } from "@/features/shared/auth/authService";
 import type { GradeQueryParams, UpdateCommentDTO } from "../types";
 import { getClassGrades, getGradeStats, updateComment } from "../services";
-
-const teacherId = () => authService.getCurrentTeacherIdSafe();
 
 export const gradeKeys = {
     all: ["teacher-grades"] as const,

@@ -35,14 +35,14 @@ function mapExam(raw: any): TeacherExam {
 
 /**
  * Lấy danh sách bài thi của teacher.
- * GET /api/v1/exams?teacherId=&status=&page=&limit=
+ * GET /api/v1/exams?status=&page=&limit=
+ * Backend tự filter theo teacher từ JWT.
  */
 export async function getTeacherExams(
-  teacherId: number,
   params?: ExamQueryParams
 ): Promise<TeacherExam[]> {
   const { data } = await apiClient.get("/exams", {
-    params: { teacherId, ...params },
+    params: { ...params },
   });
   const raw = Array.isArray(data) ? data : (data?.data ?? []);
   return raw.map(mapExam);
@@ -54,13 +54,12 @@ export async function getExamById(id: number): Promise<TeacherExam> {
 }
 
 /**
- * Tính stats cục bộ từ list — không gọi endpoint riêng (không tồn tại trên BE).
+ * Tính stats cục bộ từ list — không gọi endpoint riêng.
+ * Backend tự filter theo teacher từ JWT.
  */
-export async function getExamStats(
-  teacherId: number
-): Promise<{ total: number; draft: number; published: number; ongoing: number; ended: number; archived: number; averagePassRate: number }> {
+export async function getExamStats(): Promise<{ total: number; draft: number; published: number; ongoing: number; ended: number; archived: number; averagePassRate: number }> {
   try {
-    const exams = await getTeacherExams(teacherId);
+    const exams = await getTeacherExams();
     return {
       total: exams.length,
       draft: exams.filter((e) => e.status === "draft").length,
@@ -68,15 +67,16 @@ export async function getExamStats(
       ongoing: exams.filter((e) => e.status === "ongoing").length,
       ended: exams.filter((e) => e.status === "ended").length,
       archived: exams.filter((e) => e.status === "archived").length,
-      averagePassRate: 0, // cần gọi statistics từng bài — bỏ qua cho performance
+      averagePassRate: 0,
     };
   } catch {
     return { total: 0, draft: 0, published: 0, ongoing: 0, ended: 0, archived: 0, averagePassRate: 0 };
   }
 }
 
-export async function createExam(teacherId: number, dto: CreateExamDTO): Promise<TeacherExam> {
-  const { data } = await apiClient.post("/exams", { ...dto, teacherId });
+export async function createExam(dto: CreateExamDTO): Promise<TeacherExam> {
+  // Backend tự resolve teacher từ JWT — không cần gửi teacherId
+  const { data } = await apiClient.post("/exams", dto);
   return mapExam(data);
 }
 

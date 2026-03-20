@@ -1,10 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { authService } from "@/features/shared/auth/authService";
 import type { CreateRescheduleDTO, RescheduleQueryParams } from "../types";
 import { getRescheduleRequests, createRescheduleRequest } from "../services";
-
-const teacherId = () => authService.getCurrentTeacherIdSafe();
 
 export const rescheduleKeys = {
     all: ["teacher-reschedule"] as const,
@@ -14,14 +11,14 @@ export const rescheduleKeys = {
 export function useRescheduleRequests(params?: RescheduleQueryParams) {
     return useQuery({
         queryKey: rescheduleKeys.lists(params),
-        queryFn: () => getRescheduleRequests(teacherId(), params),
+        queryFn: () => getRescheduleRequests(params),
     });
 }
 
 export function useCreateReschedule() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (dto: CreateRescheduleDTO) => createRescheduleRequest(teacherId(), dto),
+        mutationFn: (dto: CreateRescheduleDTO) => createRescheduleRequest(dto),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: rescheduleKeys.all });
             toast.success("Đã gửi yêu cầu đổi lịch thành công");

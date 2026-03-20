@@ -14,7 +14,13 @@ import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
 import com.meilearning.backend.dto.response.ExamStatisticsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.entity.Teacher;
+import com.meilearning.backend.repository.StudentRepository;
+import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.ExamService;
+import com.meilearning.backend.util.SecurityUtils;
+import java.security.Principal;
 import java.util.List;
 @RestController
 @RequestMapping("/api/v1/exams")
@@ -24,17 +30,25 @@ import java.util.List;
 public class ExamController {
 
     private final ExamService examService;
+    private final TeacherRepository teacherRepository;
+    private final StudentRepository studentRepository;
 
     @GetMapping
     @Operation(summary = "Danh sách bài kiểm tra")
     public ResponseEntity<PageResponse<ExamResponse>> getAll(
-
+            Principal principal,
             @RequestParam(required = false) Long teacherId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return ResponseEntity.ok(examService.getAll(teacherId, status, page, limit));
 
+        // Teacher role: auto-filter theo teacher hiện tại (dùng teacher.id entity PK)
+        Long resolvedTeacherId = teacherId;
+        if (SecurityUtils.isTeacher() && !SecurityUtils.isAdmin()) {
+            Teacher teacher = SecurityUtils.getCurrentTeacher(teacherRepository);
+            resolvedTeacherId = teacher.getId();
+        }
+        return ResponseEntity.ok(examService.getAll(resolvedTeacherId, status, page, limit));
     }
 
     @GetMapping("/{id}")
@@ -47,10 +61,15 @@ public class ExamController {
 
     @PostMapping
     @Operation(summary = "Tạo bài kiểm tra (Teacher)")
-    public ResponseEntity<ExamResponse> create(@Valid @RequestBody CreateExamRequest request) {
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    public ResponseEntity<ExamResponse> create(
+            Principal principal,
+            @Valid @RequestBody CreateExamRequest request) {
 
+        // Resolve teacher từ JWT — override bất kỳ teacherId FE truyền
+        Teacher teacher = SecurityUtils.getCurrentTeacher(teacherRepository);
+        request.setTeacherId(teacher.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(examService.create(request));
-
     }
 
     @PatchMapping("/{id}/publish")
@@ -73,12 +92,16 @@ public class ExamController {
 
     @PostMapping("/{id}/submit")
     @Operation(summary = "Nộp bài (Student)")
+    @PreAuthorize("hasAnyRole('student')")
     public ResponseEntity<ExamResultResponse> submit(
-
+            Principal principal,
             @PathVariable Long id,
             @Valid @RequestBody SubmitExamResultRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(examService.submit(id, request));
 
+        // Resolve student từ JWT — chống giả mạo studentId
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        request.setStudentId(student.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(examService.submit(id, request));
     }
 
     @GetMapping("/{id}/results")

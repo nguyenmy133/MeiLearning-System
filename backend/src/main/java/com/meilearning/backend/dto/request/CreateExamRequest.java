@@ -10,11 +10,9 @@ public class CreateExamRequest {
     @NotBlank
     private String title;
 
-    @NotBlank
-    private String subject;
+    private String subject;                // auto-detected từ classes trên FE
 
-    @NotNull
-    private Long teacherId;
+    private Long teacherId;                // Controller set từ JWT
 
     @NotNull
     private Integer duration;          // phút
