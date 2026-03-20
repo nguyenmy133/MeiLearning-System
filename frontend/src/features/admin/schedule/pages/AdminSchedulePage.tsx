@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -234,9 +235,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const [teacherId, setTeacherId] = useState(0);
   const [teacherName, setTeacherName] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDateTime, setStartDateTime] = useState<Date | undefined>(undefined);
+  const [endDateTime, setEndDateTime] = useState<Date | undefined>(undefined);
   const [facilityId, setFacilityId] = useState("");
   const [room, setRoom] = useState("");
   const [notes, setNotes] = useState("");
@@ -249,8 +249,18 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
       setTeacherId(found.teacherId);
       setTeacherName(found.teacherName);
       setSelectedSubject(found.subjectName);
-      setStartTime(found.defaultStartTime);
-      setEndTime(found.defaultEndTime);
+      // Pre-fill time from class defaults, keep date from user's current startDateTime
+      const defaultStart = found.defaultStartTime; // "HH:mm"
+      const defaultEnd = found.defaultEndTime;     // "HH:mm"
+      const baseDate = startDateTime ?? new Date();
+      const [sh, sm] = defaultStart.split(":").map(Number);
+      const [eh, em] = defaultEnd.split(":").map(Number);
+      const newStart = new Date(baseDate);
+      newStart.setHours(sh, sm, 0, 0);
+      const newEnd = new Date(baseDate);
+      newEnd.setHours(eh, em, 0, 0);
+      setStartDateTime(newStart);
+      setEndDateTime(newEnd);
     }
   };
 
@@ -258,6 +268,11 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const filteredTeachers = (teacherOptions ?? []).filter((t) =>
     !selectedSubject || t.subjects?.some((s) => s.toLowerCase() === selectedSubject.toLowerCase())
   );
+
+  // Derive date/startTime/endTime strings for conflict check & submit
+  const date = startDateTime ? format(startDateTime, "yyyy-MM-dd") : "";
+  const startTime = startDateTime ? format(startDateTime, "HH:mm") : "";
+  const endTime = endDateTime ? format(endDateTime, "HH:mm") : "";
 
   // Async conflict check
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
@@ -275,7 +290,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const availableRooms = roomOptions ?? [];
 
   const canSubmit =
-    !!classId && !!date && !!startTime && !!endTime && !!room && !conflictWarning;
+    !!classId && !!startDateTime && !!endDateTime && !!room && !conflictWarning
+    && startDateTime < endDateTime;
 
   const handleSubmit = () => {
     onSubmit({ type, classId, teacherId, teacherName, date, startTime, endTime, facilityId, room, notes: notes || undefined });
@@ -402,39 +418,44 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
           </Select>
         </div>
 
-        {/* Date */}
-        <div className="space-y-2">
-          <Label>
-            Ngày học <span className="text-destructive">*</span>
-          </Label>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-
-        {/* Time range */}
-        <div className="space-y-2">
-          <Label>
-            Khung giờ <span className="text-destructive">*</span>
-          </Label>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <Input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="flex-1"
-            />
-            <span className="text-muted-foreground text-sm">→</span>
-            <Input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="flex-1"
+        {/* Date + Time */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>
+              Giờ bắt đầu <span className="text-destructive">*</span>
+            </Label>
+            <DateTimePicker
+              value={startDateTime}
+              onChange={(d) => {
+                setStartDateTime(d);
+                // If end not set or end is before new start, auto-set end = start+2h
+                if (d && (!endDateTime || endDateTime <= d)) {
+                  const autoEnd = new Date(d);
+                  autoEnd.setHours(d.getHours() + 2, d.getMinutes(), 0, 0);
+                  setEndDateTime(autoEnd);
+                }
+              }}
+              placeholder="Ngày & giờ bắt đầu"
+              fromDate={new Date()}
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Giờ được tự điền từ lịch lớp, có thể điều chỉnh nếu cần.
-          </p>
+          <div className="space-y-2">
+            <Label>
+              Giờ kết thúc <span className="text-destructive">*</span>
+            </Label>
+            <DateTimePicker
+              value={endDateTime}
+              onChange={setEndDateTime}
+              placeholder="Ngày & giờ kết thúc"
+              fromDate={startDateTime ?? new Date()}
+            />
+          </div>
         </div>
+        {startDateTime && endDateTime && startDateTime >= endDateTime && (
+          <p className="text-xs text-destructive">
+            ⚠️ Giờ kết thúc phải sau giờ bắt đầu
+          </p>
+        )}
 
         {/* Facility + Room */}
         <div className="grid grid-cols-2 gap-3">
@@ -528,9 +549,20 @@ interface EditSessionFormProps {
 }
 
 function EditSessionForm({ session, onClose, onSubmit, isPending }: EditSessionFormProps) {
-  const [date, setDate] = useState(session.date);
-  const [startTime, setStartTime] = useState(session.startTime);
-  const [endTime, setEndTime] = useState(session.endTime);
+  // Build Date objects from session.date ("yyyy-MM-dd") + session.startTime/endTime ("HH:mm")
+  const parseDateTime = (dateStr: string, timeStr: string): Date => {
+    const [h, m] = timeStr.split(":").map(Number);
+    const d = new Date(dateStr + "T00:00:00");
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+
+  const [startDateTime, setStartDateTime] = useState<Date>(
+    parseDateTime(session.date, session.startTime)
+  );
+  const [endDateTime, setEndDateTime] = useState<Date>(
+    parseDateTime(session.date, session.endTime)
+  );
   const [notes, setNotes] = useState(session.notes ?? "");
   const [facilityId, setFacilityId] = useState<string>(session.facilityId ?? "");
   const [roomId, setRoomId] = useState<string>(session.roomId ? String(session.roomId) : "");
@@ -546,9 +578,9 @@ function EditSessionForm({ session, onClose, onSubmit, isPending }: EditSessionF
 
   const handleSubmit = () => {
     onSubmit({
-      date,
-      startTime,
-      endTime,
+      date: format(startDateTime, "yyyy-MM-dd"),
+      startTime: format(startDateTime, "HH:mm"),
+      endTime: format(endDateTime, "HH:mm"),
       notes,
       roomId: roomId ? Number(roomId) : undefined,
     });
@@ -562,21 +594,27 @@ function EditSessionForm({ session, onClose, onSubmit, isPending }: EditSessionF
         <p className="text-xs text-muted-foreground">{session.teacherName}</p>
       </div>
 
-      <div className="space-y-2">
-        <Label>Ngày</Label>
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Bắt đầu</Label>
-          <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          <DateTimePicker
+            value={startDateTime}
+            onChange={(d) => d && setStartDateTime(d)}
+            placeholder="Ngày & giờ bắt đầu"
+          />
         </div>
         <div className="space-y-2">
           <Label>Kết thúc</Label>
-          <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          <DateTimePicker
+            value={endDateTime}
+            onChange={(d) => d && setEndDateTime(d)}
+            placeholder="Ngày & giờ kết thúc"
+          />
         </div>
       </div>
+      {startDateTime >= endDateTime && (
+        <p className="text-xs text-destructive">⚠️ Giờ kết thúc phải sau giờ bắt đầu</p>
+      )}
 
       {/* Facility selector */}
       <div className="space-y-2">

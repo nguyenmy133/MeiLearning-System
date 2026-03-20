@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -214,22 +217,18 @@ function ScheduleBuilder({ slots, onChange }: ScheduleBuilderProps) {
                   {dayLabel}
                 </span>
                 <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                <Input
-                  type="time"
+                <TimePicker
                   value={slot.startTime}
-                  onChange={(e) =>
-                    updateSlot(slot.weekday, "startTime", e.target.value)
-                  }
-                  className="h-8 text-sm w-28 flex-shrink-0"
+                  onChange={(t) => updateSlot(slot.weekday, "startTime", t)}
+                  placeholder="Giờ bắt đầu"
+                  className="h-8 text-sm w-32 flex-shrink-0"
                 />
                 <span className="text-muted-foreground text-xs">→</span>
-                <Input
-                  type="time"
+                <TimePicker
                   value={slot.endTime}
-                  onChange={(e) =>
-                    updateSlot(slot.weekday, "endTime", e.target.value)
-                  }
-                  className="h-8 text-sm w-28 flex-shrink-0"
+                  onChange={(t) => updateSlot(slot.weekday, "endTime", t)}
+                  placeholder="Giờ kết thúc"
+                  className="h-8 text-sm w-32 flex-shrink-0"
                 />
               </div>
             );
@@ -301,7 +300,9 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
   const [schedule, setSchedule] = useState<SessionSlot[]>(
     initial?.schedule ?? []
   );
-  const [startDate, setStartDate] = useState(initial?.startDate ?? "");
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    initial?.startDate ? new Date(initial.startDate) : undefined
+  );
   const [description, setDescription] = useState(
     initial?.description ?? ""
   );
@@ -390,15 +391,16 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
       }
     }
     if (!startDate) { toast.error("Vui lòng chọn ngày bắt đầu"); return; }
-    if (mode === "create" && startDate < new Date().toISOString().split("T")[0]) {
+    const startDateStr = format(startDate, "yyyy-MM-dd");
+    if (mode === "create" && startDateStr < new Date().toISOString().split("T")[0]) {
       toast.error("Ngày bắt đầu không được nằm trong quá khứ");
       return;
     }
 
     if (mode === "create") {
-      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description } as CreateClassDTO);
+      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate: startDateStr, description } as CreateClassDTO);
     } else {
-      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate, description } as UpdateClassDTO);
+      onSubmit({ name, subject, teacherId, facility: facilityName, room, maxStudents, pricePerSession, schedule, startDate: startDateStr, description } as UpdateClassDTO);
     }
   };
 
@@ -551,11 +553,11 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
       </p>
       <div className="space-y-2">
         <Label>Ngày bắt đầu <span className="text-destructive">*</span></Label>
-        <Input
-          type="date"
+        <DatePicker
           value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          min={mode === "create" ? new Date().toISOString().split("T")[0] : undefined}
+          onChange={setStartDate}
+          placeholder="Chọn ngày bắt đầu"
+          fromDate={mode === "create" ? new Date() : undefined}
         />
         <p className="text-xs text-muted-foreground">
           Ngày kết thúc sẽ được ghi nhận khi admin bấm{" "}

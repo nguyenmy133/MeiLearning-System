@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
+import { format } from "date-fns";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -92,12 +94,13 @@ export function CreateExamPage() {
     subject: "",
     classIds: [] as number[],
     duration: 60,
-    startTime: "",
-    endTime: "",
     maxAttempts: 1,
     passingScore: 70,
     description: "",
   });
+  // Separate Date state for the datetime pickers (cleaner than embedding in examInfo)
+  const [examStartDT, setExamStartDT] = useState<Date | undefined>(undefined);
+  const [examEndDT, setExamEndDT] = useState<Date | undefined>(undefined);
 
   // Step 2: Questions
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -122,12 +125,12 @@ export function CreateExamPage() {
       subject: editExam.subject ?? "",
       classIds: editExam.classIds ?? [],
       duration: editExam.duration ?? 60,
-      startTime: editExam.startTime ? editExam.startTime.slice(0, 16) : "",
-      endTime: editExam.endTime ? editExam.endTime.slice(0, 16) : "",
       maxAttempts: 1,
       passingScore: 70,
       description: editExam.description ?? "",
     });
+    if (editExam.startTime) setExamStartDT(new Date(editExam.startTime));
+    if (editExam.endTime) setExamEndDT(new Date(editExam.endTime));
     if (editExam.questions && editExam.questions.length > 0) {
       const mapped: Question[] = editExam.questions.map((q, idx) => ({
         id: `edit-${idx}`,
@@ -156,14 +159,15 @@ export function CreateExamPage() {
     setExamInfo({
       title: `Copy of ${sourceExam.title}`,
       subject: sourceExam.subject ?? "",
-      classIds: [],          // intentionally clear — teacher picks new class
+      classIds: [],
       duration: sourceExam.duration ?? 60,
-      startTime: "",         // clear timing — must set new schedule
-      endTime: "",
       maxAttempts: 1,
       passingScore: 70,
       description: sourceExam.description ?? "",
     });
+    // Clear timing for duplicate — teacher sets new schedule
+    setExamStartDT(undefined);
+    setExamEndDT(undefined);
     // Pre-fill questions from source exam
     if (sourceExam.questions && sourceExam.questions.length > 0) {
       const mapped: Question[] = sourceExam.questions.map((q, idx) => ({
@@ -281,8 +285,8 @@ export function CreateExamPage() {
     subject: effectiveSubject,
     classIds: examInfo.classIds,
     duration: Number(examInfo.duration),
-    startTime: examInfo.startTime || undefined,
-    endTime: examInfo.endTime || undefined,
+    startTime: examStartDT ? examStartDT.toISOString() : undefined,
+    endTime: examEndDT ? examEndDT.toISOString() : undefined,
     description: examInfo.description,
     maxAttempts: examInfo.maxAttempts,
     passingScore: examInfo.passingScore,
@@ -596,21 +600,24 @@ export function CreateExamPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startTime">Thời gian mở</Label>
-                <Input
-                  id="startTime"
-                  type="datetime-local"
-                  value={examInfo.startTime}
-                  onChange={(e) => setExamInfo({ ...examInfo, startTime: e.target.value })}
+                <DateTimePicker
+                  value={examStartDT}
+                  onChange={(d) => {
+                    setExamStartDT(d);
+                    if (d && examEndDT && examEndDT <= d) setExamEndDT(undefined);
+                  }}
+                  placeholder="Chọn ngày & giờ mở"
+                  fromDate={new Date()}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="endTime">Thời gian đóng</Label>
-                <Input
-                  id="endTime"
-                  type="datetime-local"
-                  value={examInfo.endTime}
-                  onChange={(e) => setExamInfo({ ...examInfo, endTime: e.target.value })}
+                <DateTimePicker
+                  value={examEndDT}
+                  onChange={setExamEndDT}
+                  placeholder="Chọn ngày & giờ đóng"
+                  fromDate={examStartDT ?? new Date()}
                 />
               </div>
             </div>

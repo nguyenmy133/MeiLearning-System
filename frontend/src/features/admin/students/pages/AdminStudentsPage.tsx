@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -519,8 +521,8 @@ interface DropDialogProps {
 }
 
 function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDialogProps) {
-  const [dropDate, setDropDate] = useState(
-    new Date().toISOString().split("T")[0]
+  const [dropDate, setDropDate] = useState<Date>(
+    new Date()
   );
   const [dropReason, setDropReason] = useState("");
   const [dropNotes, setDropNotes] = useState("");
@@ -532,7 +534,7 @@ function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDial
   const handleConfirm = () => {
     if (!dropDate) { toast.error("Vui lòng chọn ngày nghỉ học"); return; }
     if (!dropReason) { toast.error("Vui lòng chọn lý do nghỉ học"); return; }
-    onConfirm({ reason: dropReason, notes: dropNotes || undefined, dropDate });
+    onConfirm({ reason: dropReason, notes: dropNotes || undefined, dropDate: format(dropDate, "yyyy-MM-dd") });
   };
 
   return (
@@ -578,10 +580,10 @@ function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDial
           <Label>
             Ngày nghỉ học hiệu lực <span className="text-destructive">*</span>
           </Label>
-          <Input
-            type="date"
+          <DatePicker
             value={dropDate}
-            onChange={(e) => setDropDate(e.target.value)}
+            onChange={(d) => d && setDropDate(d)}
+            placeholder="Chọn ngày nghỉ"
           />
         </div>
 

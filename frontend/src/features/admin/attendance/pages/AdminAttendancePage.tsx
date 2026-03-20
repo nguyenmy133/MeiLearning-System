@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -77,13 +79,13 @@ function TableSkeleton() {
 export function AdminAttendancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClassId, setFilterClassId] = useState("all");
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const { data: classOptions } = useClassOptions();
 
   const queryParams: AttendanceQueryParams = {
     search: searchTerm || undefined,
     classId: filterClassId !== "all" ? filterClassId : undefined,
-    date: filterDate || undefined,
+    date: filterDate ? format(filterDate, "yyyy-MM-dd") : undefined,
   };
 
   const { data: sessions = [], isLoading: loadingSessions } = useAttendanceSessions(queryParams);
@@ -285,11 +287,11 @@ export function AdminAttendancePage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input
-                  type="date"
+                <DatePicker
                   value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-40"
+                  onChange={setFilterDate}
+                  placeholder="Lọc theo ngày"
+                  className="w-44"
                 />
               </div>
 

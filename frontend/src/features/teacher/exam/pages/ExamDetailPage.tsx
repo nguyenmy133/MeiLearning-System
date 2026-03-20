@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   ArrowLeft,
   CheckCircle,
@@ -41,8 +42,8 @@ export function ExamDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDuration, setEditDuration] = useState("");
-  const [editStartTime, setEditStartTime] = useState("");
-  const [editEndTime, setEditEndTime] = useState("");
+  const [editStartTime, setEditStartTime] = useState<Date | undefined>(undefined);
+  const [editEndTime, setEditEndTime] = useState<Date | undefined>(undefined);
 
   const isDraft = exam?.status === "draft";
   const isEndedOrArchived = exam?.status === "ended" || exam?.status === "archived";
@@ -51,8 +52,8 @@ export function ExamDetailPage() {
     if (!exam) return;
     setEditTitle(exam.title);
     setEditDuration(String(exam.duration));
-    setEditStartTime(exam.startTime ? exam.startTime.slice(0, 16) : "");
-    setEditEndTime(exam.endTime ? exam.endTime.slice(0, 16) : "");
+    setEditStartTime(exam.startTime ? new Date(exam.startTime) : undefined);
+    setEditEndTime(exam.endTime ? new Date(exam.endTime) : undefined);
     setIsEditing(true);
   };
 
@@ -64,8 +65,8 @@ export function ExamDetailPage() {
         data: {
           title: editTitle,
           duration: Number(editDuration),
-          startTime: editStartTime || undefined,
-          endTime: editEndTime || undefined,
+          startTime: editStartTime ? editStartTime.toISOString() : undefined,
+          endTime: editEndTime ? editEndTime.toISOString() : undefined,
         },
       },
       { onSuccess: () => setIsEditing(false) }
@@ -304,18 +305,22 @@ export function ExamDetailPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Thời gian mở</Label>
-                <Input
-                  type="datetime-local"
+                <DateTimePicker
                   value={editStartTime}
-                  onChange={(e) => setEditStartTime(e.target.value)}
+                  onChange={(d) => {
+                    setEditStartTime(d);
+                    if (d && editEndTime && editEndTime <= d) setEditEndTime(undefined);
+                  }}
+                  placeholder="Chọn ngày & giờ mở"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Thời gian đóng</Label>
-                <Input
-                  type="datetime-local"
+                <DateTimePicker
                   value={editEndTime}
-                  onChange={(e) => setEditEndTime(e.target.value)}
+                  onChange={setEditEndTime}
+                  placeholder="Chọn ngày & giờ đóng"
+                  fromDate={editStartTime ?? new Date()}
                 />
               </div>
             </div>

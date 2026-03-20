@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -40,7 +41,7 @@ export function TeacherReschedulePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestType, setRequestType] = useState<"reschedule" | "makeup">("reschedule");
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [originalDate, setOriginalDate] = useState("");
+  const [originalDate, setOriginalDate] = useState<Date | undefined>(undefined);
   const [newDateTime, setNewDateTime] = useState<Date | undefined>(undefined);
   const [reason, setReason] = useState("");
 
@@ -91,7 +92,7 @@ export function TeacherReschedulePage() {
       {
         classId: Number(selectedClassId),
         type: requestType,
-        originalDate,
+        originalDate: originalDate ? format(originalDate, "yyyy-MM-dd") : "",
         originalTime: "",
         requestedDate: requestType === "reschedule" && newDateTime
           ? format(newDateTime, "yyyy-MM-dd")
@@ -105,7 +106,7 @@ export function TeacherReschedulePage() {
         onSuccess: () => {
           setIsDialogOpen(false);
           setSelectedClassId("");
-          setOriginalDate("");
+          setOriginalDate(undefined);
           setNewDateTime(undefined);
           setReason("");
         },
@@ -167,10 +168,10 @@ export function TeacherReschedulePage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Ngày gốc cần đổi/hủy</label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={originalDate}
-                  onChange={(e) => setOriginalDate(e.target.value)}
+                  onChange={setOriginalDate}
+                  placeholder="Chọn ngày buổi học gốc"
                 />
               </div>
 
