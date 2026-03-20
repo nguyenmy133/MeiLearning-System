@@ -11,6 +11,7 @@ import com.meilearning.backend.exception.BusinessException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.AcademicMapper;
 import com.meilearning.backend.repository.*;
+import com.meilearning.backend.entity.User;
 import com.meilearning.backend.service.RescheduleService;
 import com.meilearning.backend.service.NotificationDispatcher;
 import com.meilearning.backend.dto.response.PageResponse;
@@ -35,6 +36,7 @@ public class RescheduleServiceImpl implements RescheduleService {
     private final AcademicMapper mapper;
     private final NotificationDispatcher notificationDispatcher;
     private final ClassEnrollmentRepository enrollmentRepository;
+    private final UserRepository userRepository;
 
     @Override
     public RescheduleRequestResponse create(CreateRescheduleRequest req) {
@@ -53,6 +55,7 @@ public class RescheduleServiceImpl implements RescheduleService {
                 .originalTime(req.getOriginalTime())
                 .requestedDate(req.getRequestedDate() != null ? LocalDate.parse(req.getRequestedDate()) : null)
                 .requestedTime(req.getRequestedTime())
+                .requestedEndTime(req.getRequestedEndTime())
                 .reason(req.getReason())
                 .build();
 
@@ -64,9 +67,22 @@ public class RescheduleServiceImpl implements RescheduleService {
 
         }
 
-        rr = rescheduleRepository.save(rr);
+        final RescheduleRequest saved = rescheduleRepository.save(rr);
 
-        return mapper.toRescheduleResponse(rr);
+        // Notify tất cả admin về yêu cầu đổi lịch mới
+        String teacherName = saved.getTeacher() != null && saved.getTeacher().getUser() != null
+                ? saved.getTeacher().getUser().getName() : "Giáo viên";
+        String className  = saved.getClassEntity() != null ? saved.getClassEntity().getName() : "";
+        String notifyTitle   = "Yêu cầu " + saved.getType() + " lịch mới";
+        String notifyContent = "Giáo viên " + teacherName + " vừa gửi yêu cầu "
+                + saved.getType() + " cho lớp " + className
+                + " ngày " + saved.getOriginalDate() + ". Vui lòng xem xét và duyệt.";
+
+        userRepository.findByRole(User.Role.admin).forEach(admin ->
+                notificationDispatcher.notifyInApp(admin, "schedule_change", notifyTitle, notifyContent)
+        );
+
+        return mapper.toRescheduleResponse(saved);
 
     }
 
@@ -124,12 +140,38 @@ public class RescheduleServiceImpl implements RescheduleService {
         rr.setReviewedBy(reviewedBy);
         rr.setReviewedAt(Instant.now());
 
-        // Nếu cancel â†’ đánh dấu session là cancelled
-
+        // Nếu cancel → đánh dấu session là cancelled
         if (rr.getType() == RescheduleType.cancel && rr.getSession() != null) {
             rr.getSession().setStatus(SessionStatus.cancelled);
 
             sessionRepository.save(rr.getSession());
+        }
+
+        // Nếu reschedule → hủy session gốc + tạo session mới
+        if (rr.getType() == RescheduleType.reschedule) {
+            // 1) Hủy session gốc
+            if (rr.getSession() != null) {
+                rr.getSession().setStatus(SessionStatus.cancelled);
+                sessionRepository.save(rr.getSession());
+            }
+            // 2) Tạo session mới với ngày/giờ đã yêu cầu
+            if (rr.getRequestedDate() != null && rr.getRequestedTime() != null) {
+                java.time.LocalTime startTime = java.time.LocalTime.parse(rr.getRequestedTime());
+                java.time.LocalTime endTime = rr.getRequestedEndTime() != null
+                        ? java.time.LocalTime.parse(rr.getRequestedEndTime())
+                        : startTime.plusHours(2); // fallback 2h
+
+                ClassSession newSession = ClassSession.builder()
+                        .classEntity(rr.getClassEntity())
+                        .date(rr.getRequestedDate())
+                        .startTime(startTime)
+                        .endTime(endTime)
+                        .status(SessionStatus.upcoming)
+                        .type(SessionType.makeup)
+                        .notes("Đổi từ buổi " + rr.getOriginalDate())
+                        .build();
+                sessionRepository.save(newSession);
+            }
         }
 
         final RescheduleRequest savedRr = rescheduleRepository.save(rr);

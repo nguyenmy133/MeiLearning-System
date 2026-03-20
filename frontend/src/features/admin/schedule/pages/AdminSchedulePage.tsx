@@ -237,6 +237,8 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [startDateTime, setStartDateTime] = useState<Date | undefined>(undefined);
   const [endDateTime, setEndDateTime] = useState<Date | undefined>(undefined);
+  // End time as string "HH:mm" for the combined DateTimePicker
+  const endTimeStr = endDateTime ? format(endDateTime, "HH:mm") : "";
   const [facilityId, setFacilityId] = useState("");
   const [room, setRoom] = useState("");
   const [notes, setNotes] = useState("");
@@ -418,38 +420,35 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
           </Select>
         </div>
 
-        {/* Date + Time */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label>
-              Giờ bắt đầu <span className="text-destructive">*</span>
-            </Label>
-            <DateTimePicker
-              value={startDateTime}
-              onChange={(d) => {
-                setStartDateTime(d);
-                // If end not set or end is before new start, auto-set end = start+2h
-                if (d && (!endDateTime || endDateTime <= d)) {
-                  const autoEnd = new Date(d);
-                  autoEnd.setHours(d.getHours() + 2, d.getMinutes(), 0, 0);
-                  setEndDateTime(autoEnd);
-                }
-              }}
-              placeholder="Ngày & giờ bắt đầu"
-              fromDate={new Date()}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>
-              Giờ kết thúc <span className="text-destructive">*</span>
-            </Label>
-            <DateTimePicker
-              value={endDateTime}
-              onChange={setEndDateTime}
-              placeholder="Ngày & giờ kết thúc"
-              fromDate={startDateTime ?? new Date()}
-            />
-          </div>
+        {/* Date + Time (combined picker) */}
+        <div className="space-y-2">
+          <Label>
+            Ngày & giờ <span className="text-destructive">*</span>
+          </Label>
+          <DateTimePicker
+            value={startDateTime}
+            onChange={(d) => {
+              setStartDateTime(d);
+              // If end not set or end is before new start, auto-set end = start+2h
+              if (d && (!endDateTime || endDateTime <= d)) {
+                const autoEnd = new Date(d);
+                autoEnd.setHours(d.getHours() + 2, d.getMinutes(), 0, 0);
+                setEndDateTime(autoEnd);
+              }
+            }}
+            showEndTime
+            endTime={endTimeStr}
+            onEndTimeChange={(t) => {
+              if (!t) { setEndDateTime(undefined); return; }
+              const base = startDateTime ?? new Date();
+              const [h, m] = t.split(":").map(Number);
+              const newEnd = new Date(base);
+              newEnd.setHours(h, m, 0, 0);
+              setEndDateTime(newEnd);
+            }}
+            placeholder="Chọn ngày, giờ bắt đầu & kết thúc"
+            fromDate={new Date()}
+          />
         </div>
         {startDateTime && endDateTime && startDateTime >= endDateTime && (
           <p className="text-xs text-destructive">
@@ -594,23 +593,22 @@ function EditSessionForm({ session, onClose, onSubmit, isPending }: EditSessionF
         <p className="text-xs text-muted-foreground">{session.teacherName}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>Bắt đầu</Label>
-          <DateTimePicker
-            value={startDateTime}
-            onChange={(d) => d && setStartDateTime(d)}
-            placeholder="Ngày & giờ bắt đầu"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Kết thúc</Label>
-          <DateTimePicker
-            value={endDateTime}
-            onChange={(d) => d && setEndDateTime(d)}
-            placeholder="Ngày & giờ kết thúc"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label>Ngày & giờ</Label>
+        <DateTimePicker
+          value={startDateTime}
+          onChange={(d) => d && setStartDateTime(d)}
+          showEndTime
+          endTime={format(endDateTime, "HH:mm")}
+          onEndTimeChange={(t) => {
+            if (!t) return;
+            const [h, m] = t.split(":").map(Number);
+            const newEnd = new Date(startDateTime);
+            newEnd.setHours(h, m, 0, 0);
+            setEndDateTime(newEnd);
+          }}
+          placeholder="Chọn ngày, giờ bắt đầu & kết thúc"
+        />
       </div>
       {startDateTime >= endDateTime && (
         <p className="text-xs text-destructive">⚠️ Giờ kết thúc phải sau giờ bắt đầu</p>

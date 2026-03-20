@@ -148,7 +148,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         ensureSessionsGenerated();
 
         List<ClassSession> sessions = sessionRepository
-                .findByDateBetween(range[0], range[1]);
+                .findByDateBetweenAndStatusNot(range[0], range[1], SessionStatus.cancelled);
 
         // Filter by facility if specified
         if (facilityId != null) {
@@ -175,8 +175,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         var range = getDateRange(baseDate, view);
 
         List<ClassSession> sessions = sessionRepository
-
-                .findByClassEntityTeacherIdAndDateBetween(teacherId, range[0], range[1]);
+                .findByClassEntityTeacherIdAndDateBetweenAndStatusNot(teacherId, range[0], range[1], SessionStatus.cancelled);
 
         return buildScheduleResponse(sessions, range[0], range[1], view);
 
@@ -220,7 +219,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         // Lấy tất cả sessions trong range cho các class đã enrolled
 
-        List<ClassSession> allSessions = sessionRepository.findByDateBetween(range[0], range[1]);
+        List<ClassSession> allSessions = sessionRepository.findByDateBetweenAndStatusNot(range[0], range[1], SessionStatus.cancelled);
 
         List<ClassSession> filtered = allSessions.stream()
                 .filter(s -> classIds.contains(s.getClassEntity().getId()))

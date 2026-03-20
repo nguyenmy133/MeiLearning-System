@@ -114,6 +114,7 @@ public class AcademicMapper {
                 .originalTime(rr.getOriginalTime())
                 .requestedDate(rr.getRequestedDate() != null ? rr.getRequestedDate().toString() : null)
                 .requestedTime(rr.getRequestedTime())
+                .requestedEndTime(rr.getRequestedEndTime())
                 .reason(rr.getReason())
                 .status(rr.getStatus().name())
                 .reviewedBy(rr.getReviewedBy())

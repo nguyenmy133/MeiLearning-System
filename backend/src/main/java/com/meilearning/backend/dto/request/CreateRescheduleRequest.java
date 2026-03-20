@@ -18,6 +18,7 @@ public class CreateRescheduleRequest {
     private String originalTime;
     private String requestedDate;
     private String requestedTime;
+    private String requestedEndTime;
     @NotBlank
     private String reason;
 }

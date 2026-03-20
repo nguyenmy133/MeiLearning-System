@@ -1,5 +1,5 @@
 export type RescheduleStatus = "pending" | "approved" | "rejected";
-export type RescheduleType = "reschedule" | "makeup";
+export type RescheduleType = "reschedule" | "cancel";
 
 export interface RescheduleRequest {
     id: string;
@@ -11,6 +11,7 @@ export interface RescheduleRequest {
     originalTime: string;       // "HH:MM - HH:MM"
     requestedDate: string;
     requestedTime: string;
+    requestedEndTime?: string;
     reason: string;
     status: RescheduleStatus;
     createdAt: string;
@@ -22,10 +23,12 @@ export interface RescheduleRequest {
 export interface CreateRescheduleDTO {
     type: RescheduleType;
     classId: number;
+    sessionId?: number;
     originalDate: string;
     originalTime: string;
-    requestedDate: string;
-    requestedTime: string;
+    requestedDate?: string;
+    requestedTime?: string;
+    requestedEndTime?: string;
     reason: string;
 }
 
@@ -42,5 +45,5 @@ export const RESCHEDULE_STATUS_LABELS: Record<RescheduleStatus, string> = {
 
 export const RESCHEDULE_TYPE_LABELS: Record<RescheduleType, string> = {
     reschedule: "Đổi lịch",
-    makeup: "Bù buổi",
+    cancel: "Hủy buổi",
 };

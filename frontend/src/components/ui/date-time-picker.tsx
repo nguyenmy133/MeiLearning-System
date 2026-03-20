@@ -20,13 +20,19 @@ interface DateTimePickerProps {
   className?: string;
   /** Không cho chọn ngày trước ngày này */
   fromDate?: Date;
+  /** Hiển thị thêm cặp drum wheel giờ kết thúc */
+  showEndTime?: boolean;
+  /** Giờ kết thúc "HH:mm" */
+  endTime?: string;
+  /** Callback khi giờ kết thúc thay đổi */
+  onEndTimeChange?: (time: string) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 15, 30, 45];
 const ITEM_H = 36; // px — height of each row
 
-/** Drum-style scroll wheel: mouse wheel, touch, native snap */
+/** Drum-style scroll wheel with mouse wheel support */
 function ScrollWheel({
   items,
   selected,
@@ -39,7 +45,6 @@ function ScrollWheel({
   formatLabel: (v: number) => string;
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const isScrolling = React.useRef(false);
 
   // Scroll to the selected item on mount / open
   React.useEffect(() => {
@@ -79,8 +84,23 @@ function ScrollWheel({
     };
   }, [handleScrollEnd]);
 
+  // Mouse wheel handler — scroll by 1 item per wheel tick
+  const handleWheel = React.useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const el = containerRef.current;
+      if (!el) return;
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const currentIdx = Math.round(el.scrollTop / ITEM_H);
+      const nextIdx = Math.max(0, Math.min(currentIdx + direction, items.length - 1));
+      el.scrollTo({ top: nextIdx * ITEM_H, behavior: "smooth" });
+    },
+    [items.length]
+  );
+
   return (
-    <div className="relative w-[60px] h-[220px] overflow-hidden">
+    <div className="relative w-[60px] h-[220px] overflow-hidden" onWheel={handleWheel}>
       {/* Gradient fade top */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 z-10 bg-gradient-to-b from-background to-transparent" />
       {/* Gradient fade bottom */}
@@ -135,6 +155,71 @@ function ScrollWheel({
   );
 }
 
+/** A pair of hour+minute drum wheels with a label */
+function TimeWheelPair({
+  label,
+  hour,
+  minute,
+  onHourChange,
+  onMinuteChange,
+}: {
+  label: string;
+  hour: number;
+  minute: number;
+  onHourChange: (h: number) => void;
+  onMinuteChange: (m: number) => void;
+}) {
+  return (
+    <div className="flex flex-col">
+      {/* Label */}
+      <div className="flex items-center gap-1 px-3 pt-3 pb-1">
+        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          {label}
+        </span>
+        <span className="ml-auto text-sm font-semibold tabular-nums text-primary">
+          {String(hour).padStart(2, "0")}:
+          {String(minute).padStart(2, "0")}
+        </span>
+      </div>
+
+      {/* Column labels */}
+      <div className="flex gap-1 px-3 pb-1">
+        <span className="w-[60px] text-center text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+          Giờ
+        </span>
+        <span className="w-4" />
+        <span className="w-[60px] text-center text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+          Phút
+        </span>
+      </div>
+
+      <div className="flex gap-1 px-2 pb-2 items-center">
+        {/* Hour wheel */}
+        <ScrollWheel
+          items={HOURS}
+          selected={hour}
+          onSelect={onHourChange}
+          formatLabel={(h) => String(h).padStart(2, "0")}
+        />
+
+        {/* Colon */}
+        <div className="flex items-center justify-center w-4">
+          <span className="text-muted-foreground font-bold text-base">:</span>
+        </div>
+
+        {/* Minute wheel */}
+        <ScrollWheel
+          items={MINUTES}
+          selected={minute}
+          onSelect={onMinuteChange}
+          formatLabel={(m) => String(m).padStart(2, "0")}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function DateTimePicker({
   value,
   onChange,
@@ -142,6 +227,9 @@ export function DateTimePicker({
   disabled = false,
   className,
   fromDate,
+  showEndTime = false,
+  endTime,
+  onEndTimeChange,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -154,6 +242,12 @@ export function DateTimePicker({
     value ? Math.round(value.getMinutes() / 15) * 15 % 60 : 0
   );
 
+  // End time staged state
+  const parsedEndHour = endTime ? parseInt(endTime.split(":")[0], 10) : 10;
+  const parsedEndMinute = endTime ? parseInt(endTime.split(":")[1], 10) : 0;
+  const [stagedEndHour, setStagedEndHour] = React.useState<number>(parsedEndHour);
+  const [stagedEndMinute, setStagedEndMinute] = React.useState<number>(parsedEndMinute);
+
   // Sync when external value changes
   React.useEffect(() => {
     setStagedDate(value);
@@ -163,11 +257,26 @@ export function DateTimePicker({
     }
   }, [value]);
 
+  React.useEffect(() => {
+    if (endTime) {
+      setStagedEndHour(parseInt(endTime.split(":")[0], 10));
+      setStagedEndMinute(parseInt(endTime.split(":")[1], 10));
+    }
+  }, [endTime]);
+
   function handleConfirm() {
     if (!stagedDate) return;
     const result = new Date(stagedDate);
     result.setHours(stagedHour, stagedMinute, 0, 0);
     onChange?.(result);
+
+    // Commit end time
+    if (showEndTime && onEndTimeChange) {
+      const hh = String(stagedEndHour).padStart(2, "0");
+      const mm = String(stagedEndMinute).padStart(2, "0");
+      onEndTimeChange(`${hh}:${mm}`);
+    }
+
     setOpen(false);
   }
 
@@ -175,13 +284,25 @@ export function DateTimePicker({
     setStagedDate(undefined);
     setStagedHour(8);
     setStagedMinute(0);
+    setStagedEndHour(10);
+    setStagedEndMinute(0);
     onChange?.(undefined);
+    if (showEndTime && onEndTimeChange) {
+      onEndTimeChange("");
+    }
     setOpen(false);
   }
 
-  const displayLabel = value
-    ? format(value, "dd/MM/yyyy  HH:mm", { locale: vi })
-    : null;
+  // Build display label
+  let displayLabel: string | null = null;
+  if (value) {
+    const datePart = format(value, "dd/MM/yyyy  HH:mm", { locale: vi });
+    if (showEndTime && endTime) {
+      displayLabel = `${datePart} - ${endTime}`;
+    } else {
+      displayLabel = datePart;
+    }
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -222,50 +343,28 @@ export function DateTimePicker({
 
           {/* ── Time Drum Wheels ── */}
           <div className="flex flex-col">
-            {/* Header */}
-            <div className="flex items-center gap-1 px-3 pt-3 pb-1">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Giờ
-              </span>
-              <span className="ml-auto text-sm font-semibold tabular-nums text-primary">
-                {String(stagedHour).padStart(2, "0")}:
-                {String(stagedMinute).padStart(2, "0")}
-              </span>
-            </div>
-
-            {/* Column labels */}
-            <div className="flex gap-1 px-3 pb-1">
-              <span className="w-[60px] text-center text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                Giờ
-              </span>
-              <span className="w-4" />
-              <span className="w-[60px] text-center text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                Phút
-              </span>
-            </div>
-
-            <div className="flex gap-1 px-2 pb-2 items-center">
-              {/* Hour wheel */}
-              <ScrollWheel
-                items={HOURS}
-                selected={stagedHour}
-                onSelect={setStagedHour}
-                formatLabel={(h) => String(h).padStart(2, "0")}
+            <div className={showEndTime ? "flex flex-row" : ""}>
+              <TimeWheelPair
+                label={showEndTime ? "Bắt đầu" : "Giờ"}
+                hour={stagedHour}
+                minute={stagedMinute}
+                onHourChange={setStagedHour}
+                onMinuteChange={setStagedMinute}
               />
 
-              {/* Colon */}
-              <div className="flex items-center justify-center w-4">
-                <span className="text-muted-foreground font-bold text-base">:</span>
-              </div>
-
-              {/* Minute wheel */}
-              <ScrollWheel
-                items={MINUTES}
-                selected={stagedMinute}
-                onSelect={setStagedMinute}
-                formatLabel={(m) => String(m).padStart(2, "0")}
-              />
+              {/* End time wheels — side by side */}
+              {showEndTime && (
+                <>
+                  <div className="w-px bg-border my-3" />
+                  <TimeWheelPair
+                    label="Kết thúc"
+                    hour={stagedEndHour}
+                    minute={stagedEndMinute}
+                    onHourChange={setStagedEndHour}
+                    onMinuteChange={setStagedEndMinute}
+                  />
+                </>
+              )}
             </div>
 
             {/* Actions */}

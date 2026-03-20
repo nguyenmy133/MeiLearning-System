@@ -15,6 +15,7 @@ public class RescheduleRequestResponse {
     private String originalTime;
     private String requestedDate;
     private String requestedTime;
+    private String requestedEndTime;
     private String reason;
     private String status;
     private String reviewedBy;

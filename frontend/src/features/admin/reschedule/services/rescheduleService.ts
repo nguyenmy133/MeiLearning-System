@@ -56,12 +56,16 @@ export async function getStats() {
   };
 }
 
-export async function approveRequest(id: string) {
-  const { data } = await apiClient.patch(API.RESCHEDULE.APPROVE(Number(id)));
+export async function approveRequest(id: string, reviewedBy: string) {
+  const { data } = await apiClient.patch(API.RESCHEDULE.APPROVE(Number(id)), null, {
+    params: { reviewedBy },
+  });
   return data;
 }
 
-export async function rejectRequest(id: string, reason: string) {
-  const { data } = await apiClient.patch(API.RESCHEDULE.REJECT(Number(id)), { reason });
+export async function rejectRequest(id: string, reviewedBy: string, reason: string) {
+  const { data } = await apiClient.patch(API.RESCHEDULE.REJECT(Number(id)), null, {
+    params: { reviewedBy, reason },
+  });
   return data;
 }

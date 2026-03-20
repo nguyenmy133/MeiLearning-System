@@ -60,6 +60,9 @@ public class RescheduleRequest extends BaseEntity {
     @Column(name = "requested_time", length = 20)
     private String requestedTime;
 
+    @Column(name = "requested_end_time", length = 20)
+    private String requestedEndTime;
+
     @Column(nullable = false, length = 500)
     private String reason;
 

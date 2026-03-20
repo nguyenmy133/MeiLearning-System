@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -34,19 +32,62 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 import { useClasses } from "@/features/admin/classes/hooks";
 import { useRescheduleRequests, useCreateReschedule } from "../hooks";
 
+// ── Fetch sessions cho 1 class ────────────────────────────────────────────────
+interface SessionOption {
+  id: number;
+  date: string;       // "YYYY-MM-DD"
+  startTime: string;  // "HH:mm"
+  endTime: string;    // "HH:mm"
+  status: string;
+}
+
+function useClassSessions(classId: number | null) {
+  return useQuery({
+    queryKey: ["class-sessions", classId],
+    queryFn: async (): Promise<SessionOption[]> => {
+      if (!classId) return [];
+      const { data } = await apiClient.get("/sessions", {
+        params: { classId },
+      });
+      const list = Array.isArray(data) ? data : data?.data ?? [];
+      return list;
+    },
+    enabled: !!classId,
+  });
+}
+
 export function TeacherReschedulePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [requestType, setRequestType] = useState<"reschedule" | "makeup">("reschedule");
+  const [requestType, setRequestType] = useState<"reschedule" | "cancel">("reschedule");
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [originalDate, setOriginalDate] = useState<Date | undefined>(undefined);
+  const [selectedSessionId, setSelectedSessionId] = useState("");
   const [newDateTime, setNewDateTime] = useState<Date | undefined>(undefined);
+  const [newEndTime, setNewEndTime] = useState("");
   const [reason, setReason] = useState("");
 
   // Backend tự filter lớp theo teacher từ JWT
   const { data: myClasses = [] } = useClasses({ limit: 50 });
+
+  // Lấy danh sách buổi học khi chọn lớp
+  const classIdNum = selectedClassId ? Number(selectedClassId) : null;
+  const { data: allSessions = [] } = useClassSessions(classIdNum);
+
+  // Chỉ hiện sessions upcoming
+  const upcomingSessions = useMemo(
+    () => allSessions.filter((s) => s.status === "upcoming"),
+    [allSessions]
+  );
+
+  // Lấy session đã chọn
+  const selectedSession = useMemo(
+    () => upcomingSessions.find((s) => String(s.id) === selectedSessionId),
+    [upcomingSessions, selectedSessionId]
+  );
 
   const { data: requests = [] } = useRescheduleRequests();
   const createReschedule = useCreateReschedule();
@@ -78,7 +119,7 @@ export function TeacherReschedulePage() {
   };
 
   const handleSubmit = () => {
-    if (!selectedClassId || !originalDate || !reason) {
+    if (!selectedClassId || !selectedSessionId || !reason) {
       toast.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
@@ -88,30 +129,56 @@ export function TeacherReschedulePage() {
       return;
     }
 
+    if (requestType === "reschedule" && !newEndTime) {
+      toast.error("Vui lòng chọn giờ kết thúc mới!");
+      return;
+    }
+
+    if (!selectedSession) {
+      toast.error("Không tìm thấy buổi học đã chọn!");
+      return;
+    }
+
     createReschedule.mutate(
       {
         classId: Number(selectedClassId),
+        sessionId: Number(selectedSessionId),
         type: requestType,
-        originalDate: originalDate ? format(originalDate, "yyyy-MM-dd") : "",
-        originalTime: "",
+        originalDate: selectedSession.date,
+        originalTime: `${selectedSession.startTime} - ${selectedSession.endTime}`,
         requestedDate: requestType === "reschedule" && newDateTime
           ? format(newDateTime, "yyyy-MM-dd")
           : undefined,
         requestedTime: requestType === "reschedule" && newDateTime
           ? format(newDateTime, "HH:mm")
           : undefined,
+        requestedEndTime: requestType === "reschedule" ? newEndTime : undefined,
         reason,
       },
       {
         onSuccess: () => {
           setIsDialogOpen(false);
           setSelectedClassId("");
-          setOriginalDate(undefined);
+          setSelectedSessionId("");
           setNewDateTime(undefined);
+          setNewEndTime("");
           setReason("");
         },
       }
     );
+  };
+
+  // Reset session khi đổi class
+  const handleClassChange = (classId: string) => {
+    setSelectedClassId(classId);
+    setSelectedSessionId("");
+  };
+
+  const formatSessionLabel = (s: SessionOption) => {
+    // "YYYY-MM-DD" → "DD/MM/YYYY"
+    const parts = s.date.split("-");
+    const dateStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : s.date;
+    return `${dateStr} — ${s.startTime} ~ ${s.endTime}`;
   };
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
@@ -139,20 +206,20 @@ export function TeacherReschedulePage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Loại yêu cầu</label>
-                <Select value={requestType} onValueChange={(v: "reschedule" | "makeup") => setRequestType(v)}>
+                <Select value={requestType} onValueChange={(v: "reschedule" | "cancel") => setRequestType(v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="reschedule">Đổi lịch dạy</SelectItem>
-                    <SelectItem value="makeup">Dạy bù</SelectItem>
+                    <SelectItem value="cancel">Hủy buổi</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Lớp học</label>
-                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <Select value={selectedClassId} onValueChange={handleClassChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn lớp" />
                   </SelectTrigger>
@@ -167,23 +234,50 @@ export function TeacherReschedulePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Ngày gốc cần đổi/hủy</label>
-                <DatePicker
-                  value={originalDate}
-                  onChange={setOriginalDate}
-                  placeholder="Chọn ngày buổi học gốc"
-                />
+                <label className="text-sm font-medium">Buổi học cần đổi/hủy</label>
+                <Select
+                  value={selectedSessionId}
+                  onValueChange={setSelectedSessionId}
+                  disabled={!selectedClassId || upcomingSessions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        !selectedClassId
+                          ? "Chọn lớp trước"
+                          : upcomingSessions.length === 0
+                            ? "Không có buổi học nào sắp tới"
+                            : "Chọn buổi học"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {upcomingSessions.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {formatSessionLabel(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedSession && (
+                  <p className="text-xs text-muted-foreground">
+                    Ngày: {selectedSession.date} • Giờ: {selectedSession.startTime} - {selectedSession.endTime}
+                  </p>
+                )}
               </div>
 
               {requestType === "reschedule" && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    Ngày &amp; giờ mới
+                    Ngày &amp; giờ mới (bắt đầu - kết thúc)
                   </label>
                   <DateTimePicker
                     value={newDateTime}
                     onChange={setNewDateTime}
-                    placeholder="Chọn ngày & giờ mới"
+                    showEndTime
+                    endTime={newEndTime}
+                    onEndTimeChange={setNewEndTime}
+                    placeholder="Chọn ngày, giờ bắt đầu & kết thúc"
                     fromDate={new Date()}
                   />
                 </div>
@@ -268,7 +362,7 @@ export function TeacherReschedulePage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold text-foreground">{request.className}</h4>
                       <Badge variant="outline">
-                        {request.type === "reschedule" ? "Đổi lịch" : "Dạy bù"}
+                        {request.type === "reschedule" ? "Đổi lịch" : "Hủy buổi"}
                       </Badge>
                       {getStatusBadge(request.status)}
                     </div>
@@ -295,6 +389,7 @@ export function TeacherReschedulePage() {
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {request.requestedTime}
+                            {request.requestedEndTime && ` - ${request.requestedEndTime}`}
                           </span>
                         </div>
                       )}

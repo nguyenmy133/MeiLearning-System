@@ -135,7 +135,14 @@ export function TeacherSchedulePage() {
 
   const todayDayIndex = jsDay2Index(new Date().getDay());
 
-  const { data: sessions = [], isLoading } = useTeacherSchedule();
+  const weekStartStr = useMemo(() => {
+    const y = weekStart.getFullYear();
+    const m = String(weekStart.getMonth() + 1).padStart(2, "0");
+    const d = String(weekStart.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [weekStart]);
+
+  const { data: sessions = [], isLoading } = useTeacherSchedule(weekStartStr);
 
   // Filter sessions to the selected week
   const weekEnd = useMemo(() => {

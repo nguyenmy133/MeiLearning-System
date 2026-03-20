@@ -59,8 +59,23 @@ function ScrollWheel({
     };
   }, [handleScrollEnd]);
 
+  // Mouse wheel handler — scroll by 1 item per wheel tick
+  const handleWheel = React.useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const el = containerRef.current;
+      if (!el) return;
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const currentIdx = Math.round(el.scrollTop / ITEM_H);
+      const nextIdx = Math.max(0, Math.min(currentIdx + direction, items.length - 1));
+      el.scrollTo({ top: nextIdx * ITEM_H, behavior: "smooth" });
+    },
+    [items.length]
+  );
+
   return (
-    <div className="relative w-[60px] h-[180px] overflow-hidden">
+    <div className="relative w-[60px] h-[180px] overflow-hidden" onWheel={handleWheel}>
       {/* Gradient fades */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-14 z-10 bg-gradient-to-b from-background to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 z-10 bg-gradient-to-t from-background to-transparent" />
