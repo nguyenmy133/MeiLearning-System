@@ -6,7 +6,10 @@ export const documentService = {
     const { data } = await apiClient.get(API.DOCUMENTS.LIST, {
       params: classId ? { classId } : undefined,
     });
-    return data;
+    // Backend returns PageResponse with .content array — unwrap it
+    if (Array.isArray(data)) return data;
+    if (data?.content && Array.isArray(data.content)) return data.content;
+    return [];
   },
 
   async getById(id: number) {
@@ -29,8 +32,21 @@ export const documentService = {
   async deleteDocument(id: number) {
     await apiClient.delete(API.DOCUMENTS.DELETE(id));
   },
+
+  async getCourses(): Promise<{ id: string; name: string }[]> {
+    const all = [{ id: "all", name: "Tất cả" }];
+    try {
+      const { data } = await apiClient.get("/classes/enrolled/me");
+      const list = Array.isArray(data) ? data : data?.content ?? [];
+      if (list.length > 0) {
+        return all.concat(list.map((c: any) => ({ id: String(c.id ?? c.name), name: c.name })));
+      }
+    } catch { /* fallback to just "all" */ }
+    return all;
+  },
 };
 
 // Named function exports
 export const getDocuments = documentService.getDocuments;
 export const uploadDocument = documentService.uploadDocument;
+export const getCourses = documentService.getCourses;

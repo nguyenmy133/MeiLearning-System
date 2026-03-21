@@ -128,7 +128,7 @@ export function UserDashboard() {
   const { data: classes = [] } = useMyClasses();
   const { data: invoices = [] } = useMyInvoices();
 
-  const activeClasses = classes.filter((c) => c.status === "ACTIVE");
+  const activeClasses = classes.filter((c) => c.status === "active");
   const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
   const totalDebt = pendingInvoices.reduce((s, i) => s + i.totalAmount, 0);
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDateTime } from "@/lib/dateUtils";
 import {
   Clock,
   Calendar,
@@ -352,14 +353,13 @@ export function TeacherLeaveApprovalPage() {
                                 <TableCell>
                                   <div className="flex items-center gap-3">
                                     <Avatar className="h-9 w-9">
-                                      <AvatarImage src={request.avatar} />
                                       <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                        {getInitials(request.studentName)}
+                                        {getInitials(request.requesterName)}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
                                       <p className="font-medium text-sm text-foreground">
-                                        {request.studentName}
+                                        {request.requesterName}
                                       </p>
                                       <p className="text-xs text-muted-foreground">
                                         {request.id}
@@ -381,12 +381,12 @@ export function TeacherLeaveApprovalPage() {
                                 <TableCell className="hidden md:table-cell">
                                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                     <Calendar className="w-3.5 h-3.5" />
-                                    {request.date}
+                                    {request.sessionDate?.split("-").reverse().join("/") ?? "—"}
                                   </div>
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell">
                                   <span className="text-sm text-muted-foreground">
-                                    {request.createdAt}
+                                    {formatDateTime(request.createdAt)}
                                   </span>
                                 </TableCell>
                                 <TableCell>
@@ -468,14 +468,13 @@ export function TeacherLeaveApprovalPage() {
               {/* Student info */}
               <div className="flex items-center gap-3 p-3 bg-accent/50 rounded-lg">
                 <Avatar className="h-11 w-11">
-                  <AvatarImage src={selectedRequest.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                    {getInitials(selectedRequest.studentName)}
+                    {getInitials(selectedRequest.requesterName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-semibold text-foreground">
-                    {selectedRequest.studentName}
+                    {selectedRequest.requesterName}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {selectedRequest.className}
@@ -501,27 +500,19 @@ export function TeacherLeaveApprovalPage() {
                 </div>
                 <div className="space-y-1">
                   <span className="text-muted-foreground">Ngày nghỉ/đi muộn</span>
-                  <p className="font-medium">{selectedRequest.date}</p>
+                  <p className="font-medium">{selectedRequest.sessionDate?.split("-").reverse().join("/") ?? "—"}</p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-muted-foreground">Ca học</span>
-                  <p className="font-medium">{selectedRequest.sessionTime}</p>
+                  <p className="font-medium">
+                    {selectedRequest.startTime && selectedRequest.endTime
+                      ? `${selectedRequest.startTime.slice(0, 5)} - ${selectedRequest.endTime.slice(0, 5)}`
+                      : "—"}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-muted-foreground">Ngày gửi đơn</span>
                   <p className="font-medium">{selectedRequest.createdAt}</p>
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <span className="text-muted-foreground">Số buổi đã nghỉ trong khóa</span>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{selectedRequest.totalAbsences} buổi</p>
-                    {selectedRequest.totalAbsences >= 3 && (
-                      <Badge variant="destructive" className="text-xs">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Cảnh báo
-                      </Badge>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -595,10 +586,10 @@ export function TeacherLeaveApprovalPage() {
             <div className="space-y-4">
               <div className="p-3 bg-accent/50 rounded-lg text-sm">
                 <p>
-                  <span className="font-medium">{selectedRequest.studentName}</span>
+                  <span className="font-medium">{selectedRequest.requesterName}</span>
                   {" — "}
                   <span className="text-muted-foreground">
-                    {getTypeLabel(selectedRequest.type)} ngày {selectedRequest.date}
+                    {getTypeLabel(selectedRequest.type)} ngày {selectedRequest.sessionDate?.split("-").reverse().join("/") ?? "—"}
                   </span>
                 </p>
               </div>

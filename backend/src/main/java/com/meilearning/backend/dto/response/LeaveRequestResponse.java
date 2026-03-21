@@ -10,6 +10,9 @@ public class LeaveRequestResponse {
     private String requesterType;
     private Long sessionId;
     private String sessionDate;
+    private String className;
+    private String startTime;
+    private String endTime;
     private String type;
     private String reason;
     private String status;

@@ -1,41 +1,21 @@
 import { apiClient } from "@/lib/api-client";
-import { authService } from "@/features/shared/auth/authService";
 import type { TuitionInvoice } from "../types";
-import { MOCK_INVOICES } from "../data/mockData";
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
-
-function getCurrentStudentId(): number {
-  const user = authService.getCurrentUser();
-  if (!user) throw new Error("Chưa đăng nhập");
-  return user.id;
-}
-
-export async function getMyInvoices(): Promise<TuitionInvoice[]> {
-  try {
-    const studentId = getCurrentStudentId();
-    const { data } = await apiClient.get(`/tuition/student/${studentId}`);
-    if (Array.isArray(data) && data.length > 0) return data;
-  } catch { /* fallback */ }
-  return clone(MOCK_INVOICES);
+/** Get invoices for current student — uses JWT-resolved /me endpoint */
+export async function getMyInvoices(month?: string): Promise<TuitionInvoice[]> {
+  const { data } = await apiClient.get("/tuition/me", {
+    params: month ? { month } : undefined,
+  });
+  if (Array.isArray(data)) return data;
+  return [];
 }
 
 export async function getInvoiceById(id: string): Promise<TuitionInvoice> {
-  try {
-    const { data } = await apiClient.get(`/tuition/${id}`);
-    return data;
-  } catch { /* fallback */ }
-  const inv = MOCK_INVOICES.find((i) => i.id === id);
-  if (!inv) throw new Error("Không tìm thấy hóa đơn");
-  return clone(inv);
+  const { data } = await apiClient.get(`/tuition/${id}`);
+  return data;
 }
 
-export async function initiatePayment(invoiceId: string, method: string): Promise<TuitionInvoice> {
-  try {
-    const { data } = await apiClient.post(`/tuition/${invoiceId}/pay`, { paymentMethod: method });
-    return data;
-  } catch { /* fallback */ }
-  const inv = MOCK_INVOICES.find((i) => i.id === invoiceId);
-  if (!inv) throw new Error("Không tìm thấy hóa đơn");
-  return { ...clone(inv), status: "reviewing" };
+export async function initiatePayment(payload: { invoiceId: string; amount: number }, method = "qr_transfer"): Promise<TuitionInvoice> {
+  const { data } = await apiClient.post(`/tuition/${payload.invoiceId}/pay`, { paymentMethod: method });
+  return data;
 }

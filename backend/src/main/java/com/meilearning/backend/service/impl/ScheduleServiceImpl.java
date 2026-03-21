@@ -24,6 +24,7 @@ import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.RoomRepository;
 import com.meilearning.backend.repository.TeacherRepository;
+import com.meilearning.backend.repository.AttendanceRecordRepository;
 import com.meilearning.backend.service.ScheduleService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -44,9 +45,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final RoomRepository roomRepository;
     private final SessionMapper sessionMapper;
     private final TeacherRepository teacherRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // â”€â”€ Generate Sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Override
     public void generateSessions(Long classId) {
@@ -135,7 +136,6 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     }
 
-    // â”€â”€ Get Schedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Override
     public ScheduleResponse getSchedule(String date, String view, Long facilityId) {
@@ -225,7 +225,26 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .filter(s -> classIds.contains(s.getClassEntity().getId()))
                 .toList();
 
-        return buildScheduleResponse(filtered, range[0], range[1], view);
+        // Enrich with per-student attendance status
+        List<ClassSessionResponse> responses = filtered.stream()
+                .map(sessionMapper::toResponse)
+                .toList();
+
+        for (ClassSessionResponse resp : responses) {
+            attendanceRecordRepository
+                    .findBySessionIdAndStudentId(resp.getId(), studentId)
+                    .ifPresent(record -> resp.setAttendanceStatus(
+                            record.getStatus().name().toUpperCase()
+                    ));
+        }
+
+        return ScheduleResponse.builder()
+                .startDate(range[0].toString())
+                .endDate(range[1].toString())
+                .view(view != null ? view : "week")
+                .sessions(responses)
+                .totalSessions(responses.size())
+                .build();
 
     }
 
@@ -250,7 +269,6 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private ScheduleResponse buildScheduleResponse(List<ClassSession> sessions,
                                                     LocalDate startDate, LocalDate endDate, String view) {

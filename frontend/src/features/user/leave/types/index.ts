@@ -7,27 +7,24 @@ export type LeaveRequestType = "leave" | "late";
 
 export interface UserLeaveRequest {
     id: string;
-    classId: string;
-    className: string;
+    className?: string;
     type: LeaveRequestType;
-    /** Date of the session to be absent. Format: "YYYY-MM-DD" */
-    sessionDate: string;
-    sessionTime: string;      // "HH:MM - HH:MM"
+    sessionId?: number;
+    sessionDate?: string;
+    startTime?: string;
+    endTime?: string;
     reason: string;
     status: LeaveRequestStatus;
     createdAt: string;
-    /** Teacher who reviewed this request */
-    reviewedByName?: string;
+    reviewedBy?: string;
     reviewedAt?: string;
-    /** Reason only filled when rejected */
     rejectReason?: string;
 }
 
 export interface CreateLeaveRequestDTO {
-    classId: string;
+    requesterType: "student" | "teacher";
+    sessionId: number;
     type: LeaveRequestType;
-    /** Must be at least 24h in the future */
-    sessionDate: string;
     reason: string;
 }
 

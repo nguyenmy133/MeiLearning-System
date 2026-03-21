@@ -125,4 +125,17 @@ public class LeaveController {
                 .orElseThrow(() -> new com.meilearning.backend.exception.ResourceNotFoundException("Reviewer not found"));
         return ResponseEntity.ok(leaveService.reject(id, reviewer.getId(), reason));
     }
+
+    /**
+     * Học viên tự huỷ đơn đang chờ duyệt — resolve requesterId từ JWT.
+     */
+    @PatchMapping("/{id}/cancel")
+    @Operation(summary = "Huỷ đơn (chỉ người gửi, khi đang pending)")
+    public ResponseEntity<Void> cancel(
+            Principal principal,
+            @PathVariable Long id) {
+        User user = SecurityUtils.getCurrentUser(userRepository);
+        leaveService.cancel(id, user.getId());
+        return ResponseEntity.ok().build();
+    }
 }

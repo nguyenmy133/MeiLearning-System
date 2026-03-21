@@ -11,7 +11,6 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class CreateLeaveRequest {
 
-    @NotNull
     private Long requesterId;
     @NotBlank
     private String requesterType;  // student, teacher

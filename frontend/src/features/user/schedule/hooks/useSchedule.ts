@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyClasses, getMySchedule, getTodaySessions } from "../services";
+import { getMyClasses, getMySchedule, getTodaySessions, getClassSessions } from "../services";
 
 export const scheduleKeys = {
     all: ["user-schedule"] as const,
@@ -26,5 +26,13 @@ export function useTodaySessions() {
     return useQuery({
         queryKey: scheduleKeys.today(),
         queryFn: () => getTodaySessions(),
+    });
+}
+
+export function useClassSessions(classId: string) {
+    return useQuery({
+        queryKey: [...scheduleKeys.all, "class-sessions", classId] as const,
+        queryFn: () => getClassSessions(classId),
+        enabled: !!classId,
     });
 }

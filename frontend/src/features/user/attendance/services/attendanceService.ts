@@ -1,41 +1,33 @@
 import { apiClient } from "@/lib/api-client";
-import { authService } from "@/features/shared/auth/authService";
-import type { AttendanceRecord } from "../types";
-import { MOCK_ATTENDANCE } from "../data/mockData";
+import type { AttendanceRecord, AttendanceSummary, CheckInPayload } from "../types";
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
-
-function getCurrentStudentId(): number {
-  const user = authService.getCurrentUser();
-  if (!user) throw new Error("Chưa đăng nhập");
-  return user.id;
+/** Get attendance records — backend resolves student from JWT */
+export async function getMyAttendance(classId?: string): Promise<AttendanceRecord[]> {
+  const { data } = await apiClient.get("/attendance/stats", {
+    params: classId ? { classId } : undefined,
+  });
+  // Backend returns AttendanceStatsResponse — may need mapping
+  if (Array.isArray(data)) return data;
+  // If backend returns an object with records array, extract it
+  if (data?.records && Array.isArray(data.records)) return data.records;
+  return [];
 }
 
-export async function getMyAttendance(): Promise<AttendanceRecord[]> {
-  try {
-    const studentId = getCurrentStudentId();
-    const { data } = await apiClient.get("/attendance/stats", {
-      params: { studentId },
-    });
-    if (Array.isArray(data) && data.length > 0) return data;
-  } catch { /* fallback */ }
-  return clone(MOCK_ATTENDANCE);
+/** Get attendance summary — backend resolves student from JWT */
+export async function getAttendanceSummary(): Promise<AttendanceSummary[]> {
+  const { data } = await apiClient.get("/attendance/stats");
+  // Backend returns AttendanceStatsResponse — extract summary if present
+  if (Array.isArray(data)) return data;
+  // If backend returns a single stats object, wrap into array
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    return [data as AttendanceSummary];
+  }
+  return [];
 }
 
-export async function getAttendanceSummary(): Promise<{
-  total: number; present: number; absent: number; late: number; rate: number;
-}> {
-  const records = await getMyAttendance();
-  const total = records.length;
-  const present = records.filter((r) => r.status === "PRESENT").length;
-  const absent = records.filter((r) => r.status === "ABSENT_UNEXCUSED" || r.status === "ABSENT_EXCUSED").length;
-  const late = records.filter((r) => r.status === "LATE").length;
-  return { total, present, absent, late, rate: total > 0 ? Math.round((present / total) * 100) : 0 };
-}
-
-export async function checkIn(sessionId: string, studentId?: number): Promise<void> {
-  const sid = studentId ?? getCurrentStudentId();
-  await apiClient.post("/attendance/check-in", null, {
-    params: { sessionId, studentId: sid },
+/** QR Check-in — uses JWT-resolved /check-in/me endpoint */
+export async function checkIn(payload: CheckInPayload): Promise<void> {
+  await apiClient.post("/attendance/check-in/me", null, {
+    params: { sessionId: payload.sessionId },
   });
 }

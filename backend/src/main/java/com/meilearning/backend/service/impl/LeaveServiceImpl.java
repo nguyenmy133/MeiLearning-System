@@ -32,6 +32,8 @@ public class LeaveServiceImpl implements LeaveService {
     private final UserRepository userRepository;
     private final ClassSessionRepository sessionRepository;
     private final TeacherRepository teacherRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
+    private final StudentRepository studentRepository;
     private final AcademicMapper mapper;
     private final NotificationDispatcher notificationDispatcher;
 
@@ -41,22 +43,38 @@ public class LeaveServiceImpl implements LeaveService {
         User requester = userRepository.findById(req.getRequesterId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + req.getRequesterId()));
 
+        ClassSession session = null;
+        if (req.getSessionId() != null) {
+            session = sessionRepository.findById(req.getSessionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+        }
+
         LeaveRequest lr = LeaveRequest.builder()
                 .requester(requester)
                 .requesterType(RequesterType.valueOf(req.getRequesterType()))
                 .type(LeaveType.valueOf(req.getType()))
                 .reason(req.getReason())
+                .session(session)
                 .build();
 
-        if (req.getSessionId() != null) {
-            ClassSession session = sessionRepository.findById(req.getSessionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
-
-            lr.setSession(session);
-
-        }
-
         lr = leaveRepository.save(lr);
+
+        // Notify teacher: có đơn xin nghỉ mới từ học viên
+        // Dùng session variable gốc (đã fully loaded) thay vì lr.getSession() (có thể lazy)
+        if (session != null
+                && session.getClassEntity() != null
+                && session.getClassEntity().getTeacher() != null) {
+            User teacherUser = session.getClassEntity().getTeacher().getUser();
+            String sessionInfo = " ngày " + session.getDate();
+            String typeLabel = lr.getType() == LeaveType.leave ? "xin nghỉ" : "đi muộn";
+            notificationDispatcher.notifyWithEmail(
+                    teacherUser,
+                    "leave_new",
+                    "Đơn " + typeLabel + " mới",
+                    requester.getName() + " đã gửi đơn " + typeLabel + sessionInfo
+                            + " — lớp " + session.getClassEntity().getName() + "."
+            );
+        }
 
         return mapper.toLeaveResponse(lr);
 
@@ -131,6 +149,33 @@ public class LeaveServiceImpl implements LeaveService {
         lr.setReviewedAt(Instant.now());
 
         lr = leaveRepository.save(lr);
+        final LeaveRequest savedLr = lr;
+
+        // ── Side-effect: tạo/update AttendanceRecord = absent_excused ──
+        // Để tuition service tự động miễn phí buổi này
+        if (savedLr.getSession() != null && savedLr.getRequester() != null) {
+            studentRepository.findByUserId(savedLr.getRequester().getId())
+                    .ifPresent(student -> {
+                        var existing = attendanceRecordRepository
+                                .findBySessionIdAndStudentId(savedLr.getSession().getId(), student.getId());
+                        if (existing.isPresent()) {
+                            // Đã có record → update status
+                            existing.get().setStatus(AttendanceStatus.absent_excused);
+                            existing.get().setNote("Nghỉ có phép — đơn #" + savedLr.getId());
+                            attendanceRecordRepository.save(existing.get());
+                        } else {
+                            // Chưa có → tạo mới
+                            attendanceRecordRepository.save(
+                                    AttendanceRecord.builder()
+                                            .session(savedLr.getSession())
+                                            .student(student)
+                                            .status(AttendanceStatus.absent_excused)
+                                            .note("Nghỉ có phép — đơn #" + savedLr.getId())
+                                            .build()
+                            );
+                        }
+                    });
+        }
 
         // Notify requester: đơn đã được duyệt
         if (lr.getRequester() != null) {
@@ -185,6 +230,16 @@ public class LeaveServiceImpl implements LeaveService {
     private LeaveRequest findLeave(Long id) {
         return leaveRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Leave request not found: " + id));
+    }
+
+    @Override
+    public void cancel(Long id, Long requesterId) {
+        LeaveRequest lr = findLeave(id);
+        if (lr.getStatus() != RequestStatus.pending)
+            throw new BusinessException("Chỉ có thể huỷ đơn đang chờ duyệt.");
+        if (!lr.getRequester().getId().equals(requesterId))
+            throw new BusinessException("Bạn không có quyền huỷ đơn này.");
+        leaveRepository.delete(lr);
     }
 
     @Override

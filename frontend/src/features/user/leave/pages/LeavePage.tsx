@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatDateTime } from "@/lib/dateUtils";
 import {
   Clock,
@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -39,9 +40,31 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyLeaveRequests, useCreateLeaveRequest, useCancelLeaveRequest } from "@/features/user/leave/hooks";
-import { useMyClasses } from "@/features/user/schedule/hooks";
+import { useMyClasses, useClassSessions } from "@/features/user/schedule/hooks";
 import type { CreateLeaveRequestDTO, LeaveRequestStatus, LeaveRequestType } from "@/features/user/leave/types";
 import { toast } from "sonner";
+
+// ── Date helpers ─────────────────────────────────────────────────────────
+
+const WEEKDAY_LABELS = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getDateAfter(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function formatSessionDate(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  const weekday = WEEKDAY_LABELS[d.getDay()];
+  const dd = d.getDate().toString().padStart(2, "0");
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  return `${weekday} - ${dd}/${mm}/${d.getFullYear()}`;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -85,6 +108,8 @@ export function LeavePage() {
   const [requestType, setRequestType] = useState<LeaveRequestType | "">("");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [reason, setReason] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | LeaveRequestStatus>("all");
 
   // ── Service hooks ───────────────────────────────────────────────────
   const { data: leaveRequests = [], isLoading } = useMyLeaveRequests();
@@ -93,21 +118,35 @@ export function LeavePage() {
   const cancelMutation = useCancelLeaveRequest();
 
   // Only ACTIVE classes can receive leave requests
-  const activeClasses = classes.filter((c) => c.status === "ACTIVE");
+  const activeClasses = classes.filter((c) => c.status === "active");
+
+  // Load sessions for selected class
+  const { data: classSessions = [] } = useClassSessions(selectedClassId);
+
+  // Filter: today → +14 days, only upcoming/ongoing sessions
+  const today = getToday();
+  const twoWeeksLater = getDateAfter(14);
+  const upcomingSessions = useMemo(() => {
+    return classSessions
+      .filter(
+        (s) =>
+          s.date >= today &&
+          s.date <= twoWeeksLater &&
+          (s.status === "upcoming" || s.status === "ongoing")
+      )
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+  }, [classSessions, today, twoWeeksLater]);
+
+  const selectedSession = upcomingSessions.find((s) => s.id === selectedSessionId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!requestType || !selectedClassId || !reason.trim()) return;
-
-    // sessionDate: 2 days from now as demo (real: user picks a date)
-    const sessionDate = new Date();
-    sessionDate.setDate(sessionDate.getDate() + 2);
-    const sessionDateStr = sessionDate.toISOString().split("T")[0];
+    if (!requestType || !selectedClassId || !reason.trim() || !selectedSession) return;
 
     const dto: CreateLeaveRequestDTO = {
-      classId: selectedClassId,
+      requesterType: "student",
+      sessionId: Number(selectedSession.id),
       type: requestType as LeaveRequestType,
-      sessionDate: sessionDateStr,
       reason: reason.trim(),
     };
 
@@ -116,6 +155,7 @@ export function LeavePage() {
         setIsOpen(false);
         setRequestType("");
         setSelectedClassId("");
+        setSelectedSessionId("");
         setReason("");
         toast.success("Đã gửi yêu cầu", {
           description: `Yêu cầu ${requestType === "leave" ? "xin nghỉ" : "đi muộn"} của bạn đã được gửi và đang chờ duyệt.`,
@@ -131,6 +171,10 @@ export function LeavePage() {
     approved: leaveRequests.filter((r) => r.status === "approved").length,
     rejected: leaveRequests.filter((r) => r.status === "rejected").length,
   };
+
+  const filteredRequests = filterStatus === "all"
+    ? leaveRequests
+    : leaveRequests.filter((r) => r.status === filterStatus);
 
   const selectedClass = activeClasses.find((c) => c.id === selectedClassId);
 
@@ -173,7 +217,13 @@ export function LeavePage() {
 
               <div className="space-y-2">
                 <Label>Lớp học</Label>
-                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <Select
+                  value={selectedClassId}
+                  onValueChange={(v) => {
+                    setSelectedClassId(v);
+                    setSelectedSessionId(""); // Reset session khi đổi lớp
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn lớp học" />
                   </SelectTrigger>
@@ -185,6 +235,39 @@ export function LeavePage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Buổi học</Label>
+                <Select
+                  value={selectedSessionId}
+                  onValueChange={setSelectedSessionId}
+                  disabled={!selectedClassId}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        !selectedClassId
+                          ? "Vui lòng chọn lớp học trước"
+                          : upcomingSessions.length === 0
+                          ? "Không có buổi học nào trong 2 tuần tới"
+                          : "Chọn buổi học"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {upcomingSessions.map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
+                        {formatSessionDate(session.date)} | {session.startTime} - {session.endTime} | {session.room}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedClassId && upcomingSessions.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Không tìm thấy buổi học nào từ hôm nay đến 2 tuần tới cho lớp này.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -217,7 +300,7 @@ export function LeavePage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!requestType || !selectedClassId || !reason.trim() || createMutation.isPending}
+                  disabled={!requestType || !selectedClassId || !reason.trim() || !selectedSessionId || createMutation.isPending}
                 >
                   <Send className="h-4 w-4 mr-2" />
                   {createMutation.isPending ? "Đang gửi..." : "Gửi yêu cầu"}
@@ -299,20 +382,45 @@ export function LeavePage() {
           <CardDescription>Các yêu cầu xin nghỉ và đi muộn của bạn</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filter tabs */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {[
+              { key: "all" as const, label: "Tất cả", count: stats.total },
+              { key: "pending" as const, label: "Chờ duyệt", count: stats.pending },
+              { key: "approved" as const, label: "Đã duyệt", count: stats.approved },
+              { key: "rejected" as const, label: "Từ chối", count: stats.rejected },
+            ].map((tab) => (
+              <Button
+                key={tab.key}
+                variant={filterStatus === tab.key ? "default" : "outline"}
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => setFilterStatus(tab.key)}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+                    {tab.count}
+                  </Badge>
+                )}
+              </Button>
+            ))}
+          </div>
+
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-lg" />
               ))}
             </div>
-          ) : leaveRequests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p>Bạn chưa có yêu cầu nào.</p>
+              <p>Không có yêu cầu nào.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {leaveRequests.map((request) => (
+              {filteredRequests.map((request) => (
                 <div
                   key={request.id}
                   className={`p-4 rounded-lg border transition-colors ${
@@ -334,30 +442,36 @@ export function LeavePage() {
                           <Badge variant={getStatusBadgeVariant(request.status) as any} className="text-xs">
                             {getStatusText(request.status)}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">{request.id}</span>
+                          <span className="text-xs text-muted-foreground">#{request.id}</span>
                         </div>
-                        <p className="font-medium text-foreground">{request.className}</p>
+                        {request.className && (
+                          <p className="font-medium text-foreground">{request.className}</p>
+                        )}
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {request.sessionDate}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {request.sessionTime}
-                          </span>
+                          {request.sessionDate && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {request.sessionDate.split("-").reverse().join("/")}
+                            </span>
+                          )}
+                          {request.startTime && request.endTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {request.startTime.slice(0, 5)} - {request.endTime.slice(0, 5)}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           <MessageSquare className="w-3.5 h-3.5 inline-block mr-1" />
                           <span className="font-medium">Lý do:</span> {request.reason}
                         </p>
 
-                        {/* Reviewer info — always Teacher */}
-                        {request.reviewedByName && (
+                        {/* Reviewer info */}
+                        {request.reviewedBy && (
                           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                             <User className="w-3 h-3" />
                             {request.status === "approved" ? "Duyệt bởi" : "Từ chối bởi"}:{" "}
-                            <span className="font-medium text-foreground">{request.reviewedByName}</span>
+                            <span className="font-medium text-foreground">{request.reviewedBy}</span>
                             {request.reviewedAt && <span> — {formatDateTime(request.reviewedAt)}</span>}
                           </p>
                         )}

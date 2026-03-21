@@ -84,13 +84,19 @@ public class AcademicMapper {
     }
 
     public LeaveRequestResponse toLeaveResponse(LeaveRequest lr) {
+        var session = lr.getSession();
+        var classEntity = session != null ? session.getClassEntity() : null;
+
         return LeaveRequestResponse.builder()
                 .id(lr.getId())
                 .requesterId(lr.getRequester().getId())
                 .requesterName(lr.getRequester().getName())
                 .requesterType(lr.getRequesterType().name())
-                .sessionId(lr.getSession() != null ? lr.getSession().getId() : null)
-                .sessionDate(lr.getSession() != null ? lr.getSession().getDate().toString() : null)
+                .sessionId(session != null ? session.getId() : null)
+                .sessionDate(session != null ? session.getDate().toString() : null)
+                .className(classEntity != null ? classEntity.getName() : null)
+                .startTime(session != null ? session.getStartTime().toString() : null)
+                .endTime(session != null ? session.getEndTime().toString() : null)
                 .type(lr.getType().name())
                 .reason(lr.getReason())
                 .status(lr.getStatus().name())

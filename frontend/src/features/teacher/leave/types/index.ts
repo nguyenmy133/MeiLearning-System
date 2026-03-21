@@ -3,21 +3,21 @@ export type LeaveRequestType = "leave" | "late";
 
 export interface StudentLeaveRequest {
     id: string;
-    studentId: string;
-    studentName: string;
-    avatar?: string;
-    classId: string;
-    className: string;
+    requesterId: number;
+    requesterName: string;
+    requesterType: string;
+    sessionId?: number;
+    sessionDate?: string;
+    className?: string;
+    startTime?: string;
+    endTime?: string;
     type: LeaveRequestType;
-    date: string;           // "DD/MM/YYYY"
-    sessionTime: string;    // "HH:MM - HH:MM"
     reason: string;
     status: LeaveRequestStatus;
     createdAt: string;
+    reviewedBy?: string;
     reviewedAt?: string;
-    reviewedById?: number;  // teacher or admin ID who reviewed
     rejectReason?: string;
-    totalAbsences: number;  // total absences this month for this student
 }
 
 export interface ReviewLeaveDTO {

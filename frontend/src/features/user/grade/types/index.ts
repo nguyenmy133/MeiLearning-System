@@ -23,5 +23,5 @@ export interface ClassGrade {
     teacherComment?: string;
     commentUpdatedAt?: string;
     /** Status of the class — determines if grades are "final" */
-    classStatus: "ACTIVE" | "COMPLETED";
+    classStatus: "active" | "completed";
 }

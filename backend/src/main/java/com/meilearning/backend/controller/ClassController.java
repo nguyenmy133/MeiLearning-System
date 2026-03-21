@@ -15,8 +15,15 @@ import com.meilearning.backend.dto.request.UpdateClassRequest;
 import com.meilearning.backend.dto.response.ClassResponse;
 import com.meilearning.backend.dto.response.ClassStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.repository.ClassEnrollmentRepository;
+import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TeacherRepository;
+import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.service.ClassService;
+import com.meilearning.backend.util.SecurityUtils;
+import java.security.Principal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -28,6 +35,8 @@ public class ClassController {
 
     private final ClassService classService;
     private final TeacherRepository teacherRepository;
+    private final ClassEnrollmentRepository classEnrollmentRepository;
+    private final StudentRepository studentRepository;
 
     @GetMapping
     @Operation(summary = "Lấy danh sách lớp học")
@@ -102,6 +111,23 @@ public class ClassController {
     public ResponseEntity<ClassStatsResponse> getStats() {
         return ResponseEntity.ok(classService.getStats());
     }
+
+    /**
+     * Lấy danh sách lớp mà student đang đăng nhập đã enroll.
+     * Resolve student từ JWT — không cần FE truyền studentId.
+     */
+    @GetMapping("/enrolled/me")
+    @Operation(summary = "Lấy lớp đã đăng ký của học viên (JWT)")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<List<ClassResponse>> getMyEnrolledClasses(Principal principal) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        List<ClassResponse> classes = classEnrollmentRepository.findByStudentId(student.getId())
+                .stream()
+                .map(enrollment -> classService.getById(enrollment.getClassEntity().getId()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(classes);
+    }
+
 
     // ── Helper: resolve teacherId cho teacher role ──────────────────────────
 

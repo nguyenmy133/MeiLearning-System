@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@/lib/dateUtils";
 import { CreditCard, Receipt, CheckCircle, AlertCircle, QrCode, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 import { useMyInvoices, useInitiatePayment } from "@/features/user/tuition/hooks";
 import { INVOICE_STATUS_LABELS, type InvoiceStatus } from "@/features/user/tuition/types";
+import { apiClient } from "@/lib/api-client";
+import { API } from "@/config/api-endpoints";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
@@ -27,6 +30,11 @@ export function TuitionPage() {
 
   const { data: invoices = [], isLoading } = useMyInvoices();
   const initPayment = useInitiatePayment();
+  const { data: profile } = useQuery<{ id: number; name: string }>({
+    queryKey: ["profile", "me"],
+    queryFn: async () => { const { data } = await apiClient.get(API.PROFILE.ME); return data; },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
   const paidInvoices = invoices.filter((i) => i.status === "paid");
@@ -208,8 +216,8 @@ export function TuitionPage() {
           onOpenChange={setQrPaymentOpen}
           paymentInfo={{
             invoiceId: selectedInvoice.id,
-            studentId: "current-user",
-            studentName: "Học viên",
+            studentId: String(profile?.id ?? ""),
+            studentName: profile?.name ?? "Học viên",
             amount: selectedInvoice.totalAmount,
             description: `Học phí tháng ${selectedInvoice.month} — ${selectedInvoice.className}`,
             dueDate: selectedInvoice.dueDate,

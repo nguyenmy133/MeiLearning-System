@@ -16,7 +16,8 @@ import {
   ChevronDown,
   FileCheck,
   Award,
-  Gamepad2
+  Gamepad2,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +39,9 @@ import { API } from "@/config/api-endpoints";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/user/dashboard" },
+  { icon: BookOpen, label: "Lớp học", href: "/user/classes" },
+  { icon: Calendar, label: "Lịch học", href: "/user/schedule" },
+  { icon: History, label: "Điểm danh", href: "/user/attendance" },
   { icon: FileText, label: "Tài liệu & Video", href: "/user/documents" },
   { icon: FileCheck, label: "Bài thi", href: "/user/exams" },
   { icon: Award, label: "Kết quả học tập", href: "/user/grades" },

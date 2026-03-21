@@ -1,1 +1,1 @@
-export { getMyClasses, getMySchedule, getTodaySessions } from "./scheduleService";
+export { getMyClasses, getMySchedule, getTodaySessions, getClassSessions } from "./scheduleService";

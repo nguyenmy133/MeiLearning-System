@@ -111,19 +111,34 @@ export function DocumentsPage() {
       return matchesSearch && matchesCourse;
     });
 
-  const handleDownload = (docName: string) => {
-    toast.success("Đang tải xuống", {
-      description: `File ${docName} đang được tải xuống...`,
-    });
+  const handleDownload = async (doc: DocumentItem) => {
+    try {
+      toast.info("Đang tải xuống", {
+        description: `File ${doc.name} đang được tải xuống...`,
+      });
+      // Create download link via API
+      const url = `${import.meta.env.VITE_API_BASE_URL || ""}/api/documents/${doc.id}/download`;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.name;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      toast.error("Tải xuống thất bại", {
+        description: "Không thể tải file. Vui lòng thử lại.",
+      });
+    }
   };
 
   const handleView = (doc: DocumentItem) => {
     if (doc.type === "video") {
       setPlayingVideo(doc);
     } else {
-      toast.success("Đang mở file", {
-        description: `Đang mở ${doc.name}...`,
-      });
+      // Open document in new tab
+      const url = `${import.meta.env.VITE_API_BASE_URL || ""}/api/documents/${doc.id}/download`;
+      window.open(url, "_blank");
     }
   };
 
@@ -192,7 +207,7 @@ export function DocumentsPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => handleDownload(doc.name)}
+              onClick={() => handleDownload(doc)}
               className="text-muted-foreground hover:text-primary"
             >
               <Download className="h-4 w-4" />

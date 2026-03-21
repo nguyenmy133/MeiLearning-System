@@ -14,6 +14,10 @@ const CheckInPage = lazyNamed(
   () => import("@/features/user/attendance/pages/CheckInPage"),
   "CheckInPage",
 );
+const MyClassesPage = lazyNamed(
+  () => import("@/features/user/classes/pages/MyClassesPage"),
+  "MyClassesPage",
+);
 const SchedulePage = lazyNamed(
   () => import("@/features/user/schedule/pages/SchedulePage"),
   "SchedulePage",
@@ -75,6 +79,7 @@ export function userRoutes() {
       }
     >
       <Route path="dashboard" element={<UserDashboard />} />
+      <Route path="classes" element={<MyClassesPage />} />
       <Route path="check-in" element={<CheckInPage />} />
       <Route path="schedule" element={<SchedulePage />} />
       <Route path="attendance" element={<AttendancePage />} />

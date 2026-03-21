@@ -13,6 +13,7 @@ public interface LeaveService {
     List<LeaveRequestResponse> getByRequester(Long requesterId);
     LeaveRequestResponse approve(Long id, Long reviewerId);
     LeaveRequestResponse reject(Long id, Long reviewerId, String reason);
+    void cancel(Long id, Long requesterId);
 
     /** Thống kê số đơn theo trạng thái */
     LeaveStatsResponse getStats(String requesterType);

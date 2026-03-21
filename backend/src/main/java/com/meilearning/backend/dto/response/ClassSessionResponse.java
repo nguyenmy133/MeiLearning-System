@@ -23,5 +23,6 @@ public class ClassSessionResponse {
     private int totalStudents;
     private int presentCount;
     private int absentCount;
+    private String attendanceStatus;  // per-student: present, absent, late, absent_excused (null if no record)
     private Instant createdAt;
 }

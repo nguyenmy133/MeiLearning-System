@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/api-client";
 import type { UserLeaveRequest, CreateLeaveRequestDTO, LeaveQueryParams } from "../types";
 
 export async function getMyLeaveRequests(params?: LeaveQueryParams): Promise<UserLeaveRequest[]> {
-  const { data } = await apiClient.get("/leave/my", { params });
+  const { data } = await apiClient.get("/leave/me", { params });
   return data;
 }
 

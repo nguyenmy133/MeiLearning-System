@@ -1,1 +1,1 @@
-export { useMyClasses, useMySchedule, useTodaySessions, scheduleKeys } from "./useSchedule";
+export { useMyClasses, useMySchedule, useTodaySessions, useClassSessions, scheduleKeys } from "./useSchedule";

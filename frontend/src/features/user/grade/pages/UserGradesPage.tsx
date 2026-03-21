@@ -14,7 +14,6 @@ import {
   FileCheck,
   Info,
   Target,
-  Medal,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -81,23 +80,13 @@ const getTrendLabel = (trend: string) => {
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).slice(-2).join("").toUpperCase();
 
-/** Hàm ước lượng hạng trong lớp dựa theo điểm số.
- *  totalStudents mặc định 30 — khi tích hợp API thật thì truyền con số thực vào.
- */
-const getEstimatedRank = (score: number, totalStudents = 30): number => {
-  if (score >= 9) return Math.max(1, Math.round(totalStudents * 0.05));
-  if (score >= 8) return Math.max(1, Math.round(totalStudents * 0.15));
-  if (score >= 7) return Math.max(1, Math.round(totalStudents * 0.30));
-  if (score >= 6.5) return Math.max(1, Math.round(totalStudents * 0.45));
-  if (score >= 5) return Math.max(1, Math.round(totalStudents * 0.65));
-  return Math.max(1, Math.round(totalStudents * 0.85));
-};
+
 
 // ── Component ───────────────────────────────────────────────────────────
 
 export function UserGradesPage() {
   const navigate = useNavigate();
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "ACTIVE" | "COMPLETED">("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "completed">("all");
 
   const { data: allGrades = [], isLoading } = useMyGrades();
 
@@ -142,8 +131,8 @@ export function UserGradesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả lớp</SelectItem>
-            <SelectItem value="ACTIVE">Đang học</SelectItem>
-            <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
+            <SelectItem value="active">Đang học</SelectItem>
+            <SelectItem value="completed">Đã hoàn thành</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -266,7 +255,7 @@ export function UserGradesPage() {
                       </AvatarFallback>
                     </Avatar>
                     <span>{subject.teacherName}</span>
-                    {subject.classStatus === "COMPLETED" && (
+                    {subject.classStatus === "completed" && (
                       <Badge variant="secondary" className="text-[10px] ml-auto">Hoàn thành</Badge>
                     )}
                   </div>
@@ -288,9 +277,6 @@ export function UserGradesPage() {
                           <div className="flex flex-col items-end gap-0.5">
                             <span className={`text-sm font-bold leading-none ${getScoreColor(es.score)}`}>
                               {es.score.toFixed(1)}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground leading-none whitespace-nowrap">
-                              Hạng {getEstimatedRank(es.score)}/30
                             </span>
                           </div>
                           <Button
@@ -314,13 +300,6 @@ export function UserGradesPage() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={`text-xs ${getScoreColor(subject.avgScore)}`}>
                         {getScoreLabel(subject.avgScore)}
-                      </Badge>
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-0"
-                      >
-                        <Medal className="w-3 h-3" />
-                        Hạng {getEstimatedRank(subject.avgScore)}/30
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground">

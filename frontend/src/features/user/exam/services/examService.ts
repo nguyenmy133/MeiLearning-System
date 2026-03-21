@@ -1,59 +1,47 @@
 import { apiClient } from "@/lib/api-client";
-import { authService } from "@/features/shared/auth/authService";
-import type { ExamDetail, ExamResult } from "../types";
-import { MOCK_EXAMS, MOCK_RESULTS } from "../data/mockData";
+import type { ExamDetail, ExamSession, ExamResult } from "../types";
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
-
-function getCurrentStudentId(): number {
-  const user = authService.getCurrentUser();
-  if (!user) throw new Error("Chưa đăng nhập");
-  return user.id;
-}
-
+/** Get all exams visible to current student */
 export async function getMyExams(): Promise<ExamDetail[]> {
-  try {
-    const { data } = await apiClient.get("/exams");
-    if (Array.isArray(data) && data.length > 0) return data;
-  } catch { /* fallback */ }
-  return clone(MOCK_EXAMS);
+  const { data } = await apiClient.get("/exams");
+  // Backend returns PageResponse with .content
+  if (data?.content && Array.isArray(data.content)) return data.content;
+  if (Array.isArray(data)) return data;
+  return [];
 }
 
+/** Get exam detail — backend allows student access */
 export async function startExam(examId: string): Promise<ExamDetail> {
-  try {
-    const { data } = await apiClient.get(`/exams/${examId}`);
-    return data;
-  } catch { /* fallback */ }
-  const exam = MOCK_EXAMS.find((e) => e.id === examId);
-  if (!exam) throw new Error("Không tìm thấy bài kiểm tra");
-  return clone(exam);
+  const { data } = await apiClient.get(`/exams/${examId}`);
+  return data;
 }
 
+/**
+ * Start exam session — backend resolves studentId from JWT.
+ * POST /exams/:id/start → ExamSession with questions
+ */
+export async function getExamSession(examId: string): Promise<ExamSession> {
+  // Backend resolves student from JWT — no need to pass studentId
+  const { data } = await apiClient.post(`/exams/${examId}/start`);
+  return data;
+}
+
+/**
+ * Submit exam — backend resolves studentId from JWT.
+ * POST /exams/:id/submit → ExamResult
+ */
 export async function submitExam(examId: string, answers: Record<number, number>): Promise<ExamResult> {
-  try {
-    const studentId = getCurrentStudentId();
-    const { data } = await apiClient.post(`/exams/${examId}/submit`, {
-      studentId,
-      score: 0, // Let BE calculate
-      correctAnswers: Object.keys(answers).length,
-    });
-    return data;
-  } catch { /* fallback */ }
-  return MOCK_RESULTS[examId] ?? {
-    examId, examTitle: "", classId: "", className: "",
-    score: 0, maxScore: 10, passed: false,
-    correctCount: 0, totalQuestions: 0, submittedAt: new Date().toISOString(),
-    breakdown: [],
-  };
+  // Backend resolves student from JWT — no need to pass studentId
+  const { data } = await apiClient.post(`/exams/${examId}/submit`, { answers });
+  return data;
 }
 
+/** Get exam result — backend allows student to see own result */
 export async function getExamResult(examId: string): Promise<ExamResult> {
-  try {
-    const studentId = getCurrentStudentId();
-    const { data } = await apiClient.get(`/exams/${examId}/results/${studentId}`);
-    return data;
-  } catch { /* fallback */ }
-  const result = MOCK_RESULTS[examId];
-  if (!result) throw new Error("Chưa có kết quả");
-  return clone(result);
+  // Use /exams/{id}/results — backend can filter by current student
+  const { data } = await apiClient.get(`/exams/${examId}/results`);
+  // If returns array of results, take first (current student's)
+  if (Array.isArray(data) && data.length > 0) return data[0];
+  if (data && !Array.isArray(data)) return data;
+  throw new Error("Chưa có kết quả");
 }

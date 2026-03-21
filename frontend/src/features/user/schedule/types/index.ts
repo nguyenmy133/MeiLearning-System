@@ -1,6 +1,6 @@
 // ─── Schedule & Class Session Types ──────────────────────────────────────────
 
-export type ClassStatus = "ACTIVE" | "COMPLETED" | "CLOSED" | "RESERVED";
+export type ClassStatus = "upcoming" | "active" | "completed";
 export type SessionStatus = "upcoming" | "ongoing" | "completed" | "cancelled";
 export type AttendanceStatus = "PRESENT" | "ABSENT_EXCUSED" | "ABSENT_UNEXCUSED" | "LATE" | null;
 

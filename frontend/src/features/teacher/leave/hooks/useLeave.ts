@@ -29,7 +29,7 @@ export function useApproveLeave() {
         mutationFn: (id: string) => approveLeaveRequest(id),
         onSuccess: (req) => {
             qc.invalidateQueries({ queryKey: leaveKeys.all });
-            toast.success(`Đã duyệt đơn của ${req.studentName}`);
+            toast.success(`Đã duyệt đơn của ${req.requesterName}`);
         },
         onError: (err: Error) => toast.error(err.message),
     });
@@ -42,7 +42,7 @@ export function useRejectLeave() {
             rejectLeaveRequest(id, dto),
         onSuccess: (req) => {
             qc.invalidateQueries({ queryKey: leaveKeys.all });
-            toast.success(`Đã từ chối đơn của ${req.studentName}`);
+            toast.success(`Đã từ chối đơn của ${req.requesterName}`);
         },
         onError: (err: Error) => toast.error(err.message),
     });
