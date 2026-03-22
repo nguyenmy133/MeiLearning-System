@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateExamRequest;
+import com.meilearning.backend.dto.request.GradeEssayRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.request.UpdateExamRequest;
 import com.meilearning.backend.dto.response.ExamAnswerDetailResponse;
@@ -29,7 +30,7 @@ import java.util.List;
 @RequestMapping("/api/v1/exams")
 @RequiredArgsConstructor
 @Tag(name = "Exam", description = "Quản lý bài kiểm tra")
-@PreAuthorize("hasAnyRole('admin', 'teacher', 'student')")
+@PreAuthorize("hasAnyRole('teacher', 'student')")
 public class ExamController {
 
     private final ExamService examService;
@@ -48,10 +49,12 @@ public class ExamController {
 
         Long resolvedTeacherId = teacherId;
         List<Long> studentClassIds = null;
+        Long currentStudentId = null;
 
         if (SecurityUtils.isStudent() && !SecurityUtils.isAdmin()) {
             // Student: resolve danh sách classId đã enroll → filter exam theo lớp
             Student student = SecurityUtils.getCurrentStudent(studentRepository);
+            currentStudentId = student.getId();
             studentClassIds = classEnrollmentRepository.findByStudentId(student.getId())
                     .stream().map(e -> e.getClassEntity().getId()).toList();
         } else if (SecurityUtils.isTeacher() && !SecurityUtils.isAdmin()) {
@@ -60,7 +63,7 @@ public class ExamController {
             resolvedTeacherId = teacher.getId();
         }
 
-        return ResponseEntity.ok(examService.getAll(resolvedTeacherId, studentClassIds, status, page, limit));
+        return ResponseEntity.ok(examService.getAll(resolvedTeacherId, studentClassIds, currentStudentId, status, page, limit));
     }
 
     @GetMapping("/{id}")
@@ -80,7 +83,7 @@ public class ExamController {
 
     @PostMapping
     @Operation(summary = "Tạo bài kiểm tra (Teacher)")
-    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    @PreAuthorize("hasRole('teacher')")
     public ResponseEntity<ExamResponse> create(
             Principal principal,
             @Valid @RequestBody CreateExamRequest request) {
@@ -101,7 +104,7 @@ public class ExamController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật bài kiểm tra (Teacher)")
-    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    @PreAuthorize("hasRole('teacher')")
     public ResponseEntity<ExamResponse> update(
             @PathVariable Long id,
             @RequestBody UpdateExamRequest request) {
@@ -148,6 +151,15 @@ public class ExamController {
         return ResponseEntity.ok(examService.getStudentResult(id, studentId));
     }
 
+    @GetMapping("/{id}/results/{studentId}/answers")
+    @Operation(summary = "Chi tiết câu trả lời của 1 học viên (Teacher)")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    public ResponseEntity<List<ExamAnswerDetailResponse>> getStudentAnswerDetails(
+            @PathVariable Long id,
+            @PathVariable Long studentId) {
+        return ResponseEntity.ok(examService.getStudentAnswerDetails(id, studentId));
+    }
+
     @GetMapping("/{id}/statistics")
     @Operation(summary = "Thống kê tổng hợp bài thi (Teacher)")
     public ResponseEntity<ExamStatisticsResponse> getStatistics(@PathVariable Long id) {
@@ -174,6 +186,17 @@ public class ExamController {
     public ResponseEntity<List<ExamAnswerDetailResponse>> getMyAnswers(@PathVariable Long id) {
         Student student = SecurityUtils.getCurrentStudent(studentRepository);
         return ResponseEntity.ok(examService.getStudentAnswerDetails(id, student.getId()));
+    }
+
+    @PutMapping("/{examId}/results/{studentId}/grade-essay")
+    @Operation(summary = "Teacher chấm điểm câu tự luận")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    public ResponseEntity<?> gradeEssay(
+            @PathVariable Long examId,
+            @PathVariable Long studentId,
+            @RequestBody GradeEssayRequest request) {
+        examService.gradeEssay(examId, studentId, request);
+        return ResponseEntity.ok().build();
     }
 
 }

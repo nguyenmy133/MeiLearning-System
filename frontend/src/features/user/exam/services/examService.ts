@@ -7,10 +7,16 @@ function mapExamStatus(raw: any): ExamDetail["status"] {
   const now = Date.now();
   const start = raw.startTime ? new Date(raw.startTime).getTime() : 0;
   const end = raw.endTime ? new Date(raw.endTime).getTime() : 0;
+  // Student đã nộp bài → completed
+  if (raw.mySubmittedAt) return "completed";
   if (raw.submittedCount > 0) return "completed";
-  if (raw.status !== "published") return "missed";
-  if (end > 0 && now > end) return "missed";
-  if (start > 0 && now >= start && (end === 0 || now <= end)) return "ongoing";
+  // Backend now returns dynamic status: "upcoming", "ongoing", "ended", "published", "draft"
+  const backendStatus = raw.status;
+  if (backendStatus === "draft") return "missed"; // student shouldn't see drafts
+  if (backendStatus === "ended" || (end > 0 && now > end)) return "missed";
+  if (backendStatus === "ongoing" || (start > 0 && now >= start && (end === 0 || now <= end))) return "ongoing";
+  if (backendStatus === "upcoming" || (start > 0 && now < start)) return "upcoming";
+  // Fallback for "published" without time set
   return "upcoming";
 }
 
@@ -23,12 +29,17 @@ function mapExamResponse(raw: any): ExamDetail {
     description: raw.description ?? undefined,
     startAt: raw.startTime ?? "",
     endAt: raw.endTime ?? undefined,
-    durationMinutes: raw.duration ?? 0,
+    durationMinutes: raw.duration ?? raw.myDurationMinutes ?? 0,
     totalQuestions: raw.totalQuestions ?? 0,
     status: mapExamStatus(raw),
-    score: raw.avgScore ?? undefined,
-    passed: undefined,
-    submittedAt: undefined,
+    score: raw.myScore ?? raw.avgScore ?? undefined,
+    passed: raw.myPassed ?? undefined,
+    submittedAt: raw.mySubmittedAt ?? undefined,
+    mySubmittedAt: raw.mySubmittedAt ?? undefined,
+    myScore: raw.myScore ?? undefined,
+    myPassed: raw.myPassed ?? undefined,
+    myTimeSpent: raw.myTimeSpent ?? undefined,
+    myGradingStatus: raw.myGradingStatus ?? undefined,
   };
 }
 
@@ -93,6 +104,7 @@ function mapQuestion(raw: any): ExamQuestion {
 
   return {
     id: raw.id,
+    type: raw.type === "essay" ? "essay" : "multiple-choice",
     content: raw.question ?? raw.questionText ?? raw.content ?? "",
     options: opts,
     correctIndex,
@@ -156,17 +168,21 @@ export async function getExamData(examId: string): Promise<{ examInfo: ExamDetai
  */
 export async function submitExam(
   examId: string,
-  answers: Record<number, number>
+  answers: Record<number, number | string>,
+  timeSpent?: number,
 ): Promise<ExamResult> {
-  // Chuyển đổi: {questionId: optionIndex} → [{questionId, selectedAnswer: "a"/"b"/...}]
-  const answerItems = Object.entries(answers).map(([qId, optIdx]) => ({
+  // Chuyển đổi: MC {questionId: optionIndex} → {questionId, selectedAnswer: "a"/"b"/...}
+  //           Essay {questionId: text} → {questionId, selectedAnswer: text}
+  const answerItems = Object.entries(answers).map(([qId, val]) => ({
     questionId: Number(qId),
-    selectedAnswer: String.fromCharCode(97 + optIdx), // 0→"a", 1→"b", 2→"c", 3→"d"
+    selectedAnswer: typeof val === "number"
+      ? String.fromCharCode(97 + val) // 0→"a", 1→"b", 2→"c", 3→"d"
+      : String(val),                   // essay: raw text
   }));
 
   const { data } = await apiClient.post(`/exams/${examId}/submit`, {
     answers: answerItems,
-    timeSpent: 0,
+    timeSpent: timeSpent ?? 0,
   });
 
   return {
@@ -209,9 +225,14 @@ export async function getMyAnswers(examId: string): Promise<ExamAnswerDetail[]> 
   const { data } = await apiClient.get(`/exams/${examId}/my-answers`);
   if (!Array.isArray(data)) return [];
   return data.map((item: any) => ({
+    id: item.id,
     questionId: item.questionId,
+    questionType: item.questionType ?? undefined,
     selectedAnswer: item.selectedAnswer ?? "",
     correctAnswer: item.correctAnswer ?? "",
     isCorrect: item.isCorrect ?? false,
+    essayScore: item.essayScore ?? undefined,
+    maxPoints: item.maxPoints ?? undefined,
+    teacherComment: item.teacherComment ?? undefined,
   }));
 }

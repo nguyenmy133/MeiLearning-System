@@ -24,6 +24,20 @@ public class ExamResponse {
     private String description;
     /** Danh sách câu hỏi — chỉ populate khi gọi GET /exams/{id} */
     private List<QuestionResponse> questions;
+
+    // ── Student-specific: populate khi student xem danh sách exam ──
+    /** Thời gian nộp bài của student hiện tại (null nếu chưa nộp) */
+    private String mySubmittedAt;
+    /** Điểm của student hiện tại */
+    private Double myScore;
+    /** Student đạt hay chưa */
+    private Boolean myPassed;
+    /** Thời gian làm bài (phút), cho phép làm */
+    private Integer myDurationMinutes;
+    /** Thời gian thực tế đã làm (phút) */
+    private Integer myTimeSpent;
+    /** Trạng thái chấm tự luận: "graded" | "pending" | "no_essay" */
+    private String myGradingStatus;
 }
 
 

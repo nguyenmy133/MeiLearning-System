@@ -181,6 +181,52 @@ export function ExamReview() {
         </Card>
       )}
 
+      {/* ── Grading Status Banner ─────────────────────────── */}
+      {(() => {
+        const essayAnswers = myAnswers.filter((a) => a.questionType === "essay");
+        const hasEssay = essayAnswers.length > 0;
+        const ungradedEssays = essayAnswers.filter((a) => a.essayScore == null);
+        if (hasEssay && ungradedEssays.length > 0) {
+          return (
+            <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <MinusCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
+                      Bài thi có {ungradedEssays.length} câu tự luận đang chờ giáo viên chấm điểm
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                      Điểm hiện tại là tạm tính. Điểm chính thức sẽ được cập nhật sau khi giáo viên chấm xong.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        if (hasEssay && ungradedEssays.length === 0) {
+          return (
+            <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/10">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm">
+                      Tất cả câu tự luận đã được chấm điểm
+                    </p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                      Điểm bên dưới là điểm chính thức bao gồm cả phần tự luận.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        return null;
+      })()}
+
       {/* ── Stats Cards ───────────────────────────────────── */}
       {result && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -296,6 +342,7 @@ export function ExamReview() {
 
         {questions.map((q, idx) => {
           const answerDetail = answerMap.get(q.id);
+          const isEssay = q.type === "essay";
           const userSelectedIdx = answerDetail ? letterToIndex(answerDetail.selectedAnswer) : -1;
           const correctIdx = answerDetail
             ? letterToIndex(answerDetail.correctAnswer)
@@ -307,7 +354,9 @@ export function ExamReview() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {answerDetail ? (
+                    {isEssay ? (
+                      <MinusCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                    ) : answerDetail ? (
                       isQuestionCorrect ? (
                         <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
                       ) : (
@@ -317,8 +366,21 @@ export function ExamReview() {
                       <MinusCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     )}
                     <span>Câu {idx + 1}</span>
+                    {isEssay && (
+                      <Badge variant="outline" className="text-xs font-normal text-amber-600">Tự luận</Badge>
+                    )}
                   </div>
-                  {answerDetail ? (
+                  {isEssay ? (
+                    answerDetail?.essayScore != null ? (
+                      <Badge variant="outline" className="text-xs font-normal border-emerald-300 text-emerald-600">
+                        Đã chấm: {answerDetail.essayScore}/{answerDetail.maxPoints ?? 1}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs font-normal border-amber-300 text-amber-600">
+                        Chờ chấm điểm
+                      </Badge>
+                    )
+                  ) : answerDetail ? (
                     <Badge
                       variant="outline"
                       className={`text-xs font-normal ${
@@ -340,75 +402,113 @@ export function ExamReview() {
                 {/* Question text */}
                 <p className="text-foreground font-medium leading-relaxed">{q.content}</p>
 
-                {/* Options with 4 states */}
-                <div className="space-y-2">
-                  {q.options.map((opt, optIdx) => {
-                    const isCorrectOption = correctIdx === optIdx;
-                    const isUserSelected = userSelectedIdx === optIdx;
-
-                    // Determine visual state
-                    let borderClass = "border-border";
-                    let bgClass = "";
-                    let textClass = "text-foreground";
-                    let labelClass = "text-muted-foreground";
-                    let badge: React.ReactNode = null;
-                    let icon: React.ReactNode = (
-                      <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/20 flex-shrink-0" />
-                    );
-
-                    if (isUserSelected && isCorrectOption) {
-                      // ✅ User chọn đúng
-                      borderClass = "border-emerald-500";
-                      bgClass = "bg-emerald-50 dark:bg-emerald-950/20";
-                      textClass = "text-emerald-700 dark:text-emerald-300 font-medium";
-                      labelClass = "text-emerald-700 dark:text-emerald-400";
-                      icon = <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />;
-                      badge = (
-                        <Badge className="ml-auto bg-emerald-600 text-[10px] px-2 py-0.5">
-                          ✓ Đúng
-                        </Badge>
-                      );
-                    } else if (isUserSelected && !isCorrectOption) {
-                      // ❌ User chọn sai
-                      borderClass = "border-destructive";
-                      bgClass = "bg-destructive/5";
-                      textClass = "text-destructive font-medium";
-                      labelClass = "text-destructive";
-                      icon = <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />;
-                      badge = (
-                        <Badge variant="destructive" className="ml-auto text-[10px] px-2 py-0.5">
-                          ✗ Bạn đã chọn
-                        </Badge>
-                      );
-                    } else if (isCorrectOption && !isQuestionCorrect) {
-                      // 🟡 Đáp án đúng (user chọn sai hoặc không chọn)
-                      borderClass = "border-emerald-400 dark:border-emerald-600";
-                      bgClass = "bg-emerald-50/50 dark:bg-emerald-950/10";
-                      textClass = "text-emerald-700 dark:text-emerald-300 font-medium";
-                      labelClass = "text-emerald-700 dark:text-emerald-400";
-                      icon = <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />;
-                      badge = (
-                        <Badge className="ml-auto bg-emerald-500 text-[10px] px-2 py-0.5">
-                          → Đáp án đúng
-                        </Badge>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={optIdx}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${borderClass} ${bgClass}`}
-                      >
-                        {icon}
-                        <span className={`font-medium text-sm ${labelClass}`}>
-                          {OPTION_LABELS[optIdx]}.
-                        </span>
-                        <span className={`text-sm ${textClass}`}>{opt}</span>
-                        {badge}
+                {isEssay ? (
+                  /* Essay review: show student's text answer + grading result */
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-muted-foreground">Câu trả lời của bạn:</p>
+                    {answerDetail?.selectedAnswer ? (
+                      <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{answerDetail.selectedAnswer}</p>
                       </div>
-                    );
-                  })}
-                </div>
+                    ) : (
+                      <div className="p-4 rounded-lg border border-border bg-muted/30">
+                        <p className="text-sm text-muted-foreground italic">Chưa trả lời</p>
+                      </div>
+                    )}
+
+                    {/* Teacher grading result */}
+                    {answerDetail?.essayScore != null ? (
+                      <div className="p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                            <CheckCircle className="h-4 w-4" />
+                            Điểm: {answerDetail.essayScore}/{answerDetail.maxPoints ?? 1}
+                          </p>
+                          <Badge className="bg-emerald-600 text-[10px]">Đã chấm</Badge>
+                        </div>
+                        {answerDetail.teacherComment && (
+                          <div className="flex items-start gap-2 pt-1">
+                            <Lightbulb className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                              {answerDetail.teacherComment}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Câu hỏi tự luận — sẽ được giáo viên chấm điểm sau
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  /* MC review: 4-state option display */
+                  <div className="space-y-2">
+                    {q.options.map((opt, optIdx) => {
+                      const isCorrectOption = correctIdx === optIdx;
+                      const isUserSelected = userSelectedIdx === optIdx;
+
+                      let borderClass = "border-border";
+                      let bgClass = "";
+                      let textClass = "text-foreground";
+                      let labelClass = "text-muted-foreground";
+                      let badge: React.ReactNode = null;
+                      let icon: React.ReactNode = (
+                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/20 flex-shrink-0" />
+                      );
+
+                      if (isUserSelected && isCorrectOption) {
+                        borderClass = "border-emerald-500";
+                        bgClass = "bg-emerald-50 dark:bg-emerald-950/20";
+                        textClass = "text-emerald-700 dark:text-emerald-300 font-medium";
+                        labelClass = "text-emerald-700 dark:text-emerald-400";
+                        icon = <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />;
+                        badge = (
+                          <Badge className="ml-auto bg-emerald-600 text-[10px] px-2 py-0.5">
+                            ✓ Đúng
+                          </Badge>
+                        );
+                      } else if (isUserSelected && !isCorrectOption) {
+                        borderClass = "border-destructive";
+                        bgClass = "bg-destructive/5";
+                        textClass = "text-destructive font-medium";
+                        labelClass = "text-destructive";
+                        icon = <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />;
+                        badge = (
+                          <Badge variant="destructive" className="ml-auto text-[10px] px-2 py-0.5">
+                            ✗ Bạn đã chọn
+                          </Badge>
+                        );
+                      } else if (isCorrectOption && !isQuestionCorrect) {
+                        borderClass = "border-emerald-400 dark:border-emerald-600";
+                        bgClass = "bg-emerald-50/50 dark:bg-emerald-950/10";
+                        textClass = "text-emerald-700 dark:text-emerald-300 font-medium";
+                        labelClass = "text-emerald-700 dark:text-emerald-400";
+                        icon = <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />;
+                        badge = (
+                          <Badge className="ml-auto bg-emerald-500 text-[10px] px-2 py-0.5">
+                            → Đáp án đúng
+                          </Badge>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={optIdx}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${borderClass} ${bgClass}`}
+                        >
+                          {icon}
+                          <span className={`font-medium text-sm ${labelClass}`}>
+                            {OPTION_LABELS[optIdx]}.
+                          </span>
+                          <span className={`text-sm ${textClass}`}>{opt}</span>
+                          {badge}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Explanation */}
                 {q.explanation && (
@@ -431,31 +531,6 @@ export function ExamReview() {
           );
         })}
       </div>
-
-      {/* ── Legend ─────────────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-sm font-medium text-foreground mb-3">Chú thích:</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="text-muted-foreground">Bạn chọn đúng</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-destructive" />
-              <span className="text-muted-foreground">Bạn chọn sai</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-400" />
-              <span className="text-muted-foreground">Đáp án đúng</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-muted" />
-              <span className="text-muted-foreground">Không liên quan</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* ── Bottom Actions ────────────────────────────────── */}
       <div className="flex gap-3 pb-4">

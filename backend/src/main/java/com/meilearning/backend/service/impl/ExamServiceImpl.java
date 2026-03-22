@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.meilearning.backend.dto.request.CreateExamRequest;
+import com.meilearning.backend.dto.request.GradeEssayRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.request.UpdateExamRequest;
 import com.meilearning.backend.dto.response.ExamAnswerDetailResponse;
@@ -78,6 +79,12 @@ public class ExamServiceImpl implements ExamService {
         if (req.getQuestions() != null && !req.getQuestions().isEmpty()) {
             final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
             for (var qr : req.getQuestions()) {
+                // Validate: MC questions must have correctAnswer
+                if ("multiple-choice".equals(qr.getType())
+                        && (qr.getCorrectAnswer() == null || qr.getCorrectAnswer().isBlank())) {
+                    throw new BusinessException("Câu hỏi trắc nghiệm \"" + qr.getQuestion()
+                            + "\" chưa chọn đáp án đúng.");
+                }
                 ExamQuestion q = new ExamQuestion();
                 q.setExam(exam);
                 q.setOrderIndex(idx.getAndIncrement());
@@ -137,6 +144,12 @@ public class ExamServiceImpl implements ExamService {
 
                 final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
                 for (var qr : req.getQuestions()) {
+                    // Validate: MC questions must have correctAnswer
+                    if ("multiple-choice".equals(qr.getType())
+                            && (qr.getCorrectAnswer() == null || qr.getCorrectAnswer().isBlank())) {
+                        throw new BusinessException("Câu hỏi trắc nghiệm \"" + qr.getQuestion()
+                                + "\" chưa chọn đáp án đúng.");
+                    }
                     ExamQuestion q = new ExamQuestion();
                     q.setExam(exam);
                     q.setOrderIndex(idx.getAndIncrement());
@@ -161,7 +174,7 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ExamResponse> getAll(Long teacherId, List<Long> studentClassIds,
-                                             String status, int page, int limit) {
+                                             Long currentStudentId, String status, int page, int limit) {
         if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
         Specification<Exam> spec = SpecHelper.empty();
@@ -182,12 +195,64 @@ public class ExamServiceImpl implements ExamService {
                 });
             }
         }
-        if (status != null && !status.isBlank()) {
-            spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), ExamStatus.valueOf(status)));
+        // Status filter: "draft"/"archived" are stored in DB → filter at DB level
+        // "ongoing"/"ended"/"published" are computed dynamically → post-filter
+        String requestedStatus = (status != null && !status.isBlank()) ? status : null;
+        if (requestedStatus != null) {
+            if ("draft".equals(requestedStatus) || "archived".equals(requestedStatus)) {
+                spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), ExamStatus.valueOf(requestedStatus)));
+            } else {
+                // "ongoing"/"ended"/"published" all come from DB status = published
+                spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), ExamStatus.published));
+            }
         }
         Page<Exam> result = examRepository.findAll(spec, pageable);
+        List<ExamResponse> responses = result.getContent().stream().map(this::toResponseWithStats).toList();
+
+        // Post-filter by dynamic status (ongoing/ended/published)
+        if (requestedStatus != null && !"draft".equals(requestedStatus) && !"archived".equals(requestedStatus)) {
+            responses = responses.stream()
+                    .filter(r -> requestedStatus.equals(r.getStatus()))
+                    .toList();
+        }
+
+        // Enrich with student-specific result data
+        if (currentStudentId != null && !responses.isEmpty()) {
+            List<ExamResult> studentResults = resultRepository.findByStudentId(currentStudentId);
+            // Build map: examId → ExamResult
+            java.util.Map<Long, ExamResult> resultMap = new java.util.HashMap<>();
+            for (ExamResult er : studentResults) {
+                resultMap.put(er.getExam().getId(), er);
+            }
+            for (ExamResponse resp : responses) {
+                ExamResult er = resultMap.get(resp.getId());
+                if (er != null) {
+                    resp.setMySubmittedAt(er.getSubmittedAt() != null ? er.getSubmittedAt().toString() : null);
+                    resp.setMyScore(er.getScore() != null ? er.getScore().doubleValue() : null);
+                    resp.setMyPassed(er.getPassed());
+                    resp.setMyTimeSpent(er.getTimeSpent());
+                    // Compute grading status from answer details
+                    String gradingStatus = "no_essay";
+                    List<ExamAnswerDetail> details = er.getAnswerDetails();
+                    if (details != null && !details.isEmpty()) {
+                        boolean hasEssay = false;
+                        boolean allGraded = true;
+                        for (ExamAnswerDetail d : details) {
+                            if ("essay".equals(d.getQuestion().getType())) {
+                                hasEssay = true;
+                                if (d.getEssayScore() == null) allGraded = false;
+                            }
+                        }
+                        if (hasEssay) gradingStatus = allGraded ? "graded" : "pending";
+                    }
+                    resp.setMyGradingStatus(gradingStatus);
+                }
+                resp.setMyDurationMinutes(resp.getDuration());
+            }
+        }
+
         return PageResponse.<ExamResponse>builder()
-                .data(result.getContent().stream().map(this::toResponseWithStats).toList())
+                .data(responses)
                 .total(result.getTotalElements())
                 .page(page)
                 .limit(limit)
@@ -300,20 +365,36 @@ public class ExamServiceImpl implements ExamService {
                 ExamQuestion q = questionMap.get(ans.getQuestionId());
                 if (q == null) continue;
 
-                String correct = (q.getCorrectAnswer() != null ? q.getCorrectAnswer() : "").toLowerCase().trim();
-                String selected = (ans.getSelectedAnswer() != null ? ans.getSelectedAnswer() : "").toLowerCase().trim();
-                boolean isCorrect = !selected.isEmpty() && correct.equals(selected);
-                if (isCorrect) correctCount++;
+                boolean isEssay = "essay".equals(q.getType());
 
-                answerDetails.add(ExamAnswerDetail.builder()
-                        .question(q)
-                        .selectedAnswer(ans.getSelectedAnswer())
-                        .correctAnswer(q.getCorrectAnswer())
-                        .isCorrect(isCorrect)
-                        .build());
+                if (isEssay) {
+                    // Essay: lưu text answer, chờ teacher chấm tay
+                    answerDetails.add(ExamAnswerDetail.builder()
+                            .question(q)
+                            .selectedAnswer(ans.getSelectedAnswer())
+                            .correctAnswer(null) // essay không có đáp án cố định
+                            .isCorrect(false)    // pending manual grading
+                            .build());
+                } else {
+                    // Multiple-choice: chấm tự động
+                    String correct = (q.getCorrectAnswer() != null ? q.getCorrectAnswer() : "").toLowerCase().trim();
+                    String selected = (ans.getSelectedAnswer() != null ? ans.getSelectedAnswer() : "").toLowerCase().trim();
+                    boolean isCorrect = !selected.isEmpty() && correct.equals(selected);
+                    if (isCorrect) correctCount++;
+
+                    answerDetails.add(ExamAnswerDetail.builder()
+                            .question(q)
+                            .selectedAnswer(ans.getSelectedAnswer())
+                            .correctAnswer(q.getCorrectAnswer())
+                            .isCorrect(isCorrect)
+                            .build());
+                }
             }
 
-            int totalQ = questions.size();
+            // Tính điểm chỉ dựa trên câu trắc nghiệm
+            int totalMC = (int) questions.stream()
+                    .filter(q -> !"essay".equals(q.getType())).count();
+            int totalQ = totalMC > 0 ? totalMC : questions.size();
             score = totalQ > 0
                     ? BigDecimal.valueOf(correctCount * 100.0 / totalQ).setScale(2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
@@ -433,6 +514,78 @@ public class ExamServiceImpl implements ExamService {
         exam.setStatus(ExamStatus.archived);
         exam = examRepository.save(exam);
         return toResponseWithStats(exam);
+    }
+
+    @Override
+    @Transactional
+    public void gradeEssay(Long examId, Long studentId, GradeEssayRequest request) {
+        // 1. Tìm ExamResult
+        ExamResult examResult = resultRepository.findByExamIdAndStudentId(examId, studentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy kết quả bài thi cho exam=" + examId + ", student=" + studentId));
+
+        // 2. Lấy tất cả answer details
+        List<ExamAnswerDetail> allDetails =
+                answerDetailRepository.findByExamResultId(examResult.getId());
+        Map<Long, ExamAnswerDetail> detailMap = allDetails.stream()
+                .collect(Collectors.toMap(ExamAnswerDetail::getId, d -> d));
+
+        // 3. Cập nhật điểm + nhận xét cho từng câu essay
+        for (GradeEssayRequest.EssayGradeItem item : request.getGrades()) {
+            ExamAnswerDetail detail = detailMap.get(item.getAnswerDetailId());
+            if (detail == null) continue;
+
+            // Validate score against question's max points
+            int maxPts = detail.getQuestion().getPoints() != null ? detail.getQuestion().getPoints() : 1;
+            if (item.getScore() != null && (item.getScore() < 0 || item.getScore() > maxPts)) {
+                throw new BusinessException("Điểm câu " + detail.getQuestion().getOrderIndex()
+                        + " phải từ 0 đến " + maxPts);
+            }
+
+            detail.setEssayScore(item.getScore());
+            detail.setTeacherComment(item.getComment());
+            // isCorrect = score > 0 (đã chấm và có điểm)
+            detail.setIsCorrect(item.getScore() != null && item.getScore() > 0);
+        }
+        answerDetailRepository.saveAll(allDetails);
+
+        // 4. Tính lại tổng điểm: (mcEarned + essayEarned) / totalPoints × 100
+        List<ExamQuestion> questions = questionRepository.findByExamIdOrderByOrderIndex(examId);
+        Map<Long, ExamQuestion> questionMap = questions.stream()
+                .collect(Collectors.toMap(ExamQuestion::getId, q -> q));
+
+        int totalPoints = 0;
+        int earnedPoints = 0;
+
+        for (ExamAnswerDetail detail : allDetails) {
+            ExamQuestion q = questionMap.get(detail.getQuestion().getId());
+            if (q == null) continue;
+            int pts = q.getPoints() != null ? q.getPoints() : 1;
+            totalPoints += pts;
+
+            if ("essay".equals(q.getType())) {
+                // Essay: dùng essayScore (0 nếu chưa chấm)
+                earnedPoints += detail.getEssayScore() != null ? detail.getEssayScore() : 0;
+            } else {
+                // MC: dùng isCorrect
+                if (Boolean.TRUE.equals(detail.getIsCorrect())) {
+                    earnedPoints += pts;
+                }
+            }
+        }
+
+        BigDecimal newScore = totalPoints > 0
+                ? BigDecimal.valueOf(earnedPoints * 100.0 / totalPoints)
+                    .setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        int correctCount = (int) allDetails.stream()
+                .filter(d -> Boolean.TRUE.equals(d.getIsCorrect())).count();
+
+        examResult.setScore(newScore);
+        examResult.setCorrectAnswers(correctCount);
+        examResult.setPassed(newScore.compareTo(BigDecimal.valueOf(50)) >= 0);
+        resultRepository.save(examResult);
     }
 
 

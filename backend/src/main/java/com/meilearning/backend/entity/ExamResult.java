@@ -13,6 +13,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 @Entity
 @Table(name = "exam_results", uniqueConstraints = {
         @UniqueConstraint(name = "uk_exam_result_exam_student", columnNames = { "exam_id", "student_id" })
@@ -62,4 +64,6 @@ public class ExamResult extends BaseEntity {
     @Column(name = "submitted_at")
     private Instant submittedAt;
 
+    @OneToMany(mappedBy = "examResult", fetch = FetchType.LAZY)
+    private List<ExamAnswerDetail> answerDetails;
 }

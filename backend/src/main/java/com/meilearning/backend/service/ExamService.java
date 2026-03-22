@@ -1,6 +1,7 @@
 package com.meilearning.backend.service;
 
 import com.meilearning.backend.dto.request.CreateExamRequest;
+import com.meilearning.backend.dto.request.GradeEssayRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.request.UpdateExamRequest;
 import com.meilearning.backend.dto.response.ExamAnswerDetailResponse;
@@ -16,7 +17,7 @@ public interface ExamService {
     /** Student version: trả về questions KHÔNG có correctAnswer + explanation */
     ExamResponse getByIdForStudent(Long id);
     ExamResponse update(Long id, UpdateExamRequest request);
-    PageResponse<ExamResponse> getAll(Long teacherId, List<Long> studentClassIds, String status, int page, int limit);
+    PageResponse<ExamResponse> getAll(Long teacherId, List<Long> studentClassIds, Long currentStudentId, String status, int page, int limit);
     List<ExamResponse> getAll(Long teacherId, String status);
     ExamResponse publish(Long id);
     void delete(Long id);
@@ -29,6 +30,9 @@ public interface ExamService {
 
     /** Thống kê tổng hợp bài thi: avg, pass rate, min/max */
     ExamStatisticsResponse getStatistics(Long examId);
+
+    /** Teacher chấm điểm câu tự luận */
+    void gradeEssay(Long examId, Long studentId, GradeEssayRequest request);
 
     /** Lưu trữ bài thi (đổi status sang archived) */
     ExamResponse archive(Long id);

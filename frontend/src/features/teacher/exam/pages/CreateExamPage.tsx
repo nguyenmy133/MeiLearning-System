@@ -227,7 +227,14 @@ export function CreateExamPage() {
 
   // ── Validation ────────────────────────────────────────────────────────────
   const effectiveSubject = examInfo.subject || detectedSubject;
-  const step1Valid = !!(examInfo.title.trim() && effectiveSubject && examInfo.duration > 0);
+  const step1Valid = !!(
+    examInfo.title.trim() &&
+    effectiveSubject &&
+    examInfo.duration > 0 &&
+    examInfo.classIds.length > 0 &&
+    examStartDT &&
+    examEndDT
+  );
 
   const toggleClassId = (classId: number) => {
     setExamInfo((prev) => ({
@@ -239,7 +246,24 @@ export function CreateExamPage() {
   };
 
   const handleAddQuestion = () => {
-    if (!questionForm.question) return;
+    if (!questionForm.question.trim()) {
+      toast.error("Vui lòng nhập nội dung câu hỏi.");
+      return;
+    }
+
+    // Validate MC: must have correctAnswer selected
+    if (questionForm.type === "multiple-choice") {
+      if (!questionForm.correctAnswer) {
+        toast.error("Vui lòng chọn đáp án đúng cho câu hỏi trắc nghiệm.");
+        return;
+      }
+      // Validate options are not empty
+      const emptyOpts = (questionForm.options ?? []).filter((o) => !o.text.trim());
+      if (emptyOpts.length > 0) {
+        toast.error("Vui lòng điền đầy đủ nội dung các đáp án.");
+        return;
+      }
+    }
 
     const newQuestion = {
       ...questionForm,
@@ -309,6 +333,14 @@ export function CreateExamPage() {
       return;
     }
 
+    // Validate all MC questions have correctAnswer
+    const invalidMC = questions.filter((q) => q.type === "multiple-choice" && !q.correctAnswer);
+    if (invalidMC.length > 0) {
+      toast.error(`Có ${invalidMC.length} câu trắc nghiệm chưa chọn đáp án đúng. Vui lòng kiểm tra lại.`);
+      setStep(2);
+      return;
+    }
+
     if (editId) {
       // ── EDIT mode: Update existing exam ─────────────────────────────────
       updateExam.mutate(
@@ -332,6 +364,15 @@ export function CreateExamPage() {
     }
     if (questions.length === 0) {
       toast.error("Vui lòng thêm ít nhất 1 câu hỏi trước khi xuất bản.");
+      setPublishDialogOpen(false);
+      setStep(2);
+      return;
+    }
+
+    // Validate all MC questions have correctAnswer
+    const invalidMC = questions.filter((q) => q.type === "multiple-choice" && !q.correctAnswer);
+    if (invalidMC.length > 0) {
+      toast.error(`Có ${invalidMC.length} câu trắc nghiệm chưa chọn đáp án đúng. Vui lòng kiểm tra lại.`);
       setPublishDialogOpen(false);
       setStep(2);
       return;
@@ -599,7 +640,7 @@ export function CreateExamPage() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Thời gian mở</Label>
+                <Label htmlFor="startTime">Thời gian mở *</Label>
                 <DateTimePicker
                   value={examStartDT}
                   onChange={(d) => {
@@ -612,7 +653,7 @@ export function CreateExamPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endTime">Thời gian đóng</Label>
+                <Label htmlFor="endTime">Thời gian đóng *</Label>
                 <DateTimePicker
                   value={examEndDT}
                   onChange={setExamEndDT}
@@ -888,9 +929,35 @@ export function CreateExamPage() {
           {step < 3 ? (
             <Button
               onClick={() => {
-                if (step === 1 && !step1Valid) {
-                  toast.error("Vui lòng điền tên bài thi, môn học và thời gian.");
-                  return;
+                if (step === 1) {
+                  if (!examInfo.title.trim()) {
+                    toast.error("Vui lòng nhập tên bài thi.");
+                    return;
+                  }
+                  if (!effectiveSubject) {
+                    toast.error("Vui lòng chọn môn học.");
+                    return;
+                  }
+                  if (examInfo.classIds.length === 0) {
+                    toast.error("Vui lòng chọn ít nhất 1 lớp tham gia.");
+                    return;
+                  }
+                  if (!examStartDT) {
+                    toast.error("Vui lòng chọn thời gian mở bài thi.");
+                    return;
+                  }
+                  if (examStartDT < new Date()) {
+                    toast.error("Thời gian mở bài thi phải sau thời điểm hiện tại.");
+                    return;
+                  }
+                  if (!examEndDT) {
+                    toast.error("Vui lòng chọn thời gian đóng bài thi.");
+                    return;
+                  }
+                  if (examInfo.duration <= 0) {
+                    toast.error("Vui lòng nhập thời gian làm bài.");
+                    return;
+                  }
                 }
                 setStep(step + 1);
               }}

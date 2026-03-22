@@ -4,7 +4,6 @@ import { formatDateTime } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -32,8 +31,6 @@ import {
 import { 
   FileCheck, 
   Plus, 
-  Search, 
-  Filter,
   MoreVertical,
   Edit,
   Eye,
@@ -50,14 +47,13 @@ import { EXAM_STATUS_LABELS } from "../types";
 
 export function TeacherExamManagement() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [classFilter, setClassFilter] = useState("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<number | null>(null);
 
   // ── Service layer hooks (replaces inline mock data) ────────────────────────
   const { data: exams = [], isLoading } = useTeacherExams({
-    search: searchQuery || undefined,
     status: statusFilter !== "all" ? (statusFilter as any) : undefined,
   });
   const { data: statsData } = useExamStats();
@@ -66,10 +62,19 @@ export function TeacherExamManagement() {
 
   const stats = statsData ?? { total: 0, ongoing: 0, ended: 0, averagePassRate: 0, draft: 0 };
 
+  // Extract unique class names for filter
+  const allClassNames = Array.from(new Set(exams.flatMap((e) => e.classNames))).sort();
+
+  // Apply client-side class filter
+  const filteredExams = classFilter === "all"
+    ? exams
+    : exams.filter((e) => e.classNames.includes(classFilter));
+
   const getStatusBadge = (status: string) => {
     const labels: Record<string, JSX.Element> = {
       draft: <Badge variant="secondary">Nháp</Badge>,
       published: <Badge className="bg-primary">Đã xuất bản</Badge>,
+      upcoming: <Badge className="bg-blue-500">Sắp diễn ra</Badge>,
       ongoing: <Badge className="bg-warning">Đang diễn ra</Badge>,
       ended: <Badge className="bg-muted text-muted-foreground">Đã kết thúc</Badge>,
       archived: <Badge variant="outline">Đã lưu trữ</Badge>,
@@ -164,41 +169,59 @@ export function TeacherExamManagement() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm bài thi..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="draft">Nháp</SelectItem>
-                <SelectItem value="published">Đã xuất bản</SelectItem>
-                <SelectItem value="ongoing">Đang diễn ra</SelectItem>
-                <SelectItem value="ended">Đã kết thúc</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Status Tab Navigation + Class Filter */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: "all", label: "Tất cả", count: exams.length },
+            { value: "draft", label: "Nháp", count: exams.filter((e) => e.status === "draft").length },
+            { value: "upcoming", label: "Sắp diễn ra", count: exams.filter((e) => e.status === "upcoming").length },
+            { value: "ongoing", label: "Đang diễn ra", count: exams.filter((e) => e.status === "ongoing").length },
+            { value: "ended", label: "Đã kết thúc", count: exams.filter((e) => e.status === "ended").length },
+            { value: "archived", label: "Lưu trữ", count: exams.filter((e) => e.status === "archived").length },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                statusFilter === tab.value
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold ${
+                  statusFilter === tab.value
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-background text-muted-foreground"
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={classFilter} onValueChange={setClassFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Lớp học" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả lớp</SelectItem>
+              {allClassNames.map((cls) => (
+                <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Exam List */}
       <div className="space-y-4">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)
-        ) : exams.length === 0 ? (
+        ) : filteredExams.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileCheck className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -206,7 +229,7 @@ export function TeacherExamManagement() {
             </CardContent>
           </Card>
         ) : (
-          exams.map((exam) => (
+          filteredExams.map((exam) => (
             <Card key={exam.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">

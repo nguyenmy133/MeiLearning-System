@@ -59,7 +59,38 @@ export function TeacherExamResults() {
   const isLoading = isLoadingInfo || isLoadingStats || isLoadingResults || isLoadingAnalysis;
 
   const handleExport = () => {
-    alert("Tính năng xuất Excel đang được phát triển");
+    if (filteredResults.length === 0) return;
+
+    import("xlsx").then((XLSX) => {
+      const wsData = [
+        ["Kết quả bài thi: " + (examInfo?.title ?? "")],
+        [],
+        ["Mã HV", "Họ tên", "Điểm", "Số câu đúng", "Thời gian (phút)", "Trạng thái chấm", "Kết quả"],
+        ...filteredResults.map((s: any) => [
+          s.studentId,
+          s.studentName,
+          s.score,
+          `${s.correctAnswers}/${examInfo?.totalQuestions ?? "?"}`,
+          s.timeSpent ?? "—",
+          s.gradingStatus === "pending" ? "Chờ chấm" : s.gradingStatus === "graded" ? "Đã chấm" : "Tự động",
+          s.passed ? "Đạt" : "Chưa đạt",
+        ]),
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Auto column widths
+      ws["!cols"] = [
+        { wch: 12 }, { wch: 25 }, { wch: 8 }, { wch: 14 },
+        { wch: 16 }, { wch: 16 }, { wch: 12 },
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Kết quả thi");
+
+      const fileName = `${(examInfo?.title ?? "exam").replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, "_")}_ket_qua.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    });
   };
 
   if (isLoading) {
@@ -234,59 +265,104 @@ export function TeacherExamResults() {
                     <TableHead>Họ tên</TableHead>
                     <TableHead className="text-center">Điểm</TableHead>
                     <TableHead className="text-center">Số câu đúng</TableHead>
-                    <TableHead className="text-center">Thời gian (phút)</TableHead>
+                    <TableHead className="text-center">Thời gian làm bài</TableHead>
+                    <TableHead className="text-center">Trạng thái chấm</TableHead>
                     <TableHead className="text-center">Kết quả</TableHead>
                     <TableHead className="text-center">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredResults.map((student: any) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.studentId}</TableCell>
-                      <TableCell>{student.studentName}</TableCell>
-                      <TableCell className="text-center">
-                        <span
-                          className={`font-bold ${
-                            student.passed ? "text-emerald-500" : "text-destructive"
-                          }`}
-                        >
-                          {student.score}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {student.correctAnswers}/{examInfo.totalQuestions ?? "?"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {student.timeSpent ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          className={
-                            student.passed
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-destructive/10 text-destructive"
-                          }
-                        >
-                          {student.passed ? "Đạt" : "Chưa đạt"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            navigate(
-                              `/teacher/exams/results/${examInfo.id}/student/${student.studentId}`
+                  {filteredResults.map((student: any) => {
+                    const isPending = student.gradingStatus === "pending";
+                    const isGraded = student.gradingStatus === "graded";
+                    const hasEssay = student.gradingStatus !== "no_essay";
+
+                    // Format time: "X phút" or "X giờ Y phút"
+                    let timeDisplay = "—";
+                    if (student.timeSpent != null) {
+                      const mins = Number(student.timeSpent);
+                      if (mins >= 60) {
+                        timeDisplay = `${Math.floor(mins / 60)}h ${mins % 60}p`;
+                      } else {
+                        timeDisplay = `${mins} phút`;
+                      }
+                    }
+
+                    return (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.studentId}</TableCell>
+                        <TableCell>{student.studentName}</TableCell>
+                        <TableCell className="text-center">
+                          <span
+                            className={`font-bold ${
+                              isPending
+                                ? "text-muted-foreground"
+                                : student.passed
+                                ? "text-emerald-500"
+                                : "text-destructive"
+                            }`}
+                          >
+                            {isPending ? `${student.score}*` : student.score}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {student.correctAnswers}/{examInfo.totalQuestions ?? "?"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {timeDisplay}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {hasEssay ? (
+                            isPending ? (
+                              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse">
+                                Chờ chấm
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                Đã chấm
+                              </Badge>
                             )
-                          }
-                          className="gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Xem
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Tự động
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {isPending ? (
+                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                              Chờ chấm tự luận
+                            </Badge>
+                          ) : (
+                            <Badge
+                              className={
+                                student.passed
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-destructive/10 text-destructive"
+                              }
+                            >
+                              {student.passed ? "Đạt" : "Chưa đạt"}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant={isPending ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() =>
+                              navigate(
+                                `/teacher/exams/results/${examInfo.id}/student/${student.studentId}`
+                              )
+                            }
+                            className="gap-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            {isPending ? "Chấm bài" : "Xem"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

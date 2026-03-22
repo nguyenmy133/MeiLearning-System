@@ -16,4 +16,6 @@ public class ExamResultResponse {
     private Integer timeSpent;
     private Boolean passed;
     private Instant submittedAt;
+    /** Trạng thái chấm: "graded" | "pending" | "no_essay" */
+    private String gradingStatus;
 }

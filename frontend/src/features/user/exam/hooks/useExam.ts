@@ -54,7 +54,7 @@ export function useMyAnswers(examId: string) {
 export function useSubmitExam() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (dto: SubmitExamDTO) => submitExam(dto.examId, dto.answers),
+        mutationFn: (dto: SubmitExamDTO) => submitExam(dto.examId, dto.answers, dto.timeSpentMinutes),
         onSuccess: (result) => {
             qc.invalidateQueries({ queryKey: examKeys.all });
             toast.success(

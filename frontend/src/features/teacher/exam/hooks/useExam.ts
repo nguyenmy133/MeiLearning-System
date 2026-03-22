@@ -14,6 +14,8 @@ import {
     getStudentResults,
     getQuestionAnalysis,
     getStudentExamResult,
+    getStudentAnswerDetails,
+    gradeEssay,
 } from "../services";
 
 export const examKeys = {
@@ -141,5 +143,33 @@ export function useStudentExamResult(examId: number, studentId: string) {
         queryKey: [...examKeys.all, "student-result", examId, studentId],
         queryFn: () => getStudentExamResult(examId, studentId),
         enabled: examId > 0 && !!studentId,
+    });
+}
+
+// ── Essay Grading Hooks ───────────────────────────────────────────────────────
+
+export function useStudentAnswerDetails(examId: number, studentId: string) {
+    return useQuery({
+        queryKey: [...examKeys.all, "student-answers", examId, studentId],
+        queryFn: () => getStudentAnswerDetails(examId, studentId),
+        enabled: examId > 0 && !!studentId,
+    });
+}
+
+export function useGradeEssay() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ examId, studentId, grades }: {
+            examId: number;
+            studentId: string;
+            grades: import("../services/examService").EssayGradeItem[];
+        }) => gradeEssay(examId, studentId, grades),
+        onSuccess: (_data, vars) => {
+            qc.invalidateQueries({ queryKey: [...examKeys.all, "student-result", vars.examId, vars.studentId] });
+            qc.invalidateQueries({ queryKey: [...examKeys.all, "student-answers", vars.examId, vars.studentId] });
+            qc.invalidateQueries({ queryKey: [...examKeys.all, "student-results", vars.examId] });
+            toast.success("Đã lưu chấm điểm tự luận thành công");
+        },
+        onError: (err: Error) => toast.error(err.message),
     });
 }

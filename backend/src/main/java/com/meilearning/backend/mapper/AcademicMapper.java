@@ -3,8 +3,33 @@ package com.meilearning.backend.mapper;
 import org.springframework.stereotype.Component;
 import com.meilearning.backend.dto.response.*;
 import com.meilearning.backend.entity.*;
+import com.meilearning.backend.entity.enums.ExamStatus;
+import java.time.Instant;
 @Component
 public class AcademicMapper {
+
+    /**
+     * Compute effective status based on stored status + startTime/endTime.
+     * Only "published" exams get dynamic status resolution.
+     */
+    private String computeEffectiveStatus(Exam exam) {
+        ExamStatus stored = exam.getStatus();
+        // draft / archived → keep as-is
+        if (stored != ExamStatus.published) {
+            return stored.name();
+        }
+        Instant now = Instant.now();
+        Instant start = exam.getStartTime();
+        Instant end = exam.getEndTime();
+        // Has ended?
+        if (end != null && now.isAfter(end)) return "ended";
+        // Is ongoing?
+        if (start != null && !now.isBefore(start) && (end == null || !now.isAfter(end))) return "ongoing";
+        // Not started yet → upcoming (published but scheduled for the future)
+        if (start != null && now.isBefore(start)) return "upcoming";
+        // Published without startTime set
+        return "published";
+    }
 
     public ExamResponse toExamResponse(Exam exam, int submittedCount, double avgScore) {
         // Count total enrolled students across all classes of this exam
@@ -21,7 +46,7 @@ public class AcademicMapper {
                 .totalQuestions(exam.getTotalQuestions())
                 .startTime(exam.getStartTime() != null ? exam.getStartTime().toString() : null)
                 .endTime(exam.getEndTime() != null ? exam.getEndTime().toString() : null)
-                .status(exam.getStatus().name())
+                .status(computeEffectiveStatus(exam))
                 .classIds(exam.getClasses().stream().map(ClassEntity::getId).toList())
                 .classNames(exam.getClasses().stream().map(ClassEntity::getName).toList())
                 .submittedCount(submittedCount)
@@ -74,6 +99,24 @@ public class AcademicMapper {
 
 
     public ExamResultResponse toResultResponse(ExamResult result) {
+        // Compute grading status from answer details
+        String gradingStatus = "no_essay";
+        if (result.getAnswerDetails() != null) {
+            boolean hasEssay = false;
+            boolean allGraded = true;
+            for (ExamAnswerDetail detail : result.getAnswerDetails()) {
+                if ("essay".equals(detail.getQuestion().getType())) {
+                    hasEssay = true;
+                    if (detail.getEssayScore() == null) {
+                        allGraded = false;
+                    }
+                }
+            }
+            if (hasEssay) {
+                gradingStatus = allGraded ? "graded" : "pending";
+            }
+        }
+
         return ExamResultResponse.builder()
                 .id(result.getId())
                 .examId(result.getExam().getId())
@@ -86,15 +129,21 @@ public class AcademicMapper {
                 .timeSpent(result.getTimeSpent())
                 .passed(result.getPassed())
                 .submittedAt(result.getSubmittedAt())
+                .gradingStatus(gradingStatus)
                 .build();
     }
 
     public ExamAnswerDetailResponse toAnswerDetailResponse(ExamAnswerDetail detail) {
         return ExamAnswerDetailResponse.builder()
+                .id(detail.getId())
                 .questionId(detail.getQuestion().getId())
+                .questionType(detail.getQuestion().getType())
                 .selectedAnswer(detail.getSelectedAnswer())
                 .correctAnswer(detail.getCorrectAnswer())
                 .isCorrect(detail.getIsCorrect())
+                .essayScore(detail.getEssayScore())
+                .maxPoints(detail.getQuestion().getPoints())
+                .teacherComment(detail.getTeacherComment())
                 .build();
     }
 

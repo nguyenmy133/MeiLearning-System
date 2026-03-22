@@ -59,20 +59,21 @@ export async function getExamById(id: number): Promise<TeacherExam> {
  * Tính stats cục bộ từ list — không gọi endpoint riêng.
  * Backend tự filter theo teacher từ JWT.
  */
-export async function getExamStats(): Promise<{ total: number; draft: number; published: number; ongoing: number; ended: number; archived: number; averagePassRate: number }> {
+export async function getExamStats(): Promise<{ total: number; draft: number; published: number; upcoming: number; ongoing: number; ended: number; archived: number; averagePassRate: number }> {
   try {
     const exams = await getTeacherExams();
     return {
       total: exams.length,
       draft: exams.filter((e) => e.status === "draft").length,
       published: exams.filter((e) => e.status === "published").length,
+      upcoming: exams.filter((e) => e.status === "upcoming").length,
       ongoing: exams.filter((e) => e.status === "ongoing").length,
       ended: exams.filter((e) => e.status === "ended").length,
       archived: exams.filter((e) => e.status === "archived").length,
       averagePassRate: 0,
     };
   } catch {
-    return { total: 0, draft: 0, published: 0, ongoing: 0, ended: 0, archived: 0, averagePassRate: 0 };
+    return { total: 0, draft: 0, published: 0, upcoming: 0, ongoing: 0, ended: 0, archived: 0, averagePassRate: 0 };
   }
 }
 
@@ -121,4 +122,31 @@ export async function getStudentExamResult(examId: number, studentId: string) {
 /** Stub — backend chưa có endpoint này. Trả [] để không crash UI. */
 export async function getQuestionAnalysis(_examId: number) {
   return [];
+}
+
+// ── Essay Grading ─────────────────────────────────────────────────────────────
+
+/** Lấy chi tiết câu trả lời của 1 student cho 1 bài thi */
+export async function getStudentAnswerDetails(examId: number, studentId: string) {
+  const { data } = await apiClient.get(
+    `/exams/${examId}/results/${studentId}/answers`
+  );
+  return Array.isArray(data) ? data : [];
+}
+
+/** Teacher chấm điểm câu tự luận */
+export interface EssayGradeItem {
+  answerDetailId: number;
+  score: number;
+  comment: string;
+}
+
+export async function gradeEssay(
+  examId: number,
+  studentId: string,
+  grades: EssayGradeItem[]
+): Promise<void> {
+  await apiClient.put(`/exams/${examId}/results/${studentId}/grade-essay`, {
+    grades,
+  });
 }

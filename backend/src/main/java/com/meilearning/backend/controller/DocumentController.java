@@ -17,7 +17,7 @@ import java.security.Principal;
 @RequestMapping("/api/v1/documents")
 @RequiredArgsConstructor
 @Tag(name = "Document", description = "Quản lý tài liệu")
-@PreAuthorize("hasAnyRole('admin', 'teacher', 'student')")
+@PreAuthorize("hasAnyRole('teacher', 'student')")
 public class DocumentController {
 
     private final DocumentService documentService;
@@ -49,7 +49,7 @@ public class DocumentController {
 
     @PostMapping
     @Operation(summary = "Upload tài liệu mới")
-    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    @PreAuthorize("hasRole('teacher')")
     public ResponseEntity<DocumentResponse> upload(Principal principal,
                                                    @RequestParam("file") MultipartFile file,
                                                    @RequestParam("title") String title,
@@ -62,7 +62,7 @@ public class DocumentController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa tài liệu (chỉ owner hoặc admin)")
-    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    @PreAuthorize("hasRole('teacher')")
     public ResponseEntity<Void> delete(Principal principal, @PathVariable Long id) {
         documentService.delete(principal.getName(), id);
         return ResponseEntity.noContent().build();

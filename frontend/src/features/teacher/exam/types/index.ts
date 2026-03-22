@@ -1,4 +1,4 @@
-export type ExamStatus = "draft" | "published" | "ongoing" | "ended" | "archived";
+export type ExamStatus = "draft" | "published" | "upcoming" | "ongoing" | "ended" | "archived";
 export type QuestionType = "multiple-choice" | "essay";
 
 export interface QuestionOption {
@@ -87,6 +87,7 @@ export interface ExamStats {
 export const EXAM_STATUS_LABELS: Record<ExamStatus, string> = {
     draft: "Nháp",
     published: "Đã xuất bản",
+    upcoming: "Sắp diễn ra",
     ongoing: "Đang diễn ra",
     ended: "Đã kết thúc",
     archived: "Đã lưu trữ",

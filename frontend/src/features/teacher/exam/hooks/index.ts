@@ -12,4 +12,6 @@ export {
     useStudentResults,
     useQuestionAnalysis,
     useStudentExamResult,
+    useStudentAnswerDetails,
+    useGradeEssay,
 } from "./useExam";

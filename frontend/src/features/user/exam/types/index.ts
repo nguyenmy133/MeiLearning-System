@@ -4,8 +4,9 @@ export type ExamStatus = "upcoming" | "ongoing" | "completed" | "missed";
 
 export interface ExamQuestion {
     id: number;
+    type: "multiple-choice" | "essay";
     content: string;
-    options: string[];   // A, B, C, D
+    options: string[];   // A, B, C, D — rỗng nếu essay
     /** 0-based index of the correct option — only populated in review mode */
     correctIndex?: number;
     /** Explanation for the answer — only populated in review mode */
@@ -27,6 +28,14 @@ export interface ExamDetail {
     score?: number;
     passed?: boolean;
     submittedAt?: string;
+    /** Student-specific: populated from backend list */
+    mySubmittedAt?: string;
+    myScore?: number;
+    myPassed?: boolean;
+    /** Thời gian thực tế đã làm bài (phút) */
+    myTimeSpent?: number;
+    /** Trạng thái chấm tự luận: "graded" | "pending" | "no_essay" */
+    myGradingStatus?: "graded" | "pending" | "no_essay";
 }
 
 export interface ExamSession {
@@ -38,8 +47,10 @@ export interface ExamSession {
 
 export interface SubmitExamDTO {
     examId: string;
-    /** key = questionId, value = answer index (0-3) */
-    answers: Record<number, number>;
+    /** key = questionId, value = optionIndex (MC) hoặc text (essay) */
+    answers: Record<number, number | string>;
+    /** Thời gian thực tế đã làm bài (phút) */
+    timeSpentMinutes?: number;
 }
 
 export interface ExamResult {
@@ -64,8 +75,13 @@ export interface ExamResult {
 
 /** Chi tiết câu trả lời từ backend (GET /exams/{id}/my-answers) */
 export interface ExamAnswerDetail {
+    id: number;
     questionId: number;
-    selectedAnswer: string;   // "a", "b", "c", "d"
-    correctAnswer: string;    // "a", "b", "c", "d"
+    questionType?: string;          // "multiple-choice" | "essay"
+    selectedAnswer: string;         // "a"/"b"/... hoặc text tự luận
+    correctAnswer: string;          // "a"/"b"/... (null cho essay)
     isCorrect: boolean;
+    essayScore?: number;            // điểm teacher chấm (null = chưa chấm)
+    maxPoints?: number;             // điểm tối đa của câu hỏi
+    teacherComment?: string;        // nhận xét của teacher
 }

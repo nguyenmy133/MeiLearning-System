@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -57,12 +58,12 @@ function getTimerData(examId: string): TimerData | null {
 }
 
 /** Save answers to localStorage */
-function saveAnswersToStorage(examId: string, answers: Record<number, number>) {
+function saveAnswersToStorage(examId: string, answers: Record<number, number | string>) {
   localStorage.setItem(`${ANSWERS_KEY_PREFIX}${examId}`, JSON.stringify(answers));
 }
 
 /** Load answers from localStorage */
-function loadAnswersFromStorage(examId: string): Record<number, number> {
+function loadAnswersFromStorage(examId: string): Record<number, number | string> {
   try {
     const raw = localStorage.getItem(`${ANSWERS_KEY_PREFIX}${examId}`);
     if (!raw) return {};
@@ -94,7 +95,7 @@ export function ExamTaking() {
 
   // ── State ──────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>(() => loadAnswersFromStorage(examId));
+  const [answers, setAnswers] = useState<Record<number, number | string>>(() => loadAnswersFromStorage(examId));
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -157,12 +158,18 @@ export function ExamTaking() {
     // Lấy answers mới nhất từ state + localStorage
     const latestAnswers = { ...loadAnswersFromStorage(examId), ...answers };
 
+    // Tính thời gian thực tế đã làm bài (phút)
+    const timerData = getTimerData(examId);
+    const timeSpentMinutes = timerData
+      ? Math.round((Date.now() - timerData.startedAt) / 60000)
+      : 0;
+
     submitMutation.mutate(
-      { examId, answers: latestAnswers },
+      { examId, answers: latestAnswers, timeSpentMinutes },
       {
         onSuccess: () => {
           clearExamStorage(examId);
-          navigate(`/user/exam-result?id=${examId}`, { replace: true });
+          navigate(`/user/exam-review?id=${examId}`, { replace: true });
         },
         onError: () => {
           setSubmitted(false);
@@ -182,6 +189,14 @@ export function ExamTaking() {
   const selectAnswer = (questionId: number, optionIndex: number) => {
     setAnswers((prev) => {
       const next = { ...prev, [questionId]: optionIndex };
+      saveAnswersToStorage(examId, next);
+      return next;
+    });
+  };
+
+  const setEssayAnswer = (questionId: number, text: string) => {
+    setAnswers((prev) => {
+      const next = { ...prev, [questionId]: text };
       saveAnswersToStorage(examId, next);
       return next;
     });
@@ -289,34 +304,49 @@ export function ExamTaking() {
                   {currentQuestion.content}
                 </p>
 
-                {/* Options */}
-                <RadioGroup
-                  value={answers[currentQuestion.id]?.toString() ?? ""}
-                  onValueChange={(val) => selectAnswer(currentQuestion.id, parseInt(val))}
-                >
-                  <div className="space-y-2.5">
-                    {currentQuestion.options.map((opt, idx) => (
-                      <Label
-                        key={idx}
-                        htmlFor={`opt-${currentQuestion.id}-${idx}`}
-                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                          answers[currentQuestion.id] === idx
-                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                            : "border-border hover:bg-secondary/50"
-                        }`}
-                      >
-                        <RadioGroupItem
-                          value={idx.toString()}
-                          id={`opt-${currentQuestion.id}-${idx}`}
-                        />
-                        <span className="font-medium text-primary mr-1">
-                          {OPTION_LABELS[idx]}.
-                        </span>
-                        <span className="text-foreground">{opt}</span>
-                      </Label>
-                    ))}
+                {/* Answer area — conditional on question type */}
+                {currentQuestion.type === "essay" ? (
+                  /* Essay: Textarea */
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Câu trả lời tự luận:</Label>
+                    <Textarea
+                      placeholder="Nhập câu trả lời của bạn..."
+                      value={typeof answers[currentQuestion.id] === "string" ? (answers[currentQuestion.id] as string) : ""}
+                      onChange={(e) => setEssayAnswer(currentQuestion.id, e.target.value)}
+                      rows={6}
+                      className="resize-y min-h-[120px]"
+                    />
                   </div>
-                </RadioGroup>
+                ) : (
+                  /* Multiple Choice: RadioGroup */
+                  <RadioGroup
+                    value={answers[currentQuestion.id]?.toString() ?? ""}
+                    onValueChange={(val) => selectAnswer(currentQuestion.id, parseInt(val))}
+                  >
+                    <div className="space-y-2.5">
+                      {currentQuestion.options.map((opt, idx) => (
+                        <Label
+                          key={idx}
+                          htmlFor={`opt-${currentQuestion.id}-${idx}`}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                            answers[currentQuestion.id] === idx
+                              ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border hover:bg-secondary/50"
+                          }`}
+                        >
+                          <RadioGroupItem
+                            value={idx.toString()}
+                            id={`opt-${currentQuestion.id}-${idx}`}
+                          />
+                          <span className="font-medium text-primary mr-1">
+                            {OPTION_LABELS[idx]}.
+                          </span>
+                          <span className="text-foreground">{opt}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                )}
               </CardContent>
             </Card>
           )}
