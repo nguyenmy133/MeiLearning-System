@@ -1,17 +1,26 @@
 package com.meilearning.backend.dto.request;
 
-import jakarta.validation.constraints.NotNull;
+
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.List;
+
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class SubmitExamResultRequest {
 
-    @NotNull
     private Long studentId;
 
-    @NotNull
-    private BigDecimal score;          // 0-100
+    /** Giữ lại để backward-compatible, nhưng backend sẽ tự tính nếu có answers */
+    private BigDecimal score;
     private Integer correctAnswers;
     private Integer timeSpent;         // phút
 
+    /** Danh sách câu trả lời chi tiết */
+    private List<AnswerItem> answers;
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class AnswerItem {
+        private Long questionId;
+        private String selectedAnswer;  // "a", "b", "c", "d"
+    }
 }

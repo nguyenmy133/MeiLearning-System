@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.request.UpdateExamRequest;
+import com.meilearning.backend.dto.response.ExamAnswerDetailResponse;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
 import com.meilearning.backend.dto.response.ExamStatisticsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.entity.Teacher;
+import com.meilearning.backend.repository.ClassEnrollmentRepository;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.ExamService;
@@ -33,6 +35,7 @@ public class ExamController {
     private final ExamService examService;
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
+    private final ClassEnrollmentRepository classEnrollmentRepository;
 
     @GetMapping
     @Operation(summary = "Danh sách bài kiểm tra")
@@ -43,13 +46,21 @@ public class ExamController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
 
-        // Teacher role: auto-filter theo teacher hiện tại (dùng teacher.id entity PK)
         Long resolvedTeacherId = teacherId;
-        if (SecurityUtils.isTeacher() && !SecurityUtils.isAdmin()) {
+        List<Long> studentClassIds = null;
+
+        if (SecurityUtils.isStudent() && !SecurityUtils.isAdmin()) {
+            // Student: resolve danh sách classId đã enroll → filter exam theo lớp
+            Student student = SecurityUtils.getCurrentStudent(studentRepository);
+            studentClassIds = classEnrollmentRepository.findByStudentId(student.getId())
+                    .stream().map(e -> e.getClassEntity().getId()).toList();
+        } else if (SecurityUtils.isTeacher() && !SecurityUtils.isAdmin()) {
+            // Teacher: auto-filter theo teacher hiện tại
             Teacher teacher = SecurityUtils.getCurrentTeacher(teacherRepository);
             resolvedTeacherId = teacher.getId();
         }
-        return ResponseEntity.ok(examService.getAll(resolvedTeacherId, status, page, limit));
+
+        return ResponseEntity.ok(examService.getAll(resolvedTeacherId, studentClassIds, status, page, limit));
     }
 
     @GetMapping("/{id}")
@@ -58,6 +69,13 @@ public class ExamController {
 
         return ResponseEntity.ok(examService.getById(id));
 
+    }
+
+    @GetMapping("/{id}/for-student")
+    @Operation(summary = "Chi tiết bài kiểm tra cho học viên (ẩn đáp án)")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<ExamResponse> getByIdForStudent(@PathVariable Long id) {
+        return ResponseEntity.ok(examService.getByIdForStudent(id));
     }
 
     @PostMapping
@@ -140,6 +158,22 @@ public class ExamController {
     @Operation(summary = "Lưu trữ bài thi (Teacher)")
     public ResponseEntity<ExamResponse> archive(@PathVariable Long id) {
         return ResponseEntity.ok(examService.archive(id));
+    }
+
+    @GetMapping("/{id}/my-result")
+    @Operation(summary = "Kết quả bài thi của học viên hiện tại (Student)")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<ExamResultResponse> getMyResult(@PathVariable Long id) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(examService.getStudentResult(id, student.getId()));
+    }
+
+    @GetMapping("/{id}/my-answers")
+    @Operation(summary = "Chi tiết câu trả lời của học viên hiện tại (Student)")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<List<ExamAnswerDetailResponse>> getMyAnswers(@PathVariable Long id) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(examService.getStudentAnswerDetails(id, student.getId()));
     }
 
 }

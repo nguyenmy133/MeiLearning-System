@@ -8,11 +8,14 @@ import org.springframework.web.multipart.MultipartFile;
 import com.meilearning.backend.dto.response.DocumentResponse;
 import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.Document;
+import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.entity.User;
 
 import com.meilearning.backend.exception.ResourceNotFoundException;
+import com.meilearning.backend.repository.ClassEnrollmentRepository;
 import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.DocumentRepository;
+import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.DocumentService;
 import com.meilearning.backend.service.FileStorageService;
@@ -34,6 +37,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final ClassRepository classRepository;
     private final FileStorageService fileStorageService;
+    private final StudentRepository studentRepository;
+    private final ClassEnrollmentRepository enrollmentRepository;
 
     // ── Query có phân quyền ──────────────────────────────────────────────────────
 
@@ -48,15 +53,28 @@ public class DocumentServiceImpl implements DocumentService {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
         Specification<Document> spec = SpecHelper.empty();
 
-        // RBAC: TEACHER chỉ thấy tài liệu của chính mình
-        // ADMIN thấy tất cả
+        // RBAC: phân quyền theo role
         boolean isAdmin = currentUser.getRole() == User.Role.admin;
+        boolean isStudent = currentUser.getRole() == User.Role.student;
 
-        if (!isAdmin) {
-            // Teacher hoặc Student: filter theo uploadedBy (teacher's own documents)
+        if (!isAdmin && !isStudent) {
+            // Teacher: chỉ thấy tài liệu mình upload
             final Long userId = currentUser.getId();
             spec = spec.and((root, q, cb) -> cb.equal(root.get("uploadedBy").get("id"), userId));
+        } else if (isStudent) {
+            // Student: thấy tài liệu của các lớp đã đăng ký
+            Student student = studentRepository.findByUserUsername(currentUser.getUsername())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên: " + username));
+            List<Long> classIds = enrollmentRepository.findByStudentId(student.getId())
+                    .stream().map(e -> e.getClassEntity().getId()).toList();
+            if (classIds.isEmpty()) {
+                // Chưa đăng ký lớp nào → trả rỗng
+                spec = spec.and((root, q, cb) -> cb.literal(false).isNotNull());
+            } else {
+                spec = spec.and((root, q, cb) -> root.get("classEntity").get("id").in(classIds));
+            }
         }
+        // Admin: không filter → thấy tất cả
 
         // Filter thêm theo classId nếu có
         if (classId != null) {

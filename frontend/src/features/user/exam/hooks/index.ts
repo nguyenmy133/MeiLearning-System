@@ -1,1 +1,1 @@
-export { useMyExams, useStartExam, useExamResult, useSubmitExam, examKeys } from "./useExam";
+export { useMyExams, useExamData, useExamResult, useMyAnswers, useSubmitExam, examKeys } from "./useExam";

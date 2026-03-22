@@ -55,7 +55,20 @@ const menuItems = [
 const subRouteMap: Record<string, string> = {
   "/user/exam-taking": "Bài thi",
   "/user/exam-result": "Bài thi",
+  "/user/exam-review": "Bài thi",
 };
+
+/** Check if a menu item should be highlighted for the current pathname */
+function isMenuActive(pathname: string, itemHref: string, itemLabel: string): boolean {
+  // Exact match
+  if (pathname === itemHref) return true;
+  // Sub-route match via subRouteMap (e.g. /user/exam-taking → "Bài thi")
+  const mappedLabel = subRouteMap[pathname];
+  if (mappedLabel && mappedLabel === itemLabel) return true;
+  // Prefix match for nested routes (e.g. /user/exams/123)
+  if (pathname.startsWith(itemHref + "/")) return true;
+  return false;
+}
 
 function getPageTitle(pathname: string): string {
   if (subRouteMap[pathname]) return subRouteMap[pathname];
@@ -157,7 +170,7 @@ export function UserLayout() {
         <nav className="flex-1 py-4 px-3 overflow-y-auto">
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = isMenuActive(location.pathname, item.href, item.label);
               const cls = `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                 isActive
                   ? "bg-primary text-primary-foreground"
@@ -223,7 +236,7 @@ export function UserLayout() {
         <nav className="py-4 px-3">
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = isMenuActive(location.pathname, item.href, item.label);
               const cls = `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                 isActive
                   ? "bg-primary text-primary-foreground"

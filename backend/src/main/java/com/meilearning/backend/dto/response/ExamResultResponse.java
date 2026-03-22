@@ -12,6 +12,7 @@ public class ExamResultResponse {
     private String studentName;
     private BigDecimal score;
     private Integer correctAnswers;
+    private Integer totalQuestions;
     private Integer timeSpent;
     private Boolean passed;
     private Instant submittedAt;

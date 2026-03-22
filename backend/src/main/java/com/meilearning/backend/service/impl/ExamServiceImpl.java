@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.meilearning.backend.dto.request.CreateExamRequest;
 import com.meilearning.backend.dto.request.SubmitExamResultRequest;
 import com.meilearning.backend.dto.request.UpdateExamRequest;
+import com.meilearning.backend.dto.response.ExamAnswerDetailResponse;
 import com.meilearning.backend.dto.response.ExamResponse;
 import com.meilearning.backend.dto.response.ExamResultResponse;
 import com.meilearning.backend.dto.response.ExamStatisticsResponse;
@@ -25,10 +26,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,6 +43,7 @@ public class ExamServiceImpl implements ExamService {
     private final ExamRepository examRepository;
     private final ExamResultRepository resultRepository;
     private final ExamQuestionRepository questionRepository;
+    private final ExamAnswerDetailRepository answerDetailRepository;
     private final TeacherRepository teacherRepository;
     private final ClassRepository classRepository;
     private final StudentRepository studentRepository;
@@ -66,15 +73,13 @@ public class ExamServiceImpl implements ExamService {
             exam.setClasses(classes);
         }
 
-        exam = examRepository.save(exam);
-
-        // Save questions cascade
+        // Build questions vào collection trước khi save
+        // → CascadeType.ALL sẽ tự persist questions cùng exam
         if (req.getQuestions() != null && !req.getQuestions().isEmpty()) {
-            final Exam savedExam = exam;
             final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
-            List<ExamQuestion> questions = req.getQuestions().stream().map(qr -> {
+            for (var qr : req.getQuestions()) {
                 ExamQuestion q = new ExamQuestion();
-                q.setExam(savedExam);
+                q.setExam(exam);
                 q.setOrderIndex(idx.getAndIncrement());
                 q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
                 q.setQuestionText(qr.getQuestion());
@@ -82,12 +87,13 @@ public class ExamServiceImpl implements ExamService {
                 q.setCorrectAnswer(qr.getCorrectAnswer());
                 q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
                 q.setExplanation(qr.getExplanation());
-                return q;
-            }).toList();
-            questionRepository.saveAll(questions);
-            exam.setTotalQuestions(questions.size());
-            exam = examRepository.save(exam);
+                exam.getQuestions().add(q);
+            }
+            exam.setTotalQuestions(exam.getQuestions().size());
         }
+
+        // Save 1 lần duy nhất — cascade persist questions
+        exam = examRepository.save(exam);
 
         return mapper.toExamResponse(exam, 0, 0);
     }
@@ -99,6 +105,15 @@ public class ExamServiceImpl implements ExamService {
         int count = (int) resultRepository.countByExamId(exam.getId());
         double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
         return mapper.toExamResponseWithQuestions(exam, count, avg);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ExamResponse getByIdForStudent(Long id) {
+        Exam exam = findExam(id);
+        int count = (int) resultRepository.countByExamId(exam.getId());
+        double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
+        return mapper.toExamResponseForStudent(exam, count, avg);
     }
 
     @Override
@@ -117,12 +132,13 @@ public class ExamServiceImpl implements ExamService {
                 exam.setClasses(classRepository.findAllById(req.getClassIds()));
             }
             if (req.getQuestions() != null) {
-                questionRepository.deleteByExamId(exam.getId());
-                final Exam savedExam = exam;
+                // Dùng collection clear → orphanRemoval = true sẽ DELETE
+                exam.getQuestions().clear();
+
                 final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
-                List<ExamQuestion> questions = req.getQuestions().stream().map(qr -> {
+                for (var qr : req.getQuestions()) {
                     ExamQuestion q = new ExamQuestion();
-                    q.setExam(savedExam);
+                    q.setExam(exam);
                     q.setOrderIndex(idx.getAndIncrement());
                     q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
                     q.setQuestionText(qr.getQuestion());
@@ -130,10 +146,9 @@ public class ExamServiceImpl implements ExamService {
                     q.setCorrectAnswer(qr.getCorrectAnswer());
                     q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
                     q.setExplanation(qr.getExplanation());
-                    return q;
-                }).toList();
-                questionRepository.saveAll(questions);
-                exam.setTotalQuestions(questions.size());
+                    exam.getQuestions().add(q);
+                }
+                exam.setTotalQuestions(exam.getQuestions().size());
             }
         }
 
@@ -145,13 +160,27 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ExamResponse> getAll(Long teacherId, String status, int page, int limit) {
+    public PageResponse<ExamResponse> getAll(Long teacherId, List<Long> studentClassIds,
+                                             String status, int page, int limit) {
         if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
         Specification<Exam> spec = SpecHelper.empty();
         if (teacherId != null) {
             // Controller đã resolve từ JWT → teacherId = teachers.id (entity PK)
             spec = spec.and((root, q, cb) -> cb.equal(root.get("teacher").get("id"), teacherId));
+        }
+        if (studentClassIds != null) {
+            // Student: chỉ thấy exam đã published + thuộc lớp đã đăng ký
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), ExamStatus.published));
+            if (studentClassIds.isEmpty()) {
+                // Chưa enroll lớp nào → trả rỗng
+                spec = spec.and((root, q, cb) -> cb.literal(false).isNotNull());
+            } else {
+                spec = spec.and((root, q, cb) -> {
+                    q.distinct(true); // tránh duplicate khi join ManyToMany
+                    return root.join("classes").get("id").in(studentClassIds);
+                });
+            }
         }
         if (status != null && !status.isBlank()) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), ExamStatus.valueOf(status)));
@@ -235,6 +264,14 @@ public class ExamServiceImpl implements ExamService {
 
     }
 
+    /**
+     * Submit exam — Backend chấm điểm + lưu chi tiết từng câu.
+     *
+     * Nếu request có `answers` (danh sách câu trả lời chi tiết):
+     *   → Backend tự chấm điểm, lưu ExamAnswerDetail cho từng câu.
+     * Nếu không có `answers` (backward-compatible):
+     *   → Dùng score/correctAnswers từ request (flow cũ).
+     */
     @Override
     public ExamResultResponse submit(Long examId, SubmitExamResultRequest req) {
 
@@ -245,22 +282,68 @@ public class ExamServiceImpl implements ExamService {
 
         if (resultRepository.existsByExamIdAndStudentId(examId, req.getStudentId())) {
             throw new BusinessException("Học viên đã nộp bài cho exam này.");
-
         }
 
-        boolean passed = req.getScore().compareTo(BigDecimal.valueOf(50)) >= 0;
+        BigDecimal score;
+        int correctCount;
+        List<ExamAnswerDetail> answerDetails = new ArrayList<>();
+
+        if (req.getAnswers() != null && !req.getAnswers().isEmpty()) {
+            // ── Chấm điểm từ chi tiết câu trả lời ──
+            List<ExamQuestion> questions = questionRepository.findByExamIdOrderByOrderIndex(examId);
+            Map<Long, ExamQuestion> questionMap = questions.stream()
+                    .collect(Collectors.toMap(ExamQuestion::getId, q -> q));
+
+            correctCount = 0;
+
+            for (SubmitExamResultRequest.AnswerItem ans : req.getAnswers()) {
+                ExamQuestion q = questionMap.get(ans.getQuestionId());
+                if (q == null) continue;
+
+                String correct = (q.getCorrectAnswer() != null ? q.getCorrectAnswer() : "").toLowerCase().trim();
+                String selected = (ans.getSelectedAnswer() != null ? ans.getSelectedAnswer() : "").toLowerCase().trim();
+                boolean isCorrect = !selected.isEmpty() && correct.equals(selected);
+                if (isCorrect) correctCount++;
+
+                answerDetails.add(ExamAnswerDetail.builder()
+                        .question(q)
+                        .selectedAnswer(ans.getSelectedAnswer())
+                        .correctAnswer(q.getCorrectAnswer())
+                        .isCorrect(isCorrect)
+                        .build());
+            }
+
+            int totalQ = questions.size();
+            score = totalQ > 0
+                    ? BigDecimal.valueOf(correctCount * 100.0 / totalQ).setScale(2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+        } else {
+            // ── Backward-compatible: dùng score từ request ──
+            score = req.getScore() != null ? req.getScore() : BigDecimal.ZERO;
+            correctCount = req.getCorrectAnswers() != null ? req.getCorrectAnswers() : 0;
+        }
+
+        boolean passed = score.compareTo(BigDecimal.valueOf(50)) >= 0;
 
         ExamResult result = ExamResult.builder()
                 .exam(exam)
                 .student(student)
-                .score(req.getScore())
-                .correctAnswers(req.getCorrectAnswers() != null ? req.getCorrectAnswers() : 0)
+                .score(score)
+                .correctAnswers(correctCount)
                 .timeSpent(req.getTimeSpent())
                 .passed(passed)
                 .submittedAt(Instant.now())
                 .build();
 
         result = resultRepository.save(result);
+
+        // Lưu chi tiết câu trả lời
+        if (!answerDetails.isEmpty()) {
+            for (ExamAnswerDetail d : answerDetails) {
+                d.setExamResult(result);
+            }
+            answerDetailRepository.saveAll(answerDetails);
+        }
 
         // Notify teacher: student nộp bài
         if (exam.getTeacher() != null && exam.getTeacher().getUser() != null) {
@@ -269,7 +352,7 @@ public class ExamServiceImpl implements ExamService {
                     "exam_submission",
                     "Học viên nộp bài: " + exam.getTitle(),
                     student.getUser() != null ? student.getUser().getName() : "Học viên"
-                            + " đã nộp bài kiểm tra \"" + exam.getTitle() + "\". Điểm: " + req.getScore()
+                            + " đã nộp bài kiểm tra \"" + exam.getTitle() + "\". Điểm: " + score
             );
         }
 
@@ -295,6 +378,14 @@ public class ExamServiceImpl implements ExamService {
 
         return mapper.toResultResponse(result);
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExamAnswerDetailResponse> getStudentAnswerDetails(Long examId, Long studentId) {
+        List<ExamAnswerDetail> details = answerDetailRepository
+                .findByExamResultExamIdAndExamResultStudentId(examId, studentId);
+        return details.stream().map(mapper::toAnswerDetailResponse).toList();
     }
 
     private Exam findExam(Long id) {

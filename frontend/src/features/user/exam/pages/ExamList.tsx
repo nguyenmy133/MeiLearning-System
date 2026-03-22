@@ -1,9 +1,18 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "@/lib/dateUtils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   BookOpen,
   Clock,
@@ -15,15 +24,17 @@ import {
   Trophy,
   Calendar,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
-import { useMyExams, useSubmitExam } from "@/features/user/exam/hooks";
+import { useMyExams } from "@/features/user/exam/hooks";
 import type { ExamDetail } from "@/features/user/exam/types";
 
 export function ExamList() {
   const navigate = useNavigate();
   const { data: exams = [], isLoading } = useMyExams();
+  const [confirmExam, setConfirmExam] = useState<ExamDetail | null>(null);
 
-  const availableExams = exams.filter((e) => e.status === "upcoming");
+  const availableExams = exams.filter((e) => e.status === "upcoming" || e.status === "ongoing");
   const completedExams = exams.filter((e) => e.status === "completed");
   const missedExams = exams.filter((e) => e.status === "missed");
 
@@ -40,8 +51,25 @@ export function ExamList() {
     }
   };
 
-  const handleStartExam = (examId: string) => {
-    navigate(`/user/exam-taking?id=${examId}`);
+  const handleStartExam = (exam: ExamDetail) => {
+    setConfirmExam(exam);
+  };
+
+  const handleConfirmStart = () => {
+    if (!confirmExam) return;
+    // Lưu thời gian bắt đầu vào localStorage (nếu chưa có)
+    const timerKey = `exam_timer_${confirmExam.id}`;
+    if (!localStorage.getItem(timerKey)) {
+      localStorage.setItem(
+        timerKey,
+        JSON.stringify({
+          startedAt: Date.now(),
+          durationMs: confirmExam.durationMinutes * 60 * 1000,
+        })
+      );
+    }
+    setConfirmExam(null);
+    navigate(`/user/exam-taking?id=${confirmExam.id}`);
   };
 
   if (isLoading) {
@@ -149,7 +177,7 @@ export function ExamList() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="w-4 h-4" />
                           <span>{exam.durationMinutes} phút</span>
@@ -162,10 +190,16 @@ export function ExamList() {
                           <Calendar className="w-4 h-4" />
                           <span>{formatDateTime(exam.startAt)}</span>
                         </div>
+                        {exam.endAt && (
+                          <div className="flex items-center gap-2 text-destructive font-medium">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>Hạn: {formatDateTime(exam.endAt)}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <Button className="gap-2" onClick={() => handleStartExam(exam.id)}>
+                    <Button className="gap-2" onClick={() => handleStartExam(exam)}>
                       <Play className="w-4 h-4" />
                       Bắt đầu làm bài
                     </Button>
@@ -219,9 +253,9 @@ export function ExamList() {
                       </div>
                     </div>
 
-                    <Button variant="outline" onClick={() => navigate(`/user/exam-result?id=${exam.id}`)}>
+                    <Button variant="outline" onClick={() => navigate(`/user/exam-review?id=${exam.id}`)}>
                       <Eye className="w-4 h-4 mr-2" />
-                      Xem chi tiết
+                      Xem lại
                     </Button>
                   </div>
                 </CardContent>
@@ -262,6 +296,53 @@ export function ExamList() {
           <p>Chưa có bài thi nào.</p>
         </div>
       )}
+
+      {/* ── Confirmation Dialog ── */}
+      <Dialog open={!!confirmExam} onOpenChange={(open) => !open && setConfirmExam(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Xác nhận bắt đầu làm bài
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p>Bạn sắp bắt đầu bài thi:</p>
+                {confirmExam && (
+                  <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
+                    <p className="font-semibold text-foreground">{confirmExam.title}</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span>Thời gian: {confirmExam.durationMinutes} phút</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <FileText className="w-4 h-4" />
+                        <span>Số câu: {confirmExam.totalQuestions} câu</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="bg-destructive/10 rounded-lg p-3 border border-destructive/20">
+                  <p className="text-sm text-destructive font-medium">
+                    ⚠️ Lưu ý: Sau khi bắt đầu, đồng hồ sẽ đếm ngược ngay cả khi bạn thoát khỏi trang.
+                    Khi hết thời gian, bài thi sẽ tự động được nộp.
+                  </p>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmExam(null)}>
+              Hủy
+            </Button>
+            <Button onClick={handleConfirmStart} className="gap-2">
+              <Play className="w-4 h-4" />
+              Bắt đầu ngay
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

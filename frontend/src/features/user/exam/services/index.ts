@@ -1,1 +1,2 @@
-export { getMyExams, startExam, getExamSession, submitExam, getExamResult } from "./examService";
+export { getMyExams, startExam, getExamData, submitExam, getExamResult, getMyAnswers } from "./examService";
+

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Clock,
@@ -24,7 +24,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useStartExam, useExamSession, useSubmitExam } from "@/features/user/exam/hooks/useExam";
+import { useExamData, useSubmitExam } from "@/features/user/exam/hooks/useExam";
 import type { ExamQuestion } from "@/features/user/exam/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -37,6 +37,47 @@ const formatTime = (seconds: number) => {
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
+const TIMER_KEY_PREFIX = "exam_timer_";
+const ANSWERS_KEY_PREFIX = "exam_answers_";
+
+interface TimerData {
+  startedAt: number;
+  durationMs: number;
+}
+
+/** Read timer deadline from localStorage */
+function getTimerData(examId: string): TimerData | null {
+  try {
+    const raw = localStorage.getItem(`${TIMER_KEY_PREFIX}${examId}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as TimerData;
+  } catch {
+    return null;
+  }
+}
+
+/** Save answers to localStorage */
+function saveAnswersToStorage(examId: string, answers: Record<number, number>) {
+  localStorage.setItem(`${ANSWERS_KEY_PREFIX}${examId}`, JSON.stringify(answers));
+}
+
+/** Load answers from localStorage */
+function loadAnswersFromStorage(examId: string): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(`${ANSWERS_KEY_PREFIX}${examId}`);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+/** Clean up localStorage for this exam */
+function clearExamStorage(examId: string) {
+  localStorage.removeItem(`${TIMER_KEY_PREFIX}${examId}`);
+  localStorage.removeItem(`${ANSWERS_KEY_PREFIX}${examId}`);
+}
+
 // ── Component ───────────────────────────────────────────────────────────
 
 export function ExamTaking() {
@@ -45,57 +86,82 @@ export function ExamTaking() {
   const examId = searchParams.get("id") ?? "";
 
   // ── API hooks ──────────────────────────────────────────────
-  const { data: examInfo, isLoading: infoLoading } = useStartExam(examId);
-  const { data: session, isLoading: sessionLoading } = useExamSession(examId);
+  const { data: examData, isLoading: dataLoading } = useExamData(examId);
   const submitMutation = useSubmitExam();
+
+  const examInfo = examData?.examInfo;
+  const session = examData?.session;
 
   // ── State ──────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, number>>(() => loadAnswersFromStorage(examId));
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const autoSubmitRef = useRef(false);
+  const deadlineRef = useRef<number | null>(null);
 
   const questions: ExamQuestion[] = session?.questions ?? [];
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
   const answeredCount = Object.keys(answers).length;
 
-  // ── Timer ──────────────────────────────────────────────────
+  // ── Initialize timer from localStorage (persistent) ────────
   useEffect(() => {
-    if (session?.remainingSeconds && timeLeft === null) {
+    if (!examId || submitted) return;
+
+    const timerData = getTimerData(examId);
+    if (timerData) {
+      // Timer đã được tạo khi user xác nhận bắt đầu
+      const deadline = timerData.startedAt + timerData.durationMs;
+      deadlineRef.current = deadline;
+      const remaining = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    } else if (session?.remainingSeconds != null && timeLeft === null) {
+      // Fallback: nếu không có timer trong localStorage, tạo từ session
+      const deadline = Date.now() + session.remainingSeconds * 1000;
+      deadlineRef.current = deadline;
+      localStorage.setItem(
+        `${TIMER_KEY_PREFIX}${examId}`,
+        JSON.stringify({
+          startedAt: Date.now() - ((examInfo?.durationMinutes ?? 0) * 60 * 1000 - session.remainingSeconds * 1000),
+          durationMs: (examInfo?.durationMinutes ?? 0) * 60 * 1000,
+        } satisfies TimerData)
+      );
       setTimeLeft(session.remainingSeconds);
     }
-  }, [session, timeLeft]);
+  }, [examId, session, examInfo, submitted, timeLeft]);
 
+  // ── Countdown tick — recalculate from deadline ─────────────
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0 || submitted) return;
+    if (deadlineRef.current === null || submitted) return;
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+      const remaining = Math.max(0, Math.floor((deadlineRef.current! - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, submitted]);
+  }, [submitted, deadlineRef.current]);
 
   // ── Auto-submit when time runs out ─────────────────────────
   const handleSubmit = useCallback(() => {
     if (submitted || !examId) return;
     setSubmitted(true);
 
+    // Lấy answers mới nhất từ state + localStorage
+    const latestAnswers = { ...loadAnswersFromStorage(examId), ...answers };
+
     submitMutation.mutate(
-      { examId, answers },
+      { examId, answers: latestAnswers },
       {
-        onSuccess: (result) => {
+        onSuccess: () => {
+          clearExamStorage(examId);
           navigate(`/user/exam-result?id=${examId}`, { replace: true });
         },
         onError: () => {
@@ -114,7 +180,11 @@ export function ExamTaking() {
 
   // ── Handlers ───────────────────────────────────────────────
   const selectAnswer = (questionId: number, optionIndex: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+    setAnswers((prev) => {
+      const next = { ...prev, [questionId]: optionIndex };
+      saveAnswersToStorage(examId, next);
+      return next;
+    });
   };
 
   const toggleFlag = (questionId: number) => {
@@ -130,7 +200,7 @@ export function ExamTaking() {
   };
 
   // ── Loading ────────────────────────────────────────────────
-  if (infoLoading || sessionLoading) {
+  if (dataLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
@@ -396,8 +466,8 @@ export function ExamTaking() {
               <AlertTriangle className="h-5 w-5" /> Thoát bài thi
             </DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn thoát? Bài thi sẽ không được nộp và bạn có
-              thể mất dữ liệu đã làm.
+              Bạn có chắc chắn muốn thoát? <strong>Đồng hồ vẫn tiếp tục đếm ngược.</strong>{" "}
+              Bạn có thể quay lại làm bài trước khi hết thời gian. Khi hết thời gian, bài thi sẽ tự động được nộp.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

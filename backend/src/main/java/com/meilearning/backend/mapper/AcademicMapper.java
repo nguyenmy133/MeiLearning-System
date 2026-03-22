@@ -51,6 +51,27 @@ public class AcademicMapper {
                 .build();
     }
 
+    /** Student version: ẩn correctAnswer + explanation để tránh gian lận */
+    public QuestionResponse toQuestionResponseForStudent(ExamQuestion q) {
+        return QuestionResponse.builder()
+                .id(q.getId())
+                .orderIndex(q.getOrderIndex())
+                .type(q.getType())
+                .question(q.getQuestionText())
+                .options(q.getOptions())
+                .correctAnswer(null)      // ẩn đáp án
+                .points(q.getPoints())
+                .explanation(null)         // ẩn giải thích
+                .build();
+    }
+
+    /** Dùng cho GET /exams/{id}/for-student — trả về kèm câu hỏi KHÔNG có đáp án */
+    public ExamResponse toExamResponseForStudent(Exam exam, int submittedCount, double avgScore) {
+        ExamResponse resp = toExamResponse(exam, submittedCount, avgScore);
+        resp.setQuestions(exam.getQuestions().stream().map(this::toQuestionResponseForStudent).toList());
+        return resp;
+    }
+
 
     public ExamResultResponse toResultResponse(ExamResult result) {
         return ExamResultResponse.builder()
@@ -61,9 +82,19 @@ public class AcademicMapper {
                 .studentName(result.getStudent().getUser().getName())
                 .score(result.getScore())
                 .correctAnswers(result.getCorrectAnswers())
+                .totalQuestions(result.getExam().getTotalQuestions())
                 .timeSpent(result.getTimeSpent())
                 .passed(result.getPassed())
                 .submittedAt(result.getSubmittedAt())
+                .build();
+    }
+
+    public ExamAnswerDetailResponse toAnswerDetailResponse(ExamAnswerDetail detail) {
+        return ExamAnswerDetailResponse.builder()
+                .questionId(detail.getQuestion().getId())
+                .selectedAnswer(detail.getSelectedAnswer())
+                .correctAnswer(detail.getCorrectAnswer())
+                .isCorrect(detail.getIsCorrect())
                 .build();
     }
 

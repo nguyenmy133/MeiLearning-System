@@ -42,6 +42,10 @@ const ExamResult = lazyNamed(
   () => import("@/features/user/exam/pages/ExamResult"),
   "ExamResult",
 );
+const ExamReview = lazyNamed(
+  () => import("@/features/user/exam/pages/ExamReview"),
+  "ExamReview",
+);
 const TuitionPage = lazyNamed(
   () => import("@/features/user/tuition/pages/TuitionPage"),
   "TuitionPage",
@@ -87,6 +91,7 @@ export function userRoutes() {
       <Route path="exams" element={<ExamList />} />
       <Route path="exam-taking" element={<ExamTaking />} />
       <Route path="exam-result" element={<ExamResult />} />
+      <Route path="exam-review" element={<ExamReview />} />
       <Route path="tuition" element={<TuitionPage />} />
       <Route path="leave" element={<LeavePage />} />
       <Route path="grades" element={<UserGradesPage />} />

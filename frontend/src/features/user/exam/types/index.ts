@@ -6,6 +6,10 @@ export interface ExamQuestion {
     id: number;
     content: string;
     options: string[];   // A, B, C, D
+    /** 0-based index of the correct option — only populated in review mode */
+    correctIndex?: number;
+    /** Explanation for the answer — only populated in review mode */
+    explanation?: string;
 }
 
 export interface ExamDetail {
@@ -15,6 +19,7 @@ export interface ExamDetail {
     title: string;
     description?: string;
     startAt: string;     // ISO timestamp
+    endAt?: string;      // ISO timestamp — thời gian kết thúc
     durationMinutes: number;
     totalQuestions: number;
     status: ExamStatus;
@@ -55,4 +60,12 @@ export interface ExamResult {
         selectedOption: number;
         correctOption: number;
     }[];
+}
+
+/** Chi tiết câu trả lời từ backend (GET /exams/{id}/my-answers) */
+export interface ExamAnswerDetail {
+    questionId: number;
+    selectedAnswer: string;   // "a", "b", "c", "d"
+    correctAnswer: string;    // "a", "b", "c", "d"
+    isCorrect: boolean;
 }
