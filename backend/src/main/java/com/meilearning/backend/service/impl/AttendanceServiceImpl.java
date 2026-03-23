@@ -6,8 +6,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.meilearning.backend.dto.request.BulkAttendanceRequest;
 import com.meilearning.backend.dto.response.AttendanceResponse;
 import com.meilearning.backend.dto.response.AttendanceStatsResponse;
+import com.meilearning.backend.dto.response.ClassSessionResponse;
+import com.meilearning.backend.dto.response.QrTokenResponse;
+import com.meilearning.backend.entity.AttendanceQrToken;
 import com.meilearning.backend.entity.AttendanceRecord;
+import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassSession;
+import com.meilearning.backend.entity.QrSettings;
 import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.entity.Teacher;
 import com.meilearning.backend.entity.enums.AttendanceStatus;
@@ -16,25 +21,31 @@ import com.meilearning.backend.entity.enums.SessionStatus;
 import com.meilearning.backend.exception.BusinessException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.SessionMapper;
+import com.meilearning.backend.repository.AttendanceQrTokenRepository;
 import com.meilearning.backend.repository.AttendanceRecordRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
+import com.meilearning.backend.repository.QrSettingsRepository;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.AttendanceService;
 import com.meilearning.backend.service.NotificationDispatcher;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRecordRepository attendanceRepository;
+    private final AttendanceQrTokenRepository qrTokenRepository;
     private final ClassSessionRepository sessionRepository;
     private final StudentRepository studentRepository;
+    private final QrSettingsRepository qrSettingsRepository;
     private final SessionMapper sessionMapper;
     private final NotificationDispatcher notificationDispatcher;
     private final TeacherRepository teacherRepository;
@@ -94,13 +105,13 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         }
 
-        // Đánh dấu session đã hoàn thành
-
-        if (session.getStatus() == SessionStatus.upcoming) {
+        // Chỉ chốt điểm danh khi confirm=true
+        boolean shouldConfirm = Boolean.TRUE.equals(request.getConfirm());
+        if (shouldConfirm && session.getStatus() == SessionStatus.upcoming) {
             session.setStatus(SessionStatus.completed);
             sessionRepository.save(session);
-
         }
+
         return saved.stream().map(sessionMapper::toAttendanceResponse).toList();
     }
 
@@ -124,6 +135,91 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .student(student)
                 .status(AttendanceStatus.present)
                 .checkInTime(LocalTime.now())
+                .method(CheckInMethod.qr)
+                .build();
+        record = attendanceRepository.save(record);
+        return sessionMapper.toAttendanceResponse(record);
+    }
+
+    // ── QR Token Generation ───────────────────────────────────────────────
+
+    @Override
+    public QrTokenResponse generateQrToken(Long sessionId) {
+        ClassSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy buổi học: " + sessionId));
+
+        // Đọc cấu hình QR từ DB (singleton)
+        QrSettings settings = qrSettingsRepository.findAll().stream().findFirst()
+                .orElse(QrSettings.builder().enabled(true).expiryMinutes(5).build());
+
+        if (!Boolean.TRUE.equals(settings.getEnabled())) {
+            throw new BusinessException("Chức năng QR điểm danh đang tắt.");
+        }
+
+        // Deactivate token cũ của session này
+        qrTokenRepository.deactivateBySessionId(sessionId);
+
+        // Tạo token mới
+        String tokenStr = UUID.randomUUID().toString();
+        Instant expiresAt = Instant.now().plusSeconds(settings.getExpiryMinutes() * 60L);
+
+        AttendanceQrToken token = AttendanceQrToken.builder()
+                .token(tokenStr)
+                .session(session)
+                .expiresAt(expiresAt)
+                .active(true)
+                .build();
+        qrTokenRepository.save(token);
+
+        return QrTokenResponse.builder()
+                .token(tokenStr)
+                .expiresAt(expiresAt)
+                .expiryMinutes(settings.getExpiryMinutes())
+                .sessionId(sessionId)
+                .build();
+    }
+
+    // ── QR Token Check-in ─────────────────────────────────────────────────
+
+    @Override
+    public AttendanceResponse qrTokenCheckIn(String token, Long studentId) {
+        // 1. Validate token
+        AttendanceQrToken qrToken = qrTokenRepository.findByTokenAndActiveTrue(token)
+                .orElseThrow(() -> new BusinessException("Mã QR không hợp lệ hoặc đã bị hủy."));
+
+        // 2. Check expiration
+        if (Instant.now().isAfter(qrToken.getExpiresAt())) {
+            throw new BusinessException("Mã QR đã hết hạn. Vui lòng yêu cầu giáo viên tạo mã mới.");
+        }
+
+        // 3. Get session & student
+        ClassSession session = qrToken.getSession();
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy học viên: " + studentId));
+
+        // 4. Check duplicate
+        if (attendanceRepository.existsBySessionIdAndStudentId(session.getId(), studentId)) {
+            throw new BusinessException("Bạn đã điểm danh buổi học này rồi.");
+        }
+
+        // 5. Determine status: present or late
+        LocalTime now = LocalTime.now();
+        AttendanceStatus status = AttendanceStatus.present;
+        if (session.getStartTime() != null) {
+            long minutesLate = java.time.Duration.between(session.getStartTime(), now).toMinutes();
+            if (minutesLate > 15) { // 15 min default late threshold
+                status = AttendanceStatus.late;
+            }
+        }
+
+        // 6. Create record
+        AttendanceRecord record = AttendanceRecord.builder()
+                .session(session)
+                .student(student)
+                .status(status)
+                .checkInTime(now)
                 .method(CheckInMethod.qr)
                 .build();
         record = attendanceRepository.save(record);
@@ -181,7 +277,117 @@ public class AttendanceServiceImpl implements AttendanceService {
         List<ClassSession> sessions = sessionRepository
                 .findByClassEntityTeacherIdAndDate(teacher.getId(), targetDate);
 
+        return sessions.stream()
+                .filter(s -> s.getStatus() != SessionStatus.cancelled)
+                .map(sessionMapper::toResponse).toList();
+    }
+
+    // ── Session Roster (enrolled students + attendance status) ─────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> getSessionRoster(Long sessionId) {
+        ClassSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy buổi học: " + sessionId));
+
+        // Get existing attendance records indexed by studentId
+        List<AttendanceRecord> records = attendanceRepository.findBySessionId(sessionId);
+        java.util.Map<Long, AttendanceRecord> recordMap = new java.util.HashMap<>();
+        for (AttendanceRecord r : records) {
+            recordMap.put(r.getStudent().getId(), r);
+        }
+
+        // Get all enrolled students
+        List<ClassEnrollment> enrollments = session.getClassEntity().getEnrollments();
+        List<AttendanceResponse> roster = new ArrayList<>();
+
+        for (ClassEnrollment enrollment : enrollments) {
+            Student student = enrollment.getStudent();
+            AttendanceRecord record = recordMap.get(student.getId());
+
+            if (record != null) {
+                roster.add(sessionMapper.toAttendanceResponse(record));
+            } else {
+                // No record yet → return as "pending"
+                roster.add(AttendanceResponse.builder()
+                        .id(null)
+                        .sessionId(sessionId)
+                        .studentId(student.getId())
+                        .studentName(student.getUser() != null ? student.getUser().getName() : "")
+                        .status("pending")
+                        .checkInTime(null)
+                        .method(null)
+                        .note(null)
+                        .createdAt(null)
+                        .build());
+            }
+        }
+        return roster;
+    }
+
+    // ── Admin: All Sessions ───────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClassSessionResponse> getAllSessions(Long classId, String date) {
+        List<ClassSession> sessions;
+        if (classId != null && date != null) {
+            sessions = sessionRepository.findByClassEntityIdAndDate(classId, LocalDate.parse(date));
+        } else if (classId != null) {
+            sessions = sessionRepository.findByClassEntityId(classId);
+        } else if (date != null) {
+            sessions = sessionRepository.findByDate(LocalDate.parse(date));
+        } else {
+            // Default: today's sessions
+            sessions = sessionRepository.findByDate(LocalDate.now());
+        }
         return sessions.stream().map(sessionMapper::toResponse).toList();
+    }
+
+    // ── Admin: Update single record ───────────────────────────────────────
+
+    @Override
+    public AttendanceResponse updateRecord(Long recordId, String status, String note) {
+        AttendanceRecord record = attendanceRepository.findById(recordId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy bản ghi điểm danh: " + recordId));
+        record.setStatus(AttendanceStatus.valueOf(status));
+        if (note != null) {
+            record.setNote(note);
+        }
+        record = attendanceRepository.save(record);
+        return sessionMapper.toAttendanceResponse(record);
+    }
+
+    // ── Student: Personal attendance records ──────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> getStudentRecords(Long studentId, Long classId) {
+        List<AttendanceRecord> records;
+        if (classId != null) {
+            records = attendanceRepository.findByStudentId(studentId).stream()
+                    .filter(r -> r.getSession().getClassEntity().getId().equals(classId))
+                    .toList();
+        } else {
+            records = attendanceRepository.findByStudentId(studentId);
+        }
+        return records.stream().map(sessionMapper::toAttendanceResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public QrTokenResponse getActiveQrToken(Long sessionId) {
+        return qrTokenRepository
+                .findBySessionIdAndActiveTrueAndExpiresAtAfter(sessionId, Instant.now())
+                .map(token -> QrTokenResponse.builder()
+                        .token(token.getToken())
+                        .expiresAt(token.getExpiresAt())
+                        .expiryMinutes(0) // not used for restore
+                        .sessionId(sessionId)
+                        .build())
+                .orElse(null);
     }
 
 }

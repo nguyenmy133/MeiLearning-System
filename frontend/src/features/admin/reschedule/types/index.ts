@@ -14,6 +14,7 @@ export interface RescheduleRequest {
   originalTime: string;
   requestedDate: string;
   requestedTime: string;
+  requestedEndTime?: string;
   reason: string;
   status: RequestStatus;
   createdAt: string;

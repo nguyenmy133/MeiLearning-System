@@ -4,4 +4,5 @@ export {
     useSessionAttendance,
     useAttendanceStats,
     useSaveAttendance,
+    useGenerateQrToken,
 } from "./useAttendance";

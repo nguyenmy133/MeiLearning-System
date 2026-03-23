@@ -439,6 +439,7 @@ export function AdminRescheduleApprovalPage() {
                                         <div className="flex items-center gap-1 text-xs">
                                           <Clock className="w-3 h-3" />
                                           {req.requestedTime}
+                                          {req.requestedEndTime && ` - ${req.requestedEndTime}`}
                                         </div>
                                       </div>
                                     ) : (
@@ -597,6 +598,7 @@ export function AdminRescheduleApprovalPage() {
                         </p>
                         <p className="text-xs text-primary">
                           {selectedRequest.requestedTime}
+                          {selectedRequest.requestedEndTime && ` - ${selectedRequest.requestedEndTime}`}
                         </p>
                       </>
                     ) : (

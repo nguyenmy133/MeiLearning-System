@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TeacherAttendanceHistory } from "./TeacherAttendanceHistory";
+import { History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +22,10 @@ import {
   CheckCircle,
   ShieldCheck,
 } from "lucide-react";
-import { useTeacherSessions, useSessionAttendance, useSaveAttendance } from "../hooks";
-import type { AttendeeRecord, AttendanceStatus, SaveAttendanceDTO, TeacherSession } from "../types";
+import { useTeacherSessions, useSessionAttendance, useSaveAttendance, useGenerateQrToken } from "../hooks";
+import type { AttendeeRecord, AttendanceStatus, SaveAttendanceDTO } from "../types";
 import { ATTENDANCE_STATUS_LABELS } from "../types";
+import { QRCodeSVG } from "qrcode.react";
 
 // Helpers
 const toMinutes = (t: string) => {
@@ -31,17 +35,55 @@ const toMinutes = (t: string) => {
 
 const getTodayISO = () => new Date().toISOString().split("T")[0];
 
+// ── localStorage persistence for QR state ───────────────────────────────────
+const QR_STORAGE_KEY = "teacher_qr_state";
+
+interface StoredQrState {
+  sessionId: number;
+  token: string;
+  expiresAt: string; // ISO
+}
+
+function saveQrState(state: StoredQrState) {
+  try { localStorage.setItem(QR_STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+function loadQrState(): StoredQrState | null {
+  try {
+    const raw = localStorage.getItem(QR_STORAGE_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw) as StoredQrState;
+    // Check if expired
+    if (new Date(state.expiresAt).getTime() <= Date.now()) {
+      localStorage.removeItem(QR_STORAGE_KEY);
+      return null;
+    }
+    return state;
+  } catch { return null; }
+}
+function clearQrState() {
+  try { localStorage.removeItem(QR_STORAGE_KEY); } catch {}
+}
+
 export function TeacherAttendancePage() {
   const { toast } = useToast();
-  const [selectedSessionId, setSelectedSessionId] = useState<number>(0);
-  const [qrActive, setQrActive] = useState(false);
-  const [countdown, setCountdown] = useState(300);
+
+  // ── Restore from localStorage on mount (instant, no network) ────────────
+  const saved = loadQrState();
+
+  const [selectedSessionId, setSelectedSessionId] = useState<number>(saved?.sessionId ?? 0);
+  const [qrActive, setQrActive] = useState(!!saved);
+  const [countdown, setCountdown] = useState(() => {
+    if (!saved) return 0;
+    return Math.max(0, Math.floor((new Date(saved.expiresAt).getTime() - Date.now()) / 1000));
+  });
+  const [qrTokenValue, setQrTokenValue] = useState(saved?.token ?? "");
   const [localAttendees, setLocalAttendees] = useState<AttendeeRecord[]>([]);
 
+  const generateQr = useGenerateQrToken();
+
   // ── Fetch today's sessions (scoped to current teacher by service) ───────────
-  const { data: sessions = [], isLoading: sessionsLoading } = useTeacherSessions({
-    date: getTodayISO(),
-  });
+  const { data: rawSessions = [], isLoading: sessionsLoading } = useTeacherSessions(getTodayISO());
+  const sessions = rawSessions.filter((s) => s.status !== "cancelled");
 
   // ── Fetch attendees for selected session ───────────────────────────────────
   const { data: sessionData, isLoading: sessionLoading } = useSessionAttendance(selectedSessionId);
@@ -49,17 +91,41 @@ export function TeacherAttendancePage() {
 
   // Sync local state when session data loads
   useEffect(() => {
-    if (sessionData?.attendees) {
-      setLocalAttendees(sessionData.attendees);
+    if (sessionData && Array.isArray(sessionData) && sessionData.length > 0) {
+      setLocalAttendees(sessionData);
+    } else if (sessionData && Array.isArray(sessionData) && sessionData.length === 0) {
+      setLocalAttendees([]);
     }
   }, [sessionData]);
 
-  // Auto-select first session if only one today
+  // Auto-select first session if only one today (and no saved QR state)
   useEffect(() => {
     if (sessions.length === 1 && selectedSessionId === 0) {
       setSelectedSessionId(sessions[0].id);
     }
   }, [sessions, selectedSessionId]);
+
+  // ── Fallback: check BE for active QR when selecting a session without local state
+  useEffect(() => {
+    // Skip if we already have QR from localStorage or if no session selected
+    if (selectedSessionId <= 0 || qrActive) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getActiveQrToken } = await import("../services/attendanceService");
+        const active = await getActiveQrToken(selectedSessionId);
+        if (cancelled || !active) return;
+        const remaining = Math.floor((new Date(active.expiresAt).getTime() - Date.now()) / 1000);
+        if (remaining > 0) {
+          setQrTokenValue(active.token);
+          setCountdown(remaining);
+          setQrActive(true);
+          saveQrState({ sessionId: selectedSessionId, token: active.token, expiresAt: active.expiresAt });
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedSessionId, qrActive]);
 
   // ── QR Countdown ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -68,8 +134,9 @@ export function TeacherAttendancePage() {
       timer = setInterval(() => setCountdown((p) => p - 1), 1000);
     } else if (countdown === 0 && qrActive) {
       setQrActive(false);
-      setCountdown(300);
-      toast({ title: "Mã QR đã hết hạn", variant: "destructive" });
+      setQrTokenValue("");
+      clearQrState();
+      toast({ title: "Mã QR đã hết hạn", description: "Bấm 'Tạo lại' để tạo mã mới.", variant: "destructive" });
     }
     return () => clearInterval(timer);
   }, [qrActive, countdown, toast]);
@@ -81,10 +148,11 @@ export function TeacherAttendancePage() {
   };
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  const selectedSession: TeacherSession | undefined = sessions.find(
+  const selectedSession = sessions.find(
     (s) => s.id === selectedSessionId
   );
-  const isConfirmed = sessionData?.session.attendanceStatus === "confirmed";
+  // Derive confirmed status from session's status (completed = confirmed by bulkAttendance)
+  const isConfirmed = selectedSession?.status === "completed";
 
   // Stats
   const total = localAttendees.length;
@@ -143,11 +211,20 @@ export function TeacherAttendancePage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-display font-bold mb-1">Điểm danh</h1>
+        <p className="text-muted-foreground">Quản lý điểm danh và lịch sử các buổi học</p>
+      </div>
+
+      <Tabs defaultValue="attendance" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="attendance" className="gap-2"><QrCode className="w-4 h-4" />Điểm danh</TabsTrigger>
+          <TabsTrigger value="history" className="gap-2"><History className="w-4 h-4" />Lịch sử</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="attendance" className="mt-0 space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div>
-          <h1 className="text-2xl font-display font-bold mb-1">Điểm danh buổi học</h1>
-          <p className="text-muted-foreground">Tạo mã QR hoặc điểm danh thủ công cho học viên</p>
-        </div>
+        <div />
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -209,9 +286,9 @@ export function TeacherAttendancePage() {
                     </SelectTrigger>
                     <SelectContent>
                       {sessions.map((s) => (
-                        <SelectItem key={s.id} value={String(s.id)}>
+                        <SelectItem key={s.id} value={String(s.id)} disabled={s.status === "completed"}>
                           {s.className} · {s.startTime}–{s.endTime} · {s.room}
-                          {s.attendanceStatus === "confirmed" && " ✓"}
+                          {s.status === "completed" && " (Đã chốt ✓)"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -230,7 +307,7 @@ export function TeacherAttendancePage() {
                       : "bg-accent border-2 border-dashed border-border"
                   }`}
                 >
-                  {qrActive ? (
+                  {qrActive && qrTokenValue ? (
                     <>
                       <div className="absolute top-3 right-3">
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -238,7 +315,12 @@ export function TeacherAttendancePage() {
                         </Button>
                       </div>
                       <div className="w-full aspect-square bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm p-4">
-                        <QrCode className="w-full h-full text-zinc-900" strokeWidth={1.5} />
+                        <QRCodeSVG
+                          value={`${window.location.origin}/user/qr-check-in?token=${qrTokenValue}`}
+                          size={200}
+                          level="M"
+                          includeMargin={false}
+                        />
                       </div>
                       <div
                         className={`flex items-center gap-2 text-2xl font-bold tracking-tight font-mono ${
@@ -249,6 +331,13 @@ export function TeacherAttendancePage() {
                         {formatTime(countdown)}
                       </div>
                     </>
+                  ) : generateQr.isPending ? (
+                    <div className="text-center space-y-3">
+                      <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center mx-auto shadow-sm animate-spin">
+                        <QrCode className="w-8 h-8 text-primary" />
+                      </div>
+                      <p className="text-muted-foreground text-sm">Đang tạo mã QR...</p>
+                    </div>
                   ) : (
                     <div className="text-center space-y-3">
                       <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center mx-auto shadow-sm">
@@ -267,7 +356,7 @@ export function TeacherAttendancePage() {
                 {qrActive ? (
                   <>
                     <Button
-                      onClick={() => { setQrActive(false); setCountdown(300); }}
+                      onClick={() => { setQrActive(false); setQrTokenValue(""); setCountdown(0); clearQrState(); }}
                       variant="destructive"
                       className="flex-1"
                     >
@@ -275,9 +364,19 @@ export function TeacherAttendancePage() {
                       Đóng QR
                     </Button>
                     <Button
-                      onClick={() => { setQrActive(true); setCountdown(300); }}
+                      onClick={() => {
+                        generateQr.mutate(selectedSessionId, {
+                          onSuccess: (data) => {
+                            setQrTokenValue(data.token);
+                            setCountdown(data.expiryMinutes * 60);
+                            setQrActive(true);
+                            saveQrState({ sessionId: selectedSessionId, token: data.token, expiresAt: data.expiresAt });
+                          },
+                        });
+                      }}
                       variant="outline"
                       className="flex-1"
+                      disabled={generateQr.isPending}
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Tạo lại
@@ -285,12 +384,21 @@ export function TeacherAttendancePage() {
                   </>
                 ) : (
                   <Button
-                    onClick={() => { setQrActive(true); setCountdown(300); }}
+                    onClick={() => {
+                      generateQr.mutate(selectedSessionId, {
+                        onSuccess: (data) => {
+                          setQrTokenValue(data.token);
+                          setCountdown(data.expiryMinutes * 60);
+                          setQrActive(true);
+                          saveQrState({ sessionId: selectedSessionId, token: data.token, expiresAt: data.expiresAt });
+                        },
+                      });
+                    }}
                     className="w-full btn-primary h-12 text-base"
-                    disabled={!selectedSessionId || isConfirmed}
+                    disabled={!selectedSessionId || isConfirmed || generateQr.isPending}
                   >
                     <QrCode className="w-5 h-5 mr-2" />
-                    Hiển thị mã QR
+                    {generateQr.isPending ? "Đang tạo..." : "Hiển thị mã QR"}
                   </Button>
                 )}
               </div>
@@ -432,6 +540,13 @@ export function TeacherAttendancePage() {
           </Card>
         </div>
       </div>
+
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-0">
+          <TeacherAttendanceHistory />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

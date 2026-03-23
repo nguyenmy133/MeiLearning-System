@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,13 @@ import type { AttendanceQueryParams } from "../types";
 import { useClassOptions } from "@/hooks/useClassOptions";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // ── Format helpers ────────────────────────────────────────────────────────────
 // formatDate imported from @/lib/dateUtils
@@ -93,6 +100,35 @@ export function AdminAttendancePage() {
   const { data: liveSessions = [], isLoading: loadingLive } = useLiveSessions();
   const { data: absentAlerts = [], isLoading: loadingAlerts } = useAbsentAlerts();
   const toggleQRMutation = useToggleQR();
+
+  // ── QR Modal state ──────────────────────────────────────────────────────────
+  const [qrModal, setQrModal] = useState<{
+    open: boolean;
+    sessionId: number;
+    className: string;
+    token: string;
+    expiresAt: string;
+  }>({ open: false, sessionId: 0, className: "", token: "", expiresAt: "" });
+  const [qrCountdown, setQrCountdown] = useState(0);
+
+  // Countdown timer for QR modal
+  useEffect(() => {
+    if (!qrModal.open || qrCountdown <= 0) return;
+    const timer = setInterval(() => setQrCountdown((p) => p - 1), 1000);
+    return () => clearInterval(timer);
+  }, [qrModal.open, qrCountdown]);
+
+  const formatTime = useCallback((seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }, []);
+
+  // Calculate remaining seconds for a live session's QR
+  const getRemaining = useCallback((expiresAt: string) => {
+    if (!expiresAt) return 0;
+    return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  }, []);
 
   const statCards = [
     {
@@ -231,21 +267,58 @@ export function AdminAttendancePage() {
                         >
                           <Eye className="w-3.5 h-3.5 mr-1.5" /> Theo dõi
                         </Button>
-                        <Button
-                          variant={session.qrActive ? "secondary" : "default"}
-                          size="sm"
-                          className="w-full text-xs h-8"
-                          disabled={toggleQRMutation.isPending}
-                          onClick={() => toggleQRMutation.mutate({ sessionId: session.id, activatedBy: "admin" })}
-                        >
-                          {toggleQRMutation.isPending ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : session.qrActive ? (
-                            "Tắt mã QR"
-                          ) : (
-                            "Bật mã QR"
-                          )}
-                        </Button>
+                        {session.qrActive ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs h-8 border-green-300 text-green-600 hover:bg-green-50"
+                            onClick={() => {
+                              setQrModal({
+                                open: true,
+                                sessionId: session.id,
+                                className: session.className,
+                                token: session.qrToken,
+                                expiresAt: session.qrExpiresAt,
+                              });
+                              setQrCountdown(getRemaining(session.qrExpiresAt));
+                            }}
+                          >
+                            <QrCode className="w-3.5 h-3.5 mr-1.5" />
+                            Xem QR ({formatTime(getRemaining(session.qrExpiresAt))})
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full text-xs h-8"
+                            disabled={toggleQRMutation.isPending}
+                            onClick={() => {
+                              toggleQRMutation.mutate(
+                                { sessionId: session.id, activatedBy: "admin" },
+                                {
+                                  onSuccess: (data: any) => {
+                                    if (data?.token) {
+                                      setQrModal({
+                                        open: true,
+                                        sessionId: session.id,
+                                        className: session.className,
+                                        token: data.token,
+                                        expiresAt: data.expiresAt,
+                                      });
+                                      setQrCountdown(Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000));
+                                    }
+                                  },
+                                }
+                              );
+                            }}
+                          >
+                            {toggleQRMutation.isPending ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <>Bật mã QR</>
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -449,6 +522,75 @@ export function AdminAttendancePage() {
           </Card>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      <Dialog open={qrModal.open} onOpenChange={(open) => setQrModal((prev) => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-primary" />
+              Mã QR — {qrModal.className}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrCountdown > 0 ? (
+              <>
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/user/qr-check-in?token=${qrModal.token}`}
+                    size={220}
+                    level="M"
+                    includeMargin={false}
+                  />
+                </div>
+                <div
+                  className={`flex items-center gap-2 text-2xl font-bold font-mono ${
+                    qrCountdown < 60 ? "text-red-500 animate-pulse" : "text-primary"
+                  }`}
+                >
+                  <Clock className="w-5 h-5" />
+                  {formatTime(qrCountdown)}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Học viên quét mã này để điểm danh
+                </p>
+              </>
+            ) : (
+              <div className="text-center space-y-3 py-4">
+                <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto">
+                  <QrCode className="w-8 h-8 text-red-400" />
+                </div>
+                <p className="text-sm text-muted-foreground">Mã QR đã hết hạn</p>
+              </div>
+            )}
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={toggleQRMutation.isPending}
+              onClick={() => {
+                toggleQRMutation.mutate(
+                  { sessionId: qrModal.sessionId, activatedBy: "admin" },
+                  {
+                    onSuccess: (data: any) => {
+                      if (data?.token) {
+                        setQrModal((prev) => ({ ...prev, token: data.token, expiresAt: data.expiresAt }));
+                        setQrCountdown(Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000));
+                      }
+                    },
+                  }
+                );
+              }}
+            >
+              {toggleQRMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <QrCode className="w-4 h-4 mr-2" />
+              )}
+              Tạo mã QR mới
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

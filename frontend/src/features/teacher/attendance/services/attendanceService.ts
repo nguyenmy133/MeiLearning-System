@@ -46,8 +46,19 @@ export async function getMyTeacherSessions(
 export async function getSessionAttendance(
   sessionId: number
 ): Promise<AttendeeRecord[]> {
-  const { data } = await apiClient.get("/attendance", { params: { sessionId } });
-  return Array.isArray(data) ? data : [];
+  const { data } = await apiClient.get("/attendance/roster", { params: { sessionId } });
+  if (!Array.isArray(data)) return [];
+  // Map BE AttendanceResponse → FE AttendeeRecord
+  return data.map((r: any) => ({
+    id: r.id,
+    studentId: r.studentId != null ? String(r.studentId) : "",
+    name: r.studentName ?? "",
+    avatar: undefined,
+    status: r.status?.toLowerCase() ?? "pending",  // BE may return uppercase
+    checkinTime: r.checkInTime ?? null,
+    method: r.method ?? null,
+    absenceCount: 0, // will be enriched in future
+  }));
 }
 
 export async function saveAttendance(_teacherId: number, dto: SaveAttendanceDTO): Promise<void> {
@@ -65,4 +76,40 @@ export async function getAttendanceStats(
     params: { sessionId },
   });
   return data ?? { total: 0, present: 0, absent: 0, late: 0, rate: 0 };
+}
+
+// ── QR Token ──────────────────────────────────────────────────────────────────
+
+export interface QrTokenResponse {
+  token: string;
+  expiresAt: string; // ISO instant
+  expiryMinutes: number;
+  sessionId: number;
+}
+
+/**
+ * Teacher generate QR token cho session.
+ * BE deactivate token cũ → tạo token mới.
+ */
+export async function generateQrToken(sessionId: number): Promise<QrTokenResponse> {
+  const { data } = await apiClient.post("/attendance/qr/generate", null, {
+    params: { sessionId },
+  });
+  return data;
+}
+
+/**
+ * Lấy QR token đang active cho session (restore khi teacher quay lại trang).
+ * Trả null nếu không có token active.
+ */
+export async function getActiveQrToken(sessionId: number): Promise<QrTokenResponse | null> {
+  try {
+    const { data, status } = await apiClient.get("/attendance/qr/active", {
+      params: { sessionId },
+    });
+    if (status === 204 || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }

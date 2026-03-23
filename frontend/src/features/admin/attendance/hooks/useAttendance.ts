@@ -61,13 +61,9 @@ export function useToggleQR() {
   return useMutation({
     mutationFn: ({ sessionId, activatedBy }: { sessionId: number; activatedBy?: QrActivatedBy }) =>
       toggleQR(sessionId, activatedBy ?? "admin"),
-    onSuccess: (session) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: attendanceKeys.live() });
-      toast.success(
-        session.qrActive
-          ? `Đã mở mã QR cho lớp ${session.className}`
-          : `Đã tắt mã QR cho lớp ${session.className}`
-      );
+      toast.success("Đã tạo mã QR cho buổi học");
     },
     onError: (err: Error) => {
       toast.error(err.message);

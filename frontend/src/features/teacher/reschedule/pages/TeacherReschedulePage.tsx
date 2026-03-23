@@ -424,14 +424,58 @@ export function TeacherReschedulePage() {
           {requests.filter(r => r.status === "pending").map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <AlertCircle className="w-10 h-10 p-2 rounded-lg bg-amber-50 text-amber-500" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{request.className}</h4>
-                    <p className="text-sm text-muted-foreground">{request.originalDate} • {request.originalTime}</p>
-                    <p className="text-sm mt-1">{request.reason}</p>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                    {request.type === "reschedule" ? (
+                      <RefreshCw className="w-5 h-5 text-primary" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-destructive" />
+                    )}
                   </div>
-                  {getStatusBadge(request.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-semibold text-foreground">{request.className}</h4>
+                      <Badge variant="outline">
+                        {request.type === "reschedule" ? "Đổi lịch" : "Hủy buổi"}
+                      </Badge>
+                      {getStatusBadge(request.status)}
+                    </div>
+                    
+                    <div className="mt-2 space-y-1 text-sm">
+                      <div className="flex items-center gap-4 text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {request.originalDate}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {request.originalTime}
+                        </span>
+                      </div>
+                      
+                      {request.type === "reschedule" && (
+                        <div className="flex items-center gap-2 text-primary">
+                          <span>→</span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {request.requestedDate}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {request.requestedTime}
+                            {request.requestedEndTime && ` - ${request.requestedEndTime}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Lý do:</span> {request.reason}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {getStatusIcon(request.status)}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -442,14 +486,64 @@ export function TeacherReschedulePage() {
           {requests.filter(r => r.status === "approved").map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <CheckCircle className="w-10 h-10 p-2 rounded-lg bg-emerald-50 text-emerald-500" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{request.className}</h4>
-                    <p className="text-sm text-muted-foreground">{request.originalDate} • {request.originalTime}</p>
-                    <p className="text-sm mt-1">{request.reason}</p>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                    {request.type === "reschedule" ? (
+                      <RefreshCw className="w-5 h-5 text-primary" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-destructive" />
+                    )}
                   </div>
-                  {getStatusBadge(request.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-semibold text-foreground">{request.className}</h4>
+                      <Badge variant="outline">
+                        {request.type === "reschedule" ? "Đổi lịch" : "Hủy buổi"}
+                      </Badge>
+                      {getStatusBadge(request.status)}
+                    </div>
+                    
+                    <div className="mt-2 space-y-1 text-sm">
+                      <div className="flex items-center gap-4 text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {request.originalDate}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {request.originalTime}
+                        </span>
+                      </div>
+                      
+                      {request.type === "reschedule" && (
+                        <div className="flex items-center gap-2 text-primary">
+                          <span>→</span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {request.requestedDate}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {request.requestedTime}
+                            {request.requestedEndTime && ` - ${request.requestedEndTime}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Lý do:</span> {request.reason}
+                    </p>
+
+                    {request.approvedBy && (
+                      <p className="mt-2 text-sm text-emerald-600">
+                        ✓ Được duyệt bởi {request.approvedBy} {request.approvedAt && `vào ${request.approvedAt}`}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0">
+                    {getStatusIcon(request.status)}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -460,17 +554,64 @@ export function TeacherReschedulePage() {
           {requests.filter(r => r.status === "rejected").map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <XCircle className="w-10 h-10 p-2 rounded-lg bg-destructive/10 text-destructive" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{request.className}</h4>
-                    <p className="text-sm text-muted-foreground">{request.originalDate} • {request.originalTime}</p>
-                    <p className="text-sm mt-1">{request.reason}</p>
-                    {request.rejectedReason && (
-                      <p className="text-sm text-destructive mt-1">Từ chối: {request.rejectedReason}</p>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                    {request.type === "reschedule" ? (
+                      <RefreshCw className="w-5 h-5 text-primary" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-destructive" />
                     )}
                   </div>
-                  {getStatusBadge(request.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-semibold text-foreground">{request.className}</h4>
+                      <Badge variant="outline">
+                        {request.type === "reschedule" ? "Đổi lịch" : "Hủy buổi"}
+                      </Badge>
+                      {getStatusBadge(request.status)}
+                    </div>
+                    
+                    <div className="mt-2 space-y-1 text-sm">
+                      <div className="flex items-center gap-4 text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {request.originalDate}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {request.originalTime}
+                        </span>
+                      </div>
+                      
+                      {request.type === "reschedule" && (
+                        <div className="flex items-center gap-2 text-primary">
+                          <span>→</span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {request.requestedDate}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {request.requestedTime}
+                            {request.requestedEndTime && ` - ${request.requestedEndTime}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Lý do:</span> {request.reason}
+                    </p>
+
+                    {request.rejectedReason && (
+                      <p className="mt-2 text-sm text-destructive">
+                        ✗ Lý do từ chối: {request.rejectedReason}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0">
+                    {getStatusIcon(request.status)}
+                  </div>
                 </div>
               </CardContent>
             </Card>

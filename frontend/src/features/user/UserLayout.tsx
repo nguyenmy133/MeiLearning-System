@@ -3,8 +3,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   LayoutDashboard,
-  Calendar,
-  History,
   FileText,
   CreditCard,
   ClipboardList,
@@ -40,8 +38,6 @@ import { API } from "@/config/api-endpoints";
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/user/dashboard" },
   { icon: BookOpen, label: "Lớp học", href: "/user/classes" },
-  { icon: Calendar, label: "Lịch học", href: "/user/schedule" },
-  { icon: History, label: "Điểm danh", href: "/user/attendance" },
   { icon: FileText, label: "Tài liệu & Video", href: "/user/documents" },
   { icon: FileCheck, label: "Bài thi", href: "/user/exams" },
   { icon: Award, label: "Kết quả học tập", href: "/user/grades" },

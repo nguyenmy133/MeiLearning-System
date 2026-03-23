@@ -22,6 +22,7 @@ import {
   XCircle,
   AlertCircle,
   Play,
+  RotateCcw,
   Trophy,
   Calendar,
   Eye,
@@ -31,6 +32,11 @@ import {
 import { useMyExams } from "@/features/user/exam/hooks";
 import type { ExamDetail } from "@/features/user/exam/types";
 import { toast } from "sonner";
+
+/** Check if user has already started this exam (timer exists in localStorage) */
+function hasExamStarted(examId: string): boolean {
+  return localStorage.getItem(`exam_timer_${examId}`) !== null;
+}
 
 export function ExamList() {
   const navigate = useNavigate();
@@ -261,10 +267,17 @@ export function ExamList() {
                           </div>
 
                           {isOngoing ? (
-                            <Button className="gap-2" onClick={() => handleStartExam(exam)}>
-                              <Play className="w-4 h-4" />
-                              Bắt đầu làm bài
-                            </Button>
+                            hasExamStarted(exam.id) ? (
+                              <Button className="gap-2 bg-amber-600 hover:bg-amber-700" onClick={() => handleStartExam(exam)}>
+                                <RotateCcw className="w-4 h-4" />
+                                Tiếp tục làm bài
+                              </Button>
+                            ) : (
+                              <Button className="gap-2" onClick={() => handleStartExam(exam)}>
+                                <Play className="w-4 h-4" />
+                                Bắt đầu làm bài
+                              </Button>
+                            )
                           ) : (
                             <Button className="gap-2" disabled>
                               <Clock className="w-4 h-4" />
@@ -419,11 +432,17 @@ export function ExamList() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-warning" />
-              Xác nhận bắt đầu làm bài
+              {confirmExam && hasExamStarted(confirmExam.id)
+                ? "Tiếp tục làm bài"
+                : "Xác nhận bắt đầu làm bài"}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-3 pt-2">
-                <p>Bạn sắp bắt đầu bài thi:</p>
+                <p>
+                  {confirmExam && hasExamStarted(confirmExam.id)
+                    ? "Bạn đang tiếp tục bài thi:"
+                    : "Bạn sắp bắt đầu bài thi:"}
+                </p>
                 {confirmExam && (
                   <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
                     <p className="font-semibold text-foreground">{confirmExam.title}</p>
@@ -441,8 +460,9 @@ export function ExamList() {
                 )}
                 <div className="bg-destructive/10 rounded-lg p-3 border border-destructive/20">
                   <p className="text-sm text-destructive font-medium">
-                    ⚠️ Lưu ý: Sau khi bắt đầu, đồng hồ sẽ đếm ngược ngay cả khi bạn thoát khỏi trang.
-                    Khi hết thời gian, bài thi sẽ tự động được nộp.
+                    {confirmExam && hasExamStarted(confirmExam.id)
+                      ? "⏱️ Đồng hồ đang tiếp tục đếm ngược. Hãy hoàn thành bài thi trước khi hết thời gian."
+                      : "⚠️ Lưu ý: Sau khi bắt đầu, đồng hồ sẽ đếm ngược ngay cả khi bạn thoát khỏi trang. Khi hết thời gian, bài thi sẽ tự động được nộp."}
                   </p>
                 </div>
               </div>
@@ -452,9 +472,16 @@ export function ExamList() {
             <Button variant="outline" onClick={() => setConfirmExam(null)}>
               Hủy
             </Button>
-            <Button onClick={handleConfirmStart} className="gap-2">
-              <Play className="w-4 h-4" />
-              Bắt đầu ngay
+            <Button onClick={handleConfirmStart} className={`gap-2 ${
+              confirmExam && hasExamStarted(confirmExam.id)
+                ? "bg-amber-600 hover:bg-amber-700"
+                : ""
+            }`}>
+              {confirmExam && hasExamStarted(confirmExam.id) ? (
+                <><RotateCcw className="w-4 h-4" /> Tiếp tục ngay</>
+              ) : (
+                <><Play className="w-4 h-4" /> Bắt đầu ngay</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

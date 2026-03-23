@@ -1,1 +1,1 @@
-export { useMyAttendance, useAttendanceSummary, useCheckIn, attendanceKeys } from "./useAttendance";
+export { useMyAttendance, useAttendanceSummary, useCheckIn, useQrTokenCheckIn, attendanceKeys } from "./useAttendance";

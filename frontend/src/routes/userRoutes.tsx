@@ -1,4 +1,4 @@
-import { Route } from "react-router-dom";
+import { Route, Navigate } from "react-router-dom";
 import { RoleRoute } from "@/features/shared/auth/guards";
 import { lazyNamed } from "./LazyWrapper";
 
@@ -10,9 +10,10 @@ const UserDashboard = lazyNamed(
   () => import("@/features/user/dashboard/pages/UserDashboard"),
   "UserDashboard",
 );
-const CheckInPage = lazyNamed(
-  () => import("@/features/user/attendance/pages/CheckInPage"),
-  "CheckInPage",
+// CheckInPage removed — insecure, bypass QR. Use qr-check-in instead.
+const CheckInTokenPage = lazyNamed(
+  () => import("@/features/user/attendance/pages/CheckInTokenPage"),
+  "CheckInTokenPage",
 );
 const MyClassesPage = lazyNamed(
   () => import("@/features/user/classes/pages/MyClassesPage"),
@@ -84,9 +85,10 @@ export function userRoutes() {
     >
       <Route path="dashboard" element={<UserDashboard />} />
       <Route path="classes" element={<MyClassesPage />} />
-      <Route path="check-in" element={<CheckInPage />} />
-      <Route path="schedule" element={<SchedulePage />} />
-      <Route path="attendance" element={<AttendancePage />} />
+      <Route path="check-in" element={<Navigate to="/user/dashboard" replace />} />
+      <Route path="qr-check-in" element={<CheckInTokenPage />} />
+      <Route path="schedule" element={<Navigate to="/user/dashboard" replace />} />
+      <Route path="attendance" element={<Navigate to="/user/dashboard" replace />} />
       <Route path="documents" element={<DocumentsPage />} />
       <Route path="exams" element={<ExamList />} />
       <Route path="exam-taking" element={<ExamTaking />} />

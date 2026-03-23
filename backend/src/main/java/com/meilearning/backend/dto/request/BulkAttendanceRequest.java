@@ -48,6 +48,9 @@ public class BulkAttendanceRequest {
     private Long sessionId;
     private List<AttendanceEntry> attendances;
 
+    /** true = chốt điểm danh (session → completed), false = lưu nháp */
+    private Boolean confirm;
+
 
     @Getter
     @Setter

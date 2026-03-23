@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { CheckInPayload } from "../types";
-import { getMyAttendance, getAttendanceSummary, checkIn } from "../services";
+import { getMyAttendance, getAttendanceSummary, checkIn, qrTokenCheckIn } from "../services";
 
 export const attendanceKeys = {
     all: ["user-attendance"] as const,
@@ -27,6 +27,18 @@ export function useCheckIn() {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (payload: CheckInPayload) => checkIn(payload),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: attendanceKeys.all });
+            toast.success("Điểm danh thành công! 🎉");
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+}
+
+export function useQrTokenCheckIn() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (token: string) => qrTokenCheckIn(token),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: attendanceKeys.all });
             toast.success("Điểm danh thành công! 🎉");

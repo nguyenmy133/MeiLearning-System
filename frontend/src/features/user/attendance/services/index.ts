@@ -1,1 +1,1 @@
-export { getMyAttendance, getAttendanceSummary, checkIn } from "./attendanceService";
+export { getMyAttendance, getAttendanceSummary, checkIn, qrTokenCheckIn } from "./attendanceService";

@@ -54,10 +54,11 @@ export async function getMySchedule(startDate?: string, endDate?: string): Promi
   const { data } = await apiClient.get("/schedule/student/me", {
     params: { view: "week", date: startDate },
   });
+  let rawList: any[] = [];
   // Handle ScheduleResponse — may contain sessions array
-  if (data?.sessions && Array.isArray(data.sessions)) return data.sessions;
-  if (Array.isArray(data)) return data;
-  return [];
+  if (data?.sessions && Array.isArray(data.sessions)) rawList = data.sessions;
+  else if (Array.isArray(data)) rawList = data;
+  return rawList.map(mapBackendSession);
 }
 
 /** Get today's sessions — uses JWT-resolved /me endpoint */
@@ -66,9 +67,10 @@ export async function getTodaySessions(): Promise<ClassSession[]> {
   const { data } = await apiClient.get("/schedule/student/me", {
     params: { view: "day", date: today },
   });
-  if (data?.sessions && Array.isArray(data.sessions)) return data.sessions;
-  if (Array.isArray(data)) return data;
-  return [];
+  let rawList: any[] = [];
+  if (data?.sessions && Array.isArray(data.sessions)) rawList = data.sessions;
+  else if (Array.isArray(data)) rawList = data;
+  return rawList.map(mapBackendSession);
 }
 
 // Keep backward-compatible named export
@@ -79,8 +81,29 @@ export async function getStudentSchedule(_studentId: number, _params?: { date?: 
 /**
  * Map backend ClassSessionResponse → frontend ClassSession.
  * Backend uses roomName/subjectName, FE uses room/subject.
+ * Computes canCheckIn on FE side since BE doesn't provide it.
  */
 function mapBackendSession(raw: any): ClassSession {
+  const today = new Date().toISOString().split("T")[0];
+  const isToday = raw.date === today;
+  const isUpcoming = raw.status === "upcoming";
+  const hasAttendance = !!raw.attendanceStatus;
+
+  // Compute canCheckIn: session is today, upcoming, not yet attended,
+  // and current time is within [startTime - 15min, endTime]
+  let canCheckIn = false;
+  if (isToday && isUpcoming && !hasAttendance && raw.startTime && raw.endTime) {
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [sh, sm] = raw.startTime.split(":").map(Number);
+    const [eh, em] = raw.endTime.split(":").map(Number);
+    const startMinutes = sh * 60 + sm - 15; // Allow 15 min early
+    const endMinutes = eh * 60 + em;
+
+    canCheckIn = nowMinutes >= startMinutes && nowMinutes <= endMinutes;
+  }
+
   return {
     id: String(raw.id),
     classId: String(raw.classId),
@@ -93,7 +116,7 @@ function mapBackendSession(raw: any): ClassSession {
     room: raw.roomName ?? raw.room ?? "",
     status: raw.status ?? "upcoming",
     attendanceStatus: raw.attendanceStatus ?? null,
-    canCheckIn: raw.canCheckIn ?? false,
+    canCheckIn,
   };
 }
 

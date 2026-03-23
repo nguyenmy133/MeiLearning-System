@@ -6,6 +6,7 @@ import {
     getSessionAttendance,
     saveAttendance,
     getAttendanceStats,
+    generateQrToken,
 } from "../services";
 
 // ── Query key factory ─────────────────────────────────────────────────────────
@@ -62,6 +63,13 @@ export function useSaveAttendance() {
                     : "Đã lưu điểm danh (nháp)."
             );
         },
+        onError: (err: Error) => toast.error(err.message),
+    });
+}
+
+export function useGenerateQrToken() {
+    return useMutation({
+        mutationFn: (sessionId: number) => generateQrToken(sessionId),
         onError: (err: Error) => toast.error(err.message),
     });
 }

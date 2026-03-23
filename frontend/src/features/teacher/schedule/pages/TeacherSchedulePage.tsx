@@ -253,6 +253,9 @@ export function TeacherSchedulePage() {
             <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
               {weekDays.map((day, index) => {
                 const isToday = isCurrentWeek && index === todayDayIndex;
+                const columnDate = new Date(weekStart);
+                columnDate.setDate(weekStart.getDate() + index);
+                const dateLabel = `${String(columnDate.getDate()).padStart(2, "0")}/${String(columnDate.getMonth() + 1).padStart(2, "0")}`;
                 return (
                   <Card
                     key={day}
@@ -260,16 +263,23 @@ export function TeacherSchedulePage() {
                   >
                     <CardHeader className="p-3 pb-2">
                       <CardTitle
-                        className={`text-sm font-medium flex items-center gap-1 ${
+                        className={`text-sm font-medium flex flex-col gap-0.5 ${
                           isToday ? "text-primary" : "text-muted-foreground"
                         }`}
                       >
-                        {day}
-                        {isToday && (
-                          <Badge className="ml-1 bg-primary text-[10px] px-1.5 py-0">
-                            Hôm nay
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {day}
+                          {isToday && (
+                            <Badge className="ml-1 bg-primary text-[10px] px-1.5 py-0">
+                              Hôm nay
+                            </Badge>
+                          )}
+                        </div>
+                        <span className={`text-xs font-normal ${
+                          isToday ? "text-primary/80" : "text-muted-foreground/70"
+                        }`}>
+                          {dateLabel}
+                        </span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3 pt-0 space-y-2">

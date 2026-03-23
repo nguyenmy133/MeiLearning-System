@@ -114,41 +114,42 @@ export function SchedulePage({ onCheckIn }: { onCheckIn?: (subject: string, sess
                   {daySessions.length > 0 ? (
                     daySessions.map((sess) => {
                       const isPast = sess.date < todayStr || sess.status === "completed";
+                      const status = sess.attendanceStatus?.toLowerCase();
                       return (
                         <div
                           key={sess.id}
-                          className={`p-3 rounded-xl border-l-[3px] flex flex-col gap-2 ${
-                            sess.attendanceStatus === "ABSENT_EXCUSED"
+                          className={`p-2.5 rounded-xl border-l-[3px] flex flex-col gap-1.5 ${
+                            status === "absent_excused"
                               ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-400"
                               : isPast
                               ? "bg-muted/30 border-muted-foreground/30"
                               : "bg-primary/10 border-primary"
                           }`}
                         >
-                          <h4 className="font-semibold text-foreground text-sm">{sess.className}</h4>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" />
+                          <h4 className="font-semibold text-foreground text-sm leading-tight">{sess.className}</h4>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1 whitespace-nowrap">
+                            <Clock className="w-3 h-3 shrink-0" />
                             <span>{sess.startTime} - {sess.endTime}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span>{sess.room}</span>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{sess.room}</span>
                           </div>
 
-                          {/* Attendance status badge for past sessions */}
-                          {sess.attendanceStatus && (
+                          {/* Attendance status badge */}
+                          {status && (
                             <Badge
                               variant="outline"
                               className={`text-[10px] w-fit ${
-                                sess.attendanceStatus === "PRESENT" ? "text-green-600 border-green-300" :
-                                sess.attendanceStatus === "ABSENT_EXCUSED" ? "text-blue-600 border-blue-300" :
-                                sess.attendanceStatus === "LATE" ? "text-yellow-600 border-yellow-300" :
+                                status === "present" ? "text-green-600 border-green-300" :
+                                status === "absent_excused" ? "text-blue-600 border-blue-300" :
+                                status === "late" ? "text-yellow-600 border-yellow-300" :
                                 "text-red-600 border-red-300"
                               }`}
                             >
-                              {sess.attendanceStatus === "PRESENT" ? "Đã có mặt" :
-                               sess.attendanceStatus === "ABSENT_EXCUSED" ? "Nghỉ có phép" :
-                               sess.attendanceStatus === "LATE" ? "Đi muộn" :
+                              {status === "present" ? "Đã có mặt" :
+                               status === "absent_excused" ? "Nghỉ có phép" :
+                               status === "late" ? "Đi muộn" :
                                "Vắng không phép"}
                             </Badge>
                           )}
@@ -158,7 +159,7 @@ export function SchedulePage({ onCheckIn }: { onCheckIn?: (subject: string, sess
                             <Button
                               size="sm"
                               variant="default"
-                              className="w-full mt-1.5 h-8 text-xs font-medium"
+                              className="w-full mt-1 h-7 text-[11px] font-medium"
                               onClick={() => onCheckIn?.(sess.className, sess.id)}
                             >
                               Điểm danh QR

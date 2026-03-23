@@ -11,6 +11,7 @@ import com.meilearning.backend.dto.request.BulkAttendanceRequest;
 import com.meilearning.backend.dto.response.AttendanceResponse;
 import com.meilearning.backend.dto.response.AttendanceStatsResponse;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
+import com.meilearning.backend.dto.response.QrTokenResponse;
 import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.service.AttendanceService;
@@ -56,16 +57,17 @@ public class AttendanceController {
     }
 
     /**
-     * QR Check-in — student tự điểm danh, resolve từ JWT.
+     * @deprecated Insecure — cho phép check-in không cần QR token.
+     * Sử dụng POST /qr/check-in?token=... thay thế.
      */
+    @Deprecated
     @PostMapping("/check-in/me")
-    @Operation(summary = "QR Check-in (student, JWT-resolved)")
+    @Operation(summary = "[DEPRECATED] QR Check-in (student) — dùng /qr/check-in thay thế", deprecated = true)
     @PreAuthorize("hasRole('student')")
-    public ResponseEntity<AttendanceResponse> qrCheckInMe(
+    public ResponseEntity<String> qrCheckInMe(
             Principal principal,
             @RequestParam Long sessionId) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
-        return ResponseEntity.ok(attendanceService.qrCheckIn(sessionId, student.getId()));
+        return ResponseEntity.status(410).body("Endpoint đã ngưng sử dụng. Vui lòng quét mã QR để điểm danh.");
     }
 
     /**
@@ -92,6 +94,91 @@ public class AttendanceController {
     @Operation(summary = "Lấy cảnh báo vắng mặt (stub)")
     public ResponseEntity<List<Object>> getAlerts() {
         return ResponseEntity.ok(java.util.Collections.emptyList());
+    }
+
+    // ── QR Token Endpoints ───────────────────────────────────────────────
+
+    /**
+     * Teacher tạo QR token cho session. Invalidate token cũ.
+     */
+    @PostMapping("/qr/generate")
+    @Operation(summary = "Tạo mã QR token cho buổi học (teacher/admin)")
+    @PreAuthorize("hasAnyRole('teacher', 'admin')")
+    public ResponseEntity<QrTokenResponse> generateQrToken(@RequestParam Long sessionId) {
+        return ResponseEntity.ok(attendanceService.generateQrToken(sessionId));
+    }
+
+    /**
+     * Lấy QR token đang active cho session (để restore khi teacher quay lại trang).
+     * Trả 200 + token nếu có, 204 No Content nếu không.
+     */
+    @GetMapping("/qr/active")
+    @Operation(summary = "Lấy QR token active cho session (teacher/admin)")
+    @PreAuthorize("hasAnyRole('teacher', 'admin')")
+    public ResponseEntity<QrTokenResponse> getActiveQrToken(@RequestParam Long sessionId) {
+        QrTokenResponse active = attendanceService.getActiveQrToken(sessionId);
+        if (active == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(active);
+    }
+
+    /**
+     * Student điểm danh bằng QR token (cả deep link và in-app scanner).
+     */
+    @PostMapping("/qr/check-in")
+    @Operation(summary = "Điểm danh bằng QR token (student)")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<AttendanceResponse> qrTokenCheckIn(
+            @RequestParam String token) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(attendanceService.qrTokenCheckIn(token, student.getId()));
+    }
+
+    /**
+     * Danh sách đầy đủ học viên + trạng thái điểm danh cho 1 buổi (roster).
+     * Enrolled students chưa có record sẽ trả về status = "pending".
+     */
+    @GetMapping("/roster")
+    @Operation(summary = "Lấy roster (tất cả enrolled students + attendance status)")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    public ResponseEntity<List<AttendanceResponse>> getSessionRoster(@RequestParam Long sessionId) {
+        return ResponseEntity.ok(attendanceService.getSessionRoster(sessionId));
+    }
+
+    // ── Admin: All Sessions ───────────────────────────────────────────────
+
+    @GetMapping("/sessions/all")
+    @Operation(summary = "[Admin] Lấy tất cả sessions với filter")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<List<ClassSessionResponse>> getAllSessions(
+            @RequestParam(required = false) Long classId,
+            @RequestParam(required = false) String date) {
+        return ResponseEntity.ok(attendanceService.getAllSessions(classId, date));
+    }
+
+    // ── Admin: Update single record ───────────────────────────────────────
+
+    @PatchMapping("/records/{id}")
+    @Operation(summary = "[Admin] Cập nhật trạng thái điểm danh 1 bản ghi")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<AttendanceResponse> updateRecord(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String status = body.get("status");
+        String note = body.get("note");
+        return ResponseEntity.ok(attendanceService.updateRecord(id, status, note));
+    }
+
+    // ── Student: Personal attendance ──────────────────────────────────────
+
+    @GetMapping("/me")
+    @Operation(summary = "[Student] Lấy điểm danh cá nhân")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<List<AttendanceResponse>> getMyAttendance(
+            @RequestParam(required = false) Long classId) {
+        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        return ResponseEntity.ok(attendanceService.getStudentRecords(student.getId(), classId));
     }
 
 }
