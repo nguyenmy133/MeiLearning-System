@@ -1,18 +1,21 @@
-// Khớp với backend DocumentResponse
+// Khớp với backend DocumentResponse (ManyToMany classes)
 export interface TeacherDocument {
   id: number;
   title: string;
   description?: string;
   fileUrl: string;
-  fileType: string;    // "pdf", "docx", "video", "image", "other"
-  fileSize: number;    // bytes
-  classId?: number;
-  className?: string;
+  fileType: string;    // "pdf", "docx", "video", "image", "youtube", "other"
+  fileSize: number;    // bytes (0 cho YouTube)
+  classes: ClassInfo[];
   uploadedByName: string;
-  uploadedById?: number;   // ID của người upload — dùng để kiểm tra ownership
+  uploadedById?: number;
   createdAt: string;
 }
 
+export interface ClassInfo {
+  id: number;
+  name: string;
+}
 
 export interface DocumentQueryParams {
   classId?: number;
@@ -24,5 +27,12 @@ export interface UploadDocumentDTO {
   file: File;
   title: string;
   description?: string;
-  classId?: number;
+  classIds: number[];
+}
+
+export interface UploadYoutubeDTO {
+  youtubeUrl: string;
+  title: string;
+  description?: string;
+  classIds: number[];
 }

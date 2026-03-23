@@ -12,6 +12,7 @@ import com.meilearning.backend.dto.response.DocumentResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.service.DocumentService;
 import java.security.Principal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/documents")
@@ -28,8 +29,8 @@ public class DocumentController {
      * Logic hiển thị (RBAC):
      * - TEACHER: chỉ thấy tài liệu của chính mình (uploadedBy = current user)
      *   + filter thêm classId nếu có
-     * - ADMIN: thấy tất cả (không filter theo uploadedBy)
-     * - STUDENT: thấy tài liệu của lớp mình (filter classId) — gọi qua endpoint khác
+     * - STUDENT: thấy tài liệu của lớp đã đăng ký
+     * - ADMIN: thấy tất cả
      */
     @GetMapping
     @Operation(summary = "Lấy danh sách tài liệu")
@@ -47,16 +48,38 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.getById(id));
     }
 
+    /**
+     * Upload tài liệu file — multipart/form-data.
+     * classIds: có thể truyền nhiều giá trị (e.g. classIds=1&classIds=2)
+     */
     @PostMapping
-    @Operation(summary = "Upload tài liệu mới")
+    @Operation(summary = "Upload tài liệu mới (file)")
     @PreAuthorize("hasRole('teacher')")
-    public ResponseEntity<DocumentResponse> upload(Principal principal,
-                                                   @RequestParam("file") MultipartFile file,
-                                                   @RequestParam("title") String title,
-                                                   @RequestParam(value = "description", required = false) String description,
-                                                   @RequestParam(value = "classId", required = false) Long classId) {
+    public ResponseEntity<DocumentResponse> upload(
+            Principal principal,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "classIds", required = false) List<Long> classIds) {
         DocumentResponse response = documentService.upload(
-                principal.getName(), title, description, classId, file);
+                principal.getName(), title, description, classIds, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Upload tài liệu YouTube — không cần file, chỉ cần URL.
+     */
+    @PostMapping("/youtube")
+    @Operation(summary = "Thêm tài liệu YouTube")
+    @PreAuthorize("hasRole('teacher')")
+    public ResponseEntity<DocumentResponse> uploadYoutube(
+            Principal principal,
+            @RequestParam("youtubeUrl") String youtubeUrl,
+            @RequestParam("title") String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "classIds", required = false) List<Long> classIds) {
+        DocumentResponse response = documentService.uploadYoutubeLink(
+                principal.getName(), title, description, classIds, youtubeUrl);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

@@ -1,19 +1,14 @@
 /**
- * Entity: Tài liệu — file đính kèm (giáo trình, bài tập, v.v.)
+ * Entity: Tài liệu — file đính kèm (giáo trình, bài tập, v.v.) hoặc YouTube link
  */
 package com.meilearning.backend.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "documents")
 @Getter
@@ -29,22 +24,27 @@ public class Document extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    /** Đường dẫn file (local storage hoặc S3 URL) */
+    /** Đường dẫn file (local storage / S3 URL) hoặc YouTube URL */
     @Column(name = "file_url", nullable = false)
     private String fileUrl;
 
-    /** MIME type */
+    /** MIME type hoặc "youtube" cho YouTube links */
     @Column(name = "file_type", length = 100)
     private String fileType;
 
-    /** Kích thước file (bytes) */
+    /** Kích thước file (bytes), 0 cho YouTube */
     @Column(name = "file_size")
     private Long fileSize;
 
-    /** Lớp liên quan (optional) */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
-    private ClassEntity classEntity;
+    /** Các lớp liên quan (ManyToMany) */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "document_classes",
+        joinColumns = @JoinColumn(name = "document_id"),
+        inverseJoinColumns = @JoinColumn(name = "class_id")
+    )
+    @Builder.Default
+    private Set<ClassEntity> classes = new HashSet<>();
 
     /** Người upload */
     @ManyToOne(fetch = FetchType.LAZY)

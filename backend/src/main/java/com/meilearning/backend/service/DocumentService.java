@@ -9,6 +9,7 @@ public interface DocumentService {
     /**
      * Lấy danh sách tài liệu có phân quyền:
      * - Teacher: chỉ thấy tài liệu của chính mình
+     * - Student: chỉ thấy tài liệu của lớp đã đăng ký
      * - Admin: thấy tất cả
      */
     PageResponse<DocumentResponse> getAll(String username, Long classId, int page, int limit);
@@ -18,8 +19,18 @@ public interface DocumentService {
 
     DocumentResponse getById(Long id);
 
+    /**
+     * Upload file tài liệu tới 1 hoặc nhiều lớp.
+     * classIds có thể rỗng/null → tài liệu không gán lớp nào.
+     */
     DocumentResponse upload(String username, String title, String description,
-                            Long classId, MultipartFile file);
+                            List<Long> classIds, MultipartFile file);
+
+    /**
+     * Upload tài liệu YouTube — lưu URL vào fileUrl, fileType = "youtube".
+     */
+    DocumentResponse uploadYoutubeLink(String username, String title, String description,
+                                       List<Long> classIds, String youtubeUrl);
 
     /**
      * Xóa tài liệu — chỉ owner hoặc admin mới được xóa.

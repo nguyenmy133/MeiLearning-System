@@ -2,20 +2,26 @@ import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 import type { DocumentItem } from "../types";
 
-// ── Mapper: Backend DocumentResponse → Frontend DocumentItem ────────────────
+// ── YouTube helpers ─────────────────────────────────────────────────────────
 
-/**
- * Backend DocumentResponse:
- *   { id, title, description, fileUrl, fileType (MIME), fileSize (bytes),
- *     classId, className, uploadedByName, uploadedById, createdAt }
- *
- * Frontend DocumentItem:
- *   { id, name, course, type ("pdf"|"doc"|"excel"|"ppt"|"video"|"audio"),
- *     size ("2.3 MB"), date ("2 ngày trước"), isNew, teacher, description }
- */
+function extractYoutubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+// ── Mapper: Backend DocumentResponse → Frontend DocumentItem ────────────────
 
 function detectDocType(mimeOrUrl: string): DocumentItem["type"] {
   const s = (mimeOrUrl ?? "").toLowerCase();
+  if (s === "youtube") return "youtube";
+  if (s.includes("youtube.com") || s.includes("youtu.be")) return "youtube";
   if (s.includes("pdf")) return "pdf";
   if (s.includes("video") || s.endsWith(".mp4") || s.endsWith(".mov")) return "video";
   if (s.includes("word") || s.endsWith(".doc") || s.endsWith(".docx")) return "doc";
@@ -52,15 +58,27 @@ function mapDocumentResponse(raw: any): DocumentItem {
     ? Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
     : 999;
 
+  const fileType = raw.fileType ?? "";
+  const fileUrl = raw.fileUrl ?? "";
+  const docType = detectDocType(fileType || fileUrl);
+
+  // Map class names — backend trả mảng classes: [{id, name}]
+  const classNames = (raw.classes ?? [])
+    .map((c: any) => c.name)
+    .filter(Boolean)
+    .join(", ");
+
   return {
     id: raw.id,
     name: raw.title ?? "Tài liệu",
-    course: raw.className ?? "Chung",
-    type: detectDocType(raw.fileType ?? raw.fileUrl ?? ""),
+    course: classNames || "Chung",
+    type: docType,
     size: formatFileSize(raw.fileSize ?? 0),
     date: formatRelativeDate(createdAt),
     isNew: diffDays <= 3,
     teacher: raw.uploadedByName ?? "",
+    fileUrl: fileUrl,
+    youtubeId: docType === "youtube" ? extractYoutubeId(fileUrl) ?? undefined : undefined,
     description: raw.description ?? undefined,
   };
 }
@@ -82,27 +100,10 @@ export const documentService = {
     return data;
   },
 
-  async uploadDocument(file: File, metadata: { title: string; classId?: number; description?: string }) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("title", metadata.title);
-    if (metadata.description) formData.append("description", metadata.description);
-    if (metadata.classId) formData.append("classId", metadata.classId.toString());
-    const { data } = await apiClient.post(API.DOCUMENTS.UPLOAD, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return data;
-  },
-
-  async deleteDocument(id: number) {
-    await apiClient.delete(API.DOCUMENTS.DELETE(id));
-  },
-
   async getCourses(): Promise<{ id: string; name: string }[]> {
     const all = [{ id: "all", name: "Tất cả" }];
     try {
       const { data } = await apiClient.get("/classes/enrolled/me");
-      // getCourses also receives ApiResponse wrapper → data is the inner payload
       const list = Array.isArray(data) ? data : (data?.data ?? data?.content ?? []);
       if (list.length > 0) {
         return all.concat(list.map((c: any) => ({ id: String(c.id ?? c.name), name: c.name })));
@@ -114,5 +115,4 @@ export const documentService = {
 
 // Named function exports
 export const getDocuments = documentService.getDocuments;
-export const uploadDocument = documentService.uploadDocument;
 export const getCourses = documentService.getCourses;

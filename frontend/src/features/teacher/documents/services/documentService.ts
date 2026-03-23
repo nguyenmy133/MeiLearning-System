@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { TeacherDocument, DocumentQueryParams, UploadDocumentDTO } from "../types";
+import type { TeacherDocument, DocumentQueryParams, UploadDocumentDTO, UploadYoutubeDTO } from "../types";
 
 /**
  * Document Service — tích hợp hoàn toàn với backend API.
@@ -7,7 +7,8 @@ import type { TeacherDocument, DocumentQueryParams, UploadDocumentDTO } from "..
  * Endpoints:
  *   GET    /api/v1/documents?classId=&page=&limit=
  *   GET    /api/v1/documents/{id}
- *   POST   /api/v1/documents (multipart/form-data)
+ *   POST   /api/v1/documents (multipart/form-data — file upload)
+ *   POST   /api/v1/documents/youtube (YouTube URL)
  *   DELETE /api/v1/documents/{id}
  */
 
@@ -21,17 +22,17 @@ function mapDoc(raw: any): TeacherDocument {
     fileUrl: raw.fileUrl ?? "",
     fileType: detectFileType(raw.fileType ?? raw.fileUrl ?? ""),
     fileSize: raw.fileSize ?? 0,
-    classId: raw.classId ?? undefined,
-    className: raw.className,
+    classes: (raw.classes ?? []).map((c: any) => ({ id: c.id, name: c.name })),
     uploadedByName: raw.uploadedByName ?? "",
     uploadedById: raw.uploadedById ?? undefined,
     createdAt: raw.createdAt ?? "",
   };
 }
 
-/** Suy ra loại file từ MIME type hoặc đuôi URL */
+/** Suy ra loại file từ MIME type, đuôi URL hoặc "youtube" */
 function detectFileType(mimeOrUrl: string): string {
   const s = mimeOrUrl.toLowerCase();
+  if (s === "youtube" || s.includes("youtube.com") || s.includes("youtu.be")) return "youtube";
   if (s.includes("pdf")) return "pdf";
   if (s.includes("video") || s.endsWith(".mp4") || s.endsWith(".mov")) return "video";
   if (s.includes("image") || s.match(/\.(jpg|jpeg|png|gif|webp)$/)) return "image";
@@ -57,18 +58,38 @@ export async function getDocumentById(id: number): Promise<TeacherDocument> {
 }
 
 /**
- * Upload tài liệu mới — dùng multipart/form-data.
- * Backend: POST /documents?title=...&description=...&classId=...&file=<binary>
+ * Upload tài liệu file — multipart/form-data.
+ * classIds gửi dưới dạng nhiều field cùng tên.
  */
 export async function uploadDocument(dto: UploadDocumentDTO): Promise<TeacherDocument> {
   const formData = new FormData();
   formData.append("file", dto.file);
   formData.append("title", dto.title);
   if (dto.description) formData.append("description", dto.description);
-  if (dto.classId != null) formData.append("classId", String(dto.classId));
+  if (dto.classIds?.length) {
+    dto.classIds.forEach((id) => formData.append("classIds", String(id)));
+  }
 
   const { data } = await apiClient.post(BASE, formData, {
     headers: { "Content-Type": "multipart/form-data" },
+  });
+  return mapDoc(data);
+}
+
+/**
+ * Upload tài liệu YouTube — gửi URL, không cần file.
+ */
+export async function uploadYoutubeDocument(dto: UploadYoutubeDTO): Promise<TeacherDocument> {
+  const params = new URLSearchParams();
+  params.append("youtubeUrl", dto.youtubeUrl);
+  params.append("title", dto.title);
+  if (dto.description) params.append("description", dto.description);
+  if (dto.classIds?.length) {
+    dto.classIds.forEach((id) => params.append("classIds", String(id)));
+  }
+
+  const { data } = await apiClient.post(`${BASE}/youtube`, params, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
   return mapDoc(data);
 }
@@ -85,4 +106,24 @@ export function formatFileSize(bytes: number): string {
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+/** Extract YouTube video ID from URL */
+export function extractYoutubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/** Get YouTube thumbnail URL */
+export function getYoutubeThumbnail(url: string): string | null {
+  const videoId = extractYoutubeId(url);
+  if (!videoId) return null;
+  return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 }

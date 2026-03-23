@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -16,10 +18,17 @@ public class DocumentResponse {
     private String fileUrl;
     private String fileType;
     private Long fileSize;
-    private Long classId;
-    private String className;
+    private List<ClassInfo> classes;
     private String uploadedByName;
-    private Long uploadedById;   // Thêm để frontend kiểm tra ownership
+    private Long uploadedById;
     private String createdAt;
-}
 
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ClassInfo {
+        private Long id;
+        private String name;
+    }
+}

@@ -176,6 +176,7 @@ export const API = {
         LIST: "/documents",
         DETAIL: (id: number | string) => `/documents/${id}`,
         UPLOAD: "/documents",
+        YOUTUBE: "/documents/youtube",
         DELETE: (id: number | string) => `/documents/${id}`,
     },
 } as const;
