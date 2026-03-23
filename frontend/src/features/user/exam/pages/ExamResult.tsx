@@ -14,9 +14,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useExamResult } from "@/features/user/exam/hooks/useExam";
+import { useExamResult, useMyAnswers } from "@/features/user/exam/hooks/useExam";
 import { formatDateTime } from "@/lib/dateUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -47,6 +46,7 @@ export function ExamResult() {
   const examId = searchParams.get("id") ?? "";
 
   const { data: result, isLoading, isError } = useExamResult(examId);
+  const { data: myAnswers = [] } = useMyAnswers(examId);
 
   // ── Loading ────────────────────────────────────────────────
   if (isLoading) {
@@ -85,10 +85,21 @@ export function ExamResult() {
   }
 
   // ── Derived data ───────────────────────────────────────────
-  const accuracyPct =
-    result.totalQuestions > 0
-      ? Math.round((result.correctCount / result.totalQuestions) * 100)
-      : 0;
+
+  // Essay-aware stats
+  const essayAnswers = myAnswers.filter((a) => a.questionType === "essay");
+  const pendingEssayCount = essayAnswers.filter((a) => a.essayScore == null).length;
+  const hasPendingEssays = pendingEssayCount > 0;
+
+  const mcAnswers = myAnswers.filter((a) => a.questionType !== "essay");
+  const mcCorrect = mcAnswers.filter((a) => a.isCorrect).length;
+  const mcWrong = mcAnswers.length - mcCorrect;
+
+  const evaluatedTotal = mcAnswers.length + essayAnswers.filter((a) => a.essayScore != null).length;
+  const evaluatedCorrect = mcCorrect + essayAnswers.filter((a) => a.essayScore != null && a.essayScore > 0).length;
+  const accuracyPct = evaluatedTotal > 0
+    ? Math.round((evaluatedCorrect / evaluatedTotal) * 100)
+    : 0;
 
   const scorePct =
     result.maxScore > 0
@@ -116,7 +127,7 @@ export function ExamResult() {
       </div>
 
       {/* Score hero card */}
-      <Card className={`border-2 ${result.passed ? "border-emerald-200 dark:border-emerald-800" : "border-destructive/30"}`}>
+      <Card className={`border-2 ${result.passed && !hasPendingEssays ? "border-emerald-200 dark:border-emerald-800" : hasPendingEssays ? "border-amber-200 dark:border-amber-800" : "border-destructive/30"}`}>
         <CardContent className="py-8">
           <div className="flex flex-col items-center text-center space-y-4">
             <div
@@ -125,34 +136,59 @@ export function ExamResult() {
               <span
                 className={`text-3xl font-bold ${getScoreColor(result.score, result.maxScore)}`}
               >
-                {result.score}
+                {result.score}{hasPendingEssays ? "*" : ""}
               </span>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">
-                Trên thang điểm {result.maxScore}
+                {hasPendingEssays ? "Điểm tạm tính" : "Trên thang điểm"} {result.maxScore}
               </p>
-              <Badge
-                variant={result.passed ? "default" : "destructive"}
-                className="mt-2 text-sm px-4"
-              >
-                {result.passed ? (
-                  <>
-                    <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Đạt
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="mr-1.5 h-3.5 w-3.5" /> Không đạt
-                  </>
-                )}
-              </Badge>
+              {hasPendingEssays ? (
+                <Badge variant="outline" className="mt-2 text-sm px-4 border-amber-400 text-amber-600">
+                  <Clock className="mr-1.5 h-3.5 w-3.5" /> Chờ chấm tự luận
+                </Badge>
+              ) : (
+                <Badge
+                  variant={result.passed ? "default" : "destructive"}
+                  className="mt-2 text-sm px-4"
+                >
+                  {result.passed ? (
+                    <>
+                      <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Đạt
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-1.5 h-3.5 w-3.5" /> Không đạt
+                    </>
+                  )}
+                </Badge>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Pending essay banner */}
+      {hasPendingEssays && (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
+                  Bài thi có {pendingEssayCount} câu tự luận đang chờ giáo viên chấm điểm
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                  Điểm hiện tại là tạm tính. Điểm chính thức sẽ được cập nhật sau khi giáo viên chấm xong.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-2 ${hasPendingEssays ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -161,7 +197,9 @@ export function ExamResult() {
               </div>
               <div>
                 <p className="text-xl font-bold text-foreground">{accuracyPct}%</p>
-                <p className="text-xs text-muted-foreground">Độ chính xác</p>
+                <p className="text-xs text-muted-foreground">
+                  Độ chính xác{hasPendingEssays ? " (đã chấm)" : ""}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -174,12 +212,28 @@ export function ExamResult() {
                 <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-xl font-bold text-foreground">{result.correctCount}</p>
-                <p className="text-xs text-muted-foreground">Câu đúng / {result.totalQuestions}</p>
+                <p className="text-xl font-bold text-foreground">{evaluatedCorrect}</p>
+                <p className="text-xs text-muted-foreground">Câu đúng / {evaluatedTotal} đã chấm</p>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {hasPendingEssays && (
+          <Card className="border-amber-200 dark:border-amber-800">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{pendingEssayCount}</p>
+                  <p className="text-xs text-muted-foreground">Chờ chấm tự luận</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-4">
@@ -189,9 +243,11 @@ export function ExamResult() {
               </div>
               <div>
                 <p className={`text-xl font-bold ${getScoreColor(result.score, result.maxScore)}`}>
-                  {result.score}/{result.maxScore}
+                  {result.score}/{result.maxScore}{hasPendingEssays ? "*" : ""}
                 </p>
-                <p className="text-xs text-muted-foreground">Điểm số</p>
+                <p className="text-xs text-muted-foreground">
+                  {hasPendingEssays ? "Điểm tạm tính" : "Điểm số"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -224,25 +280,52 @@ export function ExamResult() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Độ chính xác</span>
+              <span className="text-muted-foreground">
+                Độ chính xác{hasPendingEssays ? " (câu đã chấm)" : ""}
+              </span>
               <span className="font-semibold">{accuracyPct}%</span>
             </div>
-            <Progress value={accuracyPct} className="h-3" />
+            {/* Multi-segment progress bar */}
+            <div className="h-3 rounded-full bg-muted overflow-hidden flex">
+              {evaluatedCorrect > 0 && (
+                <div
+                  className="h-full bg-emerald-500 transition-all"
+                  style={{ width: `${(evaluatedCorrect / result.totalQuestions) * 100}%` }}
+                />
+              )}
+              {mcWrong > 0 && (
+                <div
+                  className="h-full bg-destructive transition-all"
+                  style={{ width: `${(mcWrong / result.totalQuestions) * 100}%` }}
+                />
+              )}
+              {hasPendingEssays && (
+                <div
+                  className="h-full bg-amber-400 transition-all"
+                  style={{ width: `${(pendingEssayCount / result.totalQuestions) * 100}%` }}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-2">
+          <div className={`grid ${hasPendingEssays ? 'grid-cols-3' : 'grid-cols-2'} gap-4 pt-2`}>
             <div className="flex items-center gap-2 text-sm">
               <span className="w-3 h-3 rounded-full bg-emerald-500" />
               <span className="text-muted-foreground">Đúng:</span>
-              <span className="font-semibold">{result.correctCount}</span>
+              <span className="font-semibold">{evaluatedCorrect}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="w-3 h-3 rounded-full bg-destructive" />
               <span className="text-muted-foreground">Sai:</span>
-              <span className="font-semibold">
-                {result.totalQuestions - result.correctCount}
-              </span>
+              <span className="font-semibold">{mcWrong}</span>
             </div>
+            {hasPendingEssays && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="w-3 h-3 rounded-full bg-amber-400" />
+                <span className="text-muted-foreground">Chờ chấm:</span>
+                <span className="font-semibold">{pendingEssayCount}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

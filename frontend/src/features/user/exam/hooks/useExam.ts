@@ -59,8 +59,8 @@ export function useSubmitExam() {
             qc.invalidateQueries({ queryKey: examKeys.all });
             toast.success(
                 result.passed
-                    ? `Nộp bài thành công! Điểm: ${result.score} — Đúng: ${result.correctCount}/${result.totalQuestions} ✅`
-                    : `Nộp bài thành công! Điểm: ${result.score} — Đúng: ${result.correctCount}/${result.totalQuestions} ❌`
+                    ? `Nộp bài thành công! Điểm: ${result.score}/10 — Đúng: ${result.correctCount}/${result.totalQuestions} ✅`
+                    : `Nộp bài thành công! Điểm: ${result.score}/10 — Đúng: ${result.correctCount}/${result.totalQuestions} ❌`
             );
         },
         onError: (err: Error) => toast.error(err.message),

@@ -178,7 +178,8 @@ export function TeacherStudentExamResult() {
     );
   }
 
-  const score = Number(examResult.score ?? 0);
+  const score100 = Number(examResult.score ?? 0);
+  const score = Math.round((score100 / 10) * 100) / 100; // Convert 0-100 → 0-10
   const correctAnswers = examResult.correctAnswers ?? 0;
   const totalQuestions = examInfo?.totalQuestions ?? 0;
   const isPassed = examResult.passed ?? false;
@@ -248,7 +249,7 @@ export function TeacherStudentExamResult() {
                   >
                     {score}
                   </p>
-                  <p className="text-xs text-muted-foreground">/100</p>
+                  <p className="text-xs text-muted-foreground">/10</p>
                 </div>
               </div>
               {isPassed && (
@@ -369,9 +370,9 @@ export function TeacherStudentExamResult() {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Điểm số</span>
-              <span className="font-semibold">{score}/100</span>
+              <span className="font-semibold">{score}/10</span>
             </div>
-            <Progress value={score} className="h-2" />
+            <Progress value={score * 10} className="h-2" />
           </div>
 
           <Separator />

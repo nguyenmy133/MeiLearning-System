@@ -18,8 +18,25 @@ export async function getClassGrades(
     params: { classId, ...params },
   });
   // Handle cả array và PageResponse
-  if (Array.isArray(data)) return data;
-  return data?.data ?? [];
+  const list = Array.isArray(data) ? data : (data?.data ?? []);
+  return list.map((g: any) => ({
+    id: g.id,
+    studentId: String(g.studentId ?? ""),
+    name: g.studentName ?? "",
+    avatar: undefined,
+    examScores: (g.examScores ?? []).map((e: any) => ({
+      examId: Number(e.examId ?? 0),
+      examTitle: e.examTitle ?? "",
+      score: Number(e.score ?? 0),
+      passed: Boolean(e.passed),
+      date: e.date ?? "",
+    })),
+    avgScore: Number(g.avgScore ?? 0),
+    trend: g.trend ?? "stable",
+    attendanceRate: Number(g.attendanceRate ?? 0),
+    comment: g.comment ?? "",
+    commentUpdatedAt: g.updatedAt ?? undefined,
+  }));
 }
 
 export async function getGradeStats(

@@ -391,12 +391,24 @@ public class ExamServiceImpl implements ExamService {
                 }
             }
 
-            // Tính điểm chỉ dựa trên câu trắc nghiệm
-            int totalMC = (int) questions.stream()
-                    .filter(q -> !"essay".equals(q.getType())).count();
-            int totalQ = totalMC > 0 ? totalMC : questions.size();
-            score = totalQ > 0
-                    ? BigDecimal.valueOf(correctCount * 100.0 / totalQ).setScale(2, RoundingMode.HALF_UP)
+            // Tính điểm dựa trên câu ĐÃ CHẤM (MC only trên lần nộp đầu)
+            // Essay chưa chấm KHÔNG tham gia vào cả tử số và mẫu số.
+            // Khi teacher chấm essay → gradeEssay() sẽ tính lại trên ALL questions.
+            int totalPoints = 0;
+            int earnedPoints = 0;
+            for (ExamQuestion q : questions) {
+                if ("essay".equals(q.getType())) continue; // skip essay
+                int pts = q.getPoints() != null ? q.getPoints() : 1;
+                totalPoints += pts;
+            }
+            for (ExamAnswerDetail d : answerDetails) {
+                if (Boolean.TRUE.equals(d.getIsCorrect())) {
+                    int pts = d.getQuestion().getPoints() != null ? d.getQuestion().getPoints() : 1;
+                    earnedPoints += pts;
+                }
+            }
+            score = totalPoints > 0
+                    ? BigDecimal.valueOf(earnedPoints * 100.0 / totalPoints).setScale(2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
         } else {
             // ── Backward-compatible: dùng score từ request ──
@@ -586,6 +598,20 @@ public class ExamServiceImpl implements ExamService {
         examResult.setCorrectAnswers(correctCount);
         examResult.setPassed(newScore.compareTo(BigDecimal.valueOf(50)) >= 0);
         resultRepository.save(examResult);
+
+        // 5. Notify student: teacher đã chấm bài tự luận
+        Exam exam = examResult.getExam();
+        Student student = examResult.getStudent();
+        if (student != null && student.getUser() != null) {
+            BigDecimal score10 = newScore.divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP);
+            notificationDispatcher.notifyWithEmail(
+                    student.getUser(),
+                    "exam_graded",
+                    "Bài thi đã được chấm điểm",
+                    "Giáo viên đã chấm bài tự luận cho bài thi \"" + exam.getTitle()
+                            + "\". Điểm cập nhật: " + score10 + "/10."
+            );
+        }
     }
 
 

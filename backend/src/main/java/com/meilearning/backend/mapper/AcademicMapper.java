@@ -148,18 +148,65 @@ public class AcademicMapper {
     }
 
     public GradeResponse toGradeResponse(Grade grade) {
+        ClassEntity cls = grade.getClassEntity();
         return GradeResponse.builder()
                 .id(grade.getId())
                 .studentId(grade.getStudent().getId())
                 .studentName(grade.getStudent().getUser().getName())
-                .classId(grade.getClassEntity().getId())
-                .className(grade.getClassEntity().getName())
-                .subjectName(grade.getClassEntity().getSubject().getName())
+                .classId(cls.getId())
+                .className(cls.getName())
+                .subjectName(cls.getSubject().getName())
                 .avgScore(grade.getAvgScore())
                 .trend(grade.getTrend().name())
                 .attendanceRate(grade.getAttendanceRate())
                 .comment(grade.getComment())
                 .updatedAt(grade.getUpdatedAt())
+                // Enriched fields
+                .classStatus(cls.getStatus() != null ? cls.getStatus().name() : "active")
+                .teacherName(cls.getTeacher() != null && cls.getTeacher().getUser() != null
+                        ? cls.getTeacher().getUser().getName() : "")
+                .build();
+    }
+
+    /** Tạo enriched GradeResponse kèm danh sách điểm bài thi */
+    public GradeResponse toGradeResponseEnriched(Grade grade, java.util.List<ExamScoreItem> examScores) {
+        GradeResponse resp = toGradeResponse(grade);
+        resp.setExamScores(examScores);
+        return resp;
+    }
+
+    /** Convert ExamResult entity → ExamScoreItem DTO (score converted 0-100 → 0-10) */
+    public ExamScoreItem toExamScoreItem(ExamResult result) {
+        // ExamResult stores score on 0-100 scale, FE expects 0-10
+        java.math.BigDecimal score10 = result.getScore() != null
+                ? result.getScore().divide(java.math.BigDecimal.TEN, 2, java.math.RoundingMode.HALF_UP)
+                : java.math.BigDecimal.ZERO;
+
+        // Compute grading status from answer details
+        String gradingStatus = "no_essay";
+        var details = result.getAnswerDetails();
+        if (details != null && !details.isEmpty()) {
+            boolean hasEssay = false;
+            boolean allGraded = true;
+            for (var d : details) {
+                if (d.getQuestion() != null && "essay".equals(d.getQuestion().getType())) {
+                    hasEssay = true;
+                    if (d.getEssayScore() == null) allGraded = false;
+                }
+            }
+            if (hasEssay) gradingStatus = allGraded ? "graded" : "pending";
+        }
+
+        return ExamScoreItem.builder()
+                .examId(result.getExam().getId())
+                .examTitle(result.getExam().getTitle())
+                .score(score10)
+                .passed(result.getPassed())
+                .date(result.getExam().getEndTime() != null
+                        ? result.getExam().getEndTime().toString() : null)
+                .submittedAt(result.getSubmittedAt() != null
+                        ? result.getSubmittedAt().toString() : null)
+                .gradingStatus(gradingStatus)
                 .build();
     }
 

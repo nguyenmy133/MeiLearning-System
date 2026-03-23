@@ -126,9 +126,8 @@ description: Quy trình rà soát và sửa lỗi toàn diện (Full-stack Bug F
 13. **Verify các thay đổi**:
 
     > ⚠️ **Lưu ý**: Dự án build và chạy bằng **Docker**. Sử dụng `docker-compose build` để build lại các service và `docker-compose up` để chạy. File cấu hình: `docker-compose.yml` tại thư mục gốc dự án.
-
-    - [ ] Build backend thành công (không có compile error) — `docker-compose build backend`
-    - [ ] Build frontend thành công (không có TypeScript error) — `docker-compose build frontend`
+`
+    - [ ] Build thành công: docke compose up -d --build
     - [ ] Test chức năng đã fix — lỗi không còn tái hiện
     - [ ] Test regression — các chức năng liên quan vẫn hoạt động bình thường
     - [ ] Kiểm tra các edge case

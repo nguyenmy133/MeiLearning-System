@@ -185,13 +185,17 @@ export async function submitExam(
     timeSpent: timeSpent ?? 0,
   });
 
+  // Convert score from 0-100 (BE) to 0-10 (FE display)
+  const rawScore = Number(data.score ?? 0);
+  const score10 = Math.round((rawScore / 10) * 100) / 100;
+
   return {
     examId: String(data.examId ?? examId),
     examTitle: data.examTitle ?? "",
     classId: "",
     className: "",
-    score: data.score ?? 0,
-    maxScore: 100,
+    score: score10,
+    maxScore: 10,
     passed: data.passed ?? false,
     correctCount: data.correctAnswers ?? 0,
     totalQuestions: data.totalQuestions ?? 0,
@@ -205,13 +209,17 @@ export async function getExamResult(examId: string): Promise<ExamResult> {
   const { data } = await apiClient.get(`/exams/${examId}/my-result`);
   if (!data) throw new Error("Chưa có kết quả");
 
+  // Convert score from 0-100 (BE) to 0-10 (FE display)
+  const rawScore = Number(data.score ?? 0);
+  const score10 = Math.round((rawScore / 10) * 100) / 100;
+
   return {
     examId: String(data.examId ?? examId),
     examTitle: data.examTitle ?? "",
     classId: "",
     className: "",
-    score: data.score ?? 0,
-    maxScore: 100,
+    score: score10,
+    maxScore: 10,
     passed: data.passed ?? false,
     correctCount: data.correctAnswers ?? 0,
     totalQuestions: data.totalQuestions ?? 0,

@@ -3,9 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Award,
   BookOpen,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Calendar,
   MessageSquare,
   BarChart3,
@@ -36,7 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyGrades } from "@/features/user/grade/hooks";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -61,21 +58,7 @@ const getScoreLabel = (score: number) => {
   return "Yếu";
 };
 
-const getTrendIcon = (trend: string) => {
-  switch (trend) {
-    case "up": return <TrendingUp className="w-4 h-4 text-emerald-600" />;
-    case "down": return <TrendingDown className="w-4 h-4 text-destructive" />;
-    default: return <Minus className="w-4 h-4 text-muted-foreground" />;
-  }
-};
 
-const getTrendLabel = (trend: string) => {
-  switch (trend) {
-    case "up": return "Tiến bộ";
-    case "down": return "Giảm sút";
-    default: return "Ổn định";
-  }
-};
 
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).slice(-2).join("").toUpperCase();
@@ -240,10 +223,9 @@ export function UserGradesPage() {
                         <CardDescription>{subject.className}</CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      {getTrendIcon(subject.trend)}
-                      <span className="text-xs text-muted-foreground">{getTrendLabel(subject.trend)}</span>
-                    </div>
+                    {subject.classStatus === "completed" && (
+                      <Badge variant="secondary" className="text-[10px]">Hoàn thành</Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -255,9 +237,6 @@ export function UserGradesPage() {
                       </AvatarFallback>
                     </Avatar>
                     <span>{subject.teacherName}</span>
-                    {subject.classStatus === "completed" && (
-                      <Badge variant="secondary" className="text-[10px] ml-auto">Hoàn thành</Badge>
-                    )}
                   </div>
 
                   {/* Exam Scores */}
@@ -268,15 +247,22 @@ export function UserGradesPage() {
                         className="flex items-center justify-between p-2.5 bg-secondary/50 rounded-md hover:bg-secondary transition-colors group"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{es.examTitle}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium truncate">{es.examTitle}</p>
+                            {es.gradingStatus === "pending" && (
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-400 text-amber-600 dark:text-amber-400 animate-pulse whitespace-nowrap">
+                                ⏳ Chờ chấm tự luận
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-[11px] text-muted-foreground">
-                            {formatDate(es.date)}
+                            Nộp bài: {formatDateTime(es.submittedAt || es.date)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <div className="flex flex-col items-end gap-0.5">
                             <span className={`text-sm font-bold leading-none ${getScoreColor(es.score)}`}>
-                              {es.score.toFixed(1)}
+                              {es.score.toFixed(1)}{es.gradingStatus === "pending" ? "*" : ""}
                             </span>
                           </div>
                           <Button
@@ -302,9 +288,6 @@ export function UserGradesPage() {
                         {getScoreLabel(subject.avgScore)}
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      Điểm danh: <span className="font-semibold text-foreground">{subject.attendanceRate}%</span>
-                    </span>
                   </div>
 
                   {/* Teacher Comment */}

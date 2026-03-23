@@ -268,6 +268,12 @@ export function DateTimePicker({
     if (!stagedDate) return;
     const result = new Date(stagedDate);
     result.setHours(stagedHour, stagedMinute, 0, 0);
+
+    // Validate: không cho chọn thời gian trong quá khứ
+    if (fromDate && result < fromDate) {
+      return; // silently reject — calendar already grays out past dates
+    }
+
     onChange?.(result);
 
     // Commit end time

@@ -7,7 +7,10 @@ export interface ExamScoreEntry {
     examTitle: string;
     score: number;   // 0-10
     passed: boolean;
-    date: string;    // "YYYY-MM-DD"
+    date: string;    // "YYYY-MM-DD" (exam end time, fallback)
+    submittedAt: string; // ISO datetime of student submission
+    /** no_essay | pending | graded */
+    gradingStatus: "no_essay" | "pending" | "graded";
 }
 
 export interface ClassGrade {

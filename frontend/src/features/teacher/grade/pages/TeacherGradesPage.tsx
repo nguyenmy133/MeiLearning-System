@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,11 @@ export function TeacherGradesPage() {
   const [selectedClassId, setSelectedClassId] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Sticky column scroll detection
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
   // Comment dialog
   const [showCommentDialog, setShowCommentDialog] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentGrade | null>(null);
@@ -143,6 +148,69 @@ export function TeacherGradesPage() {
   // Derive exam columns from student data
   const completedExams = students[0]?.examScores ?? [];
 
+  // Detect horizontal scroll position for sticky column shadows
+  const checkScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener("scroll", checkScroll);
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [checkScroll, completedExams]);
+
+  // ── Drag-to-scroll ──────────────────────────────────────────────────────
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragScrollLeft = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    // Only activate on left mouse button and not on interactive elements
+    if (e.button !== 0) return;
+    const tag = (e.target as HTMLElement).closest('button, a, input, textarea');
+    if (tag) return;
+    isDragging.current = true;
+    dragStartX.current = e.pageX - el.offsetLeft;
+    dragScrollLeft.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - dragStartX.current) * 1.5; // Speed multiplier
+    el.scrollLeft = dragScrollLeft.current - walk;
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.style.cursor = '';
+    el.style.userSelect = '';
+  }, []);
+
+  useEffect(() => {
+    const onMouseUp = () => handleMouseUp();
+    window.addEventListener('mouseup', onMouseUp);
+    return () => window.removeEventListener('mouseup', onMouseUp);
+  }, [handleMouseUp]);
+
   // Computed grade distribution — backend trả avg/pass/fail/total
   const classAvg = (gradeStatsData as any)?.avg ?? (gradeStatsData as any)?.averageScore ?? 0;
   const gioi = students.filter((s) => s.avgScore >= 8).length;
@@ -161,7 +229,7 @@ export function TeacherGradesPage() {
     if (!editingStudent) return;
     updateComment.mutate({
       studentId: editingStudent.studentId,
-      classId: selectedClassId,
+      classId: effectiveClassId,
       comment: newComment.trim(),
     });
     setShowCommentDialog(false);
@@ -327,103 +395,125 @@ export function TeacherGradesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12 text-center">#</TableHead>
-                  <TableHead className="min-w-[180px]">Học viên</TableHead>
-                  {completedExams.map((exam) => (
-                    <TableHead key={exam.examId} className="text-center min-w-[120px]">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            className="text-xs hover:text-primary transition-colors cursor-pointer underline-offset-2 hover:underline"
-                            onClick={() => navigate(`/teacher/exams/results/${exam.examId}`)}
-                          >
-                            {exam.examTitle}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Ngày thi: {exam.date}</p>
-                          <p className="text-xs text-muted-foreground">Click để xem chi tiết</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center">TB</TableHead>
-                  <TableHead className="min-w-[200px]">Nhận xét</TableHead>
-                  <TableHead className="w-16"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {studentsLoading ? (
-                  <TableRow><TableCell colSpan={99}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                ) : students.map((student, index) => (
-                  <TableRow key={student.id} className={student.avgScore < 5 ? "bg-destructive/5" : ""}>
-                    <TableCell className="text-center text-muted-foreground text-sm">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={student.avatar} />
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {getInitials(student.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{student.name}</p>
-                          <p className="text-xs text-muted-foreground">{student.studentId}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Exam scores — dynamic columns */}
-                    {completedExams.map((exam) => {
-                      const result = student.examScores.find((es) => es.examId === exam.examId);
-                      return (
-                        <TableCell key={exam.examId} className="text-center">
-                          {result ? (
-                            <span className={`font-semibold ${getScoreColor(result.score)}`}>
-                              {result.score.toFixed(1)}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/50">—</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-
-                    {/* Average */}
-                    <TableCell className="text-center">
-                      <span className={`font-bold text-base ${getScoreColor(student.avgScore)}`}>
-                        {student.avgScore.toFixed(1)}
-                      </span>
-                    </TableCell>
-
-                    {/* Comment */}
-                    <TableCell>
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {student.comment || <span className="italic text-muted-foreground/50">Chưa có nhận xét</span>}
-                      </p>
-                    </TableCell>
-
-                    {/* Action — edit comment */}
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openCommentDialog(student)}
+          <div className="relative">
+            {/* Right-edge gradient scroll indicator */}
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent z-30 pointer-events-none" />
+            )}
+            {/* Use raw <table> instead of <Table> component to avoid nested overflow wrapper that breaks position:sticky */}
+            <div
+              className="relative w-full overflow-auto cursor-grab scroll-smooth [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [scrollbar-width:thin] [scrollbar-color:hsl(var(--muted-foreground)/0.2)_transparent]"
+              ref={scrollContainerRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <table className="w-full caption-bottom text-sm">
+                <thead className="[&_tr]:border-b">
+                  <tr className="border-b transition-colors hover:bg-muted/50">
+                    <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground w-12 sticky left-0 z-20 bg-card">#</th>
+                    <th
+                      className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[180px] sticky left-12 z-20 bg-card border-r border-border/50 transition-shadow duration-200"
+                      style={canScrollLeft ? { boxShadow: '4px 0 6px -2px rgba(0,0,0,0.1)' } : undefined}
+                    >
+                      Học viên
+                    </th>
+                    {completedExams.map((exam) => (
+                      <th key={exam.examId} className="h-12 px-4 text-center align-middle font-medium text-muted-foreground min-w-[120px]">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              className="text-xs hover:text-primary transition-colors cursor-pointer underline-offset-2 hover:underline"
+                              onClick={() => navigate(`/teacher/exams/results/${exam.examId}`)}
+                            >
+                              {exam.examTitle}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ngày thi: {exam.date}</p>
+                            <p className="text-xs text-muted-foreground">Click để xem chi tiết</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </th>
+                    ))}
+                    <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">TB</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px]">Nhận xét</th>
+                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground w-16"></th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr:last-child]:border-0">
+                  {studentsLoading ? (
+                    <tr className="border-b"><td colSpan={99} className="p-4"><Skeleton className="h-8 w-full" /></td></tr>
+                  ) : students.map((student, index) => (
+                    <tr key={student.id} className={`border-b transition-colors hover:bg-muted/50 ${student.avgScore < 5 ? "bg-destructive/5" : ""}`}>
+                      <td className="p-4 text-center text-muted-foreground text-sm align-middle sticky left-0 z-10 bg-card">
+                        {index + 1}
+                      </td>
+                      <td
+                        className="p-4 align-middle sticky left-12 z-10 bg-card border-r border-border/50 transition-shadow duration-200"
+                        style={canScrollLeft ? { boxShadow: '4px 0 6px -2px rgba(0,0,0,0.1)' } : undefined}
                       >
-                        <MessageSquare className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={student.avatar} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {getInitials(student.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{student.name}</p>
+                            <p className="text-xs text-muted-foreground">{student.studentId}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Exam scores — dynamic columns */}
+                      {completedExams.map((exam) => {
+                        const result = student.examScores.find((es) => es.examId === exam.examId);
+                        return (
+                          <td key={exam.examId} className="p-4 align-middle text-center">
+                            {result ? (
+                              <span className={`font-semibold ${getScoreColor(result.score)}`}>
+                                {result.score.toFixed(1)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+
+                      {/* Average */}
+                      <td className="p-4 align-middle text-center">
+                        <span className={`font-bold text-base ${getScoreColor(student.avgScore)}`}>
+                          {student.avgScore.toFixed(1)}
+                        </span>
+                      </td>
+
+                      {/* Comment */}
+                      <td className="p-4 align-middle">
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {student.comment || <span className="italic text-muted-foreground/50">Chưa có nhận xét</span>}
+                        </p>
+                      </td>
+
+                      {/* Action — edit comment */}
+                      <td className="p-4 align-middle">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openCommentDialog(student)}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {!studentsLoading && students.length === 0 && (
