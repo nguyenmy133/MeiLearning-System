@@ -12,9 +12,10 @@ export async function getMyAttendance(classId?: string): Promise<AttendanceRecor
     id: String(r.id ?? ""),
     sessionId: String(r.sessionId ?? ""),
     classId: "",
-    className: "",
-    date: "",
-    sessionTime: "",
+    className: r.className ?? "",
+    date: r.sessionDate ?? "",
+    sessionTime: r.sessionStartTime && r.sessionEndTime
+      ? `${r.sessionStartTime} - ${r.sessionEndTime}` : "",
     status: mapStatus(r.status),
     isBillable: r.status !== "absent_excused",
     checkedInAt: r.checkInTime ?? undefined,

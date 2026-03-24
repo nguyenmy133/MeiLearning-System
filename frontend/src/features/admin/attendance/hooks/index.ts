@@ -5,4 +5,6 @@ export {
   useLiveSessions,
   useAbsentAlerts,
   useToggleQR,
+  useSessionRecords,
+  useUpdateAttendanceRecord,
 } from "./useAttendance";

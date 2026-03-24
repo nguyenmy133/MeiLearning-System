@@ -38,6 +38,9 @@ public interface ClassSessionRepository
     /** Lấy sessions của 1 teacher trong tuần */
     List<ClassSession> findByClassEntityTeacherIdAndDateBetween(Long teacherId, LocalDate startDate, LocalDate endDate);
 
+    /** Lọc sessions của 1 lớp, chỉ lấy đến ngày chỉ định (dùng cho lịch sử điểm danh) */
+    List<ClassSession> findByClassEntityIdAndDateLessThanEqual(Long classId, LocalDate date);
+
     /** Lấy sessions trong khoảng thời gian, loại trừ status cụ thể */
     List<ClassSession> findByDateBetweenAndStatusNot(LocalDate startDate, LocalDate endDate, SessionStatus status);
 

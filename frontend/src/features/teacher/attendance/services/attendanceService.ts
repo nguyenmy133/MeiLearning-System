@@ -64,7 +64,13 @@ export async function getSessionAttendance(
 export async function saveAttendance(_teacherId: number, dto: SaveAttendanceDTO): Promise<void> {
   await apiClient.post("/attendance/bulk", {
     sessionId: dto.sessionId,
-    attendances: dto.attendees,
+    attendances: dto.attendees
+      .filter((a) => a.status !== "pending") // BE không có status "pending"
+      .map((a) => ({
+        studentId: Number(a.studentId), // BE expects Long
+        status: a.status,
+        note: undefined,
+      })),
     confirm: dto.confirm,
   });
 }

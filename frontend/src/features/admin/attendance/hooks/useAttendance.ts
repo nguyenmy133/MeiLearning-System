@@ -44,6 +44,7 @@ export function useLiveSessions() {
   return useQuery({
     queryKey: attendanceKeys.live(),
     queryFn: () => getLiveSessions(),
+    refetchInterval: 10_000, // Poll every 10s để cập nhật QR status real-time
   });
 }
 

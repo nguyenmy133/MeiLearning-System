@@ -139,6 +139,23 @@ export function TeacherReschedulePage() {
       return;
     }
 
+    // Validate: ngày giờ mới phải trong tương lai và giờ kết thúc > giờ bắt đầu
+    if (requestType === "reschedule" && newDateTime) {
+      if (newDateTime.getTime() < Date.now()) {
+        toast.error("Ngày giờ bắt đầu phải trong tương lai!");
+        return;
+      }
+      if (newEndTime) {
+        const startH = newDateTime.getHours();
+        const startM = newDateTime.getMinutes();
+        const [endH, endM] = newEndTime.split(":").map(Number);
+        if (endH * 60 + endM <= startH * 60 + startM) {
+          toast.error("Giờ kết thúc phải sau giờ bắt đầu!");
+          return;
+        }
+      }
+    }
+
     createReschedule.mutate(
       {
         classId: Number(selectedClassId),

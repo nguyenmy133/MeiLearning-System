@@ -43,6 +43,7 @@ import {
   useLiveSessions,
   useAbsentAlerts,
   useToggleQR,
+  useSessionRecords,
 } from "../hooks";
 import type { AttendanceQueryParams } from "../types";
 import { useClassOptions } from "@/hooks/useClassOptions";
@@ -83,6 +84,19 @@ function TableSkeleton() {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const toMinutes = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+};
+
+/** Issue #5: Kiểm tra session đã đến giờ chưa (cho phép trước 5 phút) */
+const isSessionStarted = (startTime: string) => {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return nowMin >= toMinutes(startTime) - 5;
+};
+
 export function AdminAttendancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClassId, setFilterClassId] = useState("all");
@@ -110,6 +124,12 @@ export function AdminAttendancePage() {
     expiresAt: string;
   }>({ open: false, sessionId: 0, className: "", token: "", expiresAt: "" });
   const [qrCountdown, setQrCountdown] = useState(0);
+
+  // ── Roster detail dialog state (Issue #4) ───────────────────────────────────
+  const [rosterModal, setRosterModal] = useState<{ open: boolean; sessionId: number; className: string; date: string; time: string }>({
+    open: false, sessionId: 0, className: "", date: "", time: "",
+  });
+  const { data: rosterData = [], isLoading: rosterLoading } = useSessionRecords(rosterModal.sessionId);
 
   // Countdown timer for QR modal
   useEffect(() => {
@@ -291,7 +311,8 @@ export function AdminAttendancePage() {
                             variant="default"
                             size="sm"
                             className="w-full text-xs h-8"
-                            disabled={toggleQRMutation.isPending}
+                            disabled={toggleQRMutation.isPending || !isSessionStarted(session.startTime)}
+                            title={!isSessionStarted(session.startTime) ? "Chưa đến giờ học (có thể bật trước 5 phút)" : undefined}
                             onClick={() => {
                               toggleQRMutation.mutate(
                                 { sessionId: session.id, activatedBy: "admin" },
@@ -314,6 +335,8 @@ export function AdminAttendancePage() {
                           >
                             {toggleQRMutation.isPending ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : !isSessionStarted(session.startTime) ? (
+                              <>Chưa đến giờ</>
                             ) : (
                               <>Bật mã QR</>
                             )}
@@ -369,16 +392,15 @@ export function AdminAttendancePage() {
               </div>
 
               {/* Table */}
+              {/* Issue #4: Compact table — gộp Sĩ số + Vắng/Muộn, thêm Xem chi tiết */}
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Lớp học</TableHead>
                     <TableHead className="hidden sm:table-cell">Thời gian</TableHead>
-                    <TableHead className="text-center">Sĩ số</TableHead>
-                    <TableHead className="text-center hidden md:table-cell">
-                      Vắng / Muộn
-                    </TableHead>
+                    <TableHead className="text-center">Sĩ số / Vắng</TableHead>
                     <TableHead>Tỉ lệ</TableHead>
+                    <TableHead className="text-center w-24"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -415,31 +437,18 @@ export function AdminAttendancePage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge className="bg-primary/10 text-primary border-0">
-                            {item.present}/{item.total}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center hidden md:table-cell">
-                          <div className="flex justify-center gap-1">
-                            {item.absent > 0 && (
-                              <Badge
-                                variant="outline"
-                                className="text-destructive border-destructive/30 bg-destructive/5"
-                              >
-                                {item.absent} vắng
-                              </Badge>
-                            )}
-                            {item.late > 0 && (
-                              <Badge
-                                variant="outline"
-                                className="text-amber-600 dark:text-amber-500 border-amber-500/30 bg-amber-500/10"
-                              >
-                                {item.late} muộn
-                              </Badge>
-                            )}
-                            {item.absent === 0 && item.late === 0 && (
-                              <span className="text-muted-foreground text-xs">Đủ</span>
-                            )}
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Badge className="bg-primary/10 text-primary border-0">
+                              {item.present}/{item.total}
+                            </Badge>
+                            <div className="flex gap-1">
+                              {item.absent > 0 && (
+                                <span className="text-[10px] text-destructive">{item.absent} vắng</span>
+                              )}
+                              {item.late > 0 && (
+                                <span className="text-[10px] text-amber-600">{item.late} muộn</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -447,6 +456,25 @@ export function AdminAttendancePage() {
                             <Progress value={item.rate} className="w-16 h-2" />
                             <span className="text-sm font-medium">{item.rate}%</span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {/* Chỉ hiển thị "Chi tiết" khi session đã hoàn thành */}
+                          {item.status === "completed" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => setRosterModal({
+                                open: true,
+                                sessionId: item.id,
+                                className: item.className,
+                                date: item.date,
+                                time: `${item.startTime} - ${item.endTime}`,
+                              })}
+                            >
+                              <Eye className="w-3.5 h-3.5 mr-1" /> Chi tiết
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
@@ -588,6 +616,61 @@ export function AdminAttendancePage() {
               )}
               Tạo mã QR mới
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Roster Detail Dialog (Issue #4) */}
+      <Dialog open={rosterModal.open} onOpenChange={(open) => setRosterModal((prev) => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Chi tiết điểm danh — {rosterModal.className}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {rosterModal.date && formatDate(rosterModal.date)} · {rosterModal.time}
+            </p>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {rosterLoading ? (
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-md" />)
+            ) : rosterData.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">Chưa có dữ liệu điểm danh cho buổi học này.</p>
+            ) : (
+              rosterData.map((r: any) => (
+                <div key={r.id ?? r.studentId} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                      {(r.studentName ?? "").charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{r.studentName}</p>
+                      {r.checkInTime && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Check-in: {r.checkInTime} · {r.method === "qr" ? "QR" : "Thủ công"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${
+                      r.status === "present" ? "bg-green-100 text-green-700 border-green-200" :
+                      r.status === "late" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                      r.status === "absent_excused" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                      r.status === "absent" ? "bg-red-100 text-red-700 border-red-200" :
+                      "bg-muted text-muted-foreground border-border"
+                    }`}
+                  >
+                    {r.status === "present" ? "Có mặt" :
+                     r.status === "late" ? "Đi muộn" :
+                     r.status === "absent_excused" ? "Nghỉ CP" :
+                     r.status === "absent" ? "Vắng" : "Chưa ĐD"}
+                  </Badge>
+                </div>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>

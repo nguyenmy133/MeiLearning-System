@@ -85,6 +85,7 @@ export async function getAttendanceSessions(params?: any) {
       rate: s.totalStudents > 0
         ? Math.round((s.presentCount / s.totalStudents) * 100)
         : 0,
+      status: s.status ?? "upcoming",
       createdAt: "",
       updatedAt: "",
     }));
@@ -113,10 +114,12 @@ export async function getLiveSessions() {
         let qrToken = "";
         let qrExpiresAt = "";
         try {
-          const { data: qrData, status } = await apiClient.get("/attendance/qr/active", {
+          // apiClient interceptor unwraps response.data → { data: T, message }
+          // destructure data field from ApiResponse wrapper
+          const { data: qrData } = await apiClient.get("/attendance/qr/active", {
             params: { sessionId: s.id },
-          });
-          if (status === 200 && qrData?.token) {
+          }) as any;
+          if (qrData?.token) {
             const remaining = new Date(qrData.expiresAt).getTime() - Date.now();
             if (remaining > 0) {
               qrActive = true;
@@ -124,7 +127,7 @@ export async function getLiveSessions() {
               qrExpiresAt = qrData.expiresAt;
             }
           }
-        } catch { /* no active QR */ }
+        } catch { /* no active QR or 204 */ }
 
         return {
           id: s.id,

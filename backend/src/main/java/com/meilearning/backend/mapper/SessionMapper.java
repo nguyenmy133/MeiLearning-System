@@ -68,6 +68,10 @@ public class SessionMapper {
                 .method(record.getMethod() != null ? record.getMethod().name() : null)
                 .note(record.getNote())
                 .createdAt(record.getCreatedAt())
+                .sessionDate(record.getSession().getDate().toString())
+                .sessionStartTime(record.getSession().getStartTime().toString())
+                .sessionEndTime(record.getSession().getEndTime().toString())
+                .className(record.getSession().getClassEntity().getName())
                 .build();
     }
 }

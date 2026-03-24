@@ -149,6 +149,21 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy buổi học: " + sessionId));
 
+        // Fix timezone: dùng explicit ZoneId để tránh phụ thuộc container timezone
+        java.time.ZoneId vnZone = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDate today = LocalDate.now(vnZone);
+        LocalTime now = LocalTime.now(vnZone);
+        LocalTime earliestAllowed = session.getStartTime().minusMinutes(5);
+
+        if (session.getDate().isAfter(today)) {
+            throw new BusinessException(
+                    "Chưa đến ngày học. Chỉ có thể bật QR vào ngày " + session.getDate());
+        }
+        if (session.getDate().isEqual(today) && now.isBefore(earliestAllowed)) {
+            throw new BusinessException(
+                    "Chưa đến giờ học. Có thể bật QR từ " + earliestAllowed);
+        }
+
         // Đọc cấu hình QR từ DB (singleton)
         QrSettings settings = qrSettingsRepository.findAll().stream().findFirst()
                 .orElse(QrSettings.builder().enabled(true).expiryMinutes(5).build());
@@ -335,7 +350,8 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (classId != null && date != null) {
             sessions = sessionRepository.findByClassEntityIdAndDate(classId, LocalDate.parse(date));
         } else if (classId != null) {
-            sessions = sessionRepository.findByClassEntityId(classId);
+            // Issue #3: Chỉ lấy sessions đến hôm nay (không hiển thị ngày tương lai)
+            sessions = sessionRepository.findByClassEntityIdAndDateLessThanEqual(classId, LocalDate.now());
         } else if (date != null) {
             sessions = sessionRepository.findByDate(LocalDate.parse(date));
         } else {

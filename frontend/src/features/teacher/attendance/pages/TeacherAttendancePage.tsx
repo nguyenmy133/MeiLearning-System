@@ -35,6 +35,13 @@ const toMinutes = (t: string) => {
 
 const getTodayISO = () => new Date().toISOString().split("T")[0];
 
+/** Issue #7: Kiểm tra session đã đến giờ chưa (cho phép trước 5 phút) */
+const isSessionStarted = (startTime: string) => {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return nowMin >= toMinutes(startTime) - 5;
+};
+
 // ── localStorage persistence for QR state ───────────────────────────────────
 const QR_STORAGE_KEY = "teacher_qr_state";
 
@@ -136,10 +143,43 @@ export function TeacherAttendancePage() {
       setQrActive(false);
       setQrTokenValue("");
       clearQrState();
-      toast({ title: "Mã QR đã hết hạn", description: "Bấm 'Tạo lại' để tạo mã mới.", variant: "destructive" });
+
+      // Issue #6: Auto-update pending → absent và lưu nháp
+      const updatedAttendees = localAttendees.map((a) =>
+        a.status === "pending" ? { ...a, status: "absent" as AttendanceStatus } : a
+      );
+      setLocalAttendees(updatedAttendees);
+
+      // Auto-save draft nếu có session được chọn
+      if (selectedSessionId > 0) {
+        const draftPayload: SaveAttendanceDTO = {
+          sessionId: selectedSessionId,
+          attendees: updatedAttendees
+            .filter((a) => a.status !== "pending")
+            .map((a) => ({
+              studentId: String(Number(a.studentId) || a.studentId),
+              status: a.status,
+              method: a.method ?? "manual",
+            })),
+          confirm: false,
+        };
+        saveAttendance.mutate(draftPayload, {
+          onSuccess: () => {
+            toast({
+              title: "Mã QR đã hết hạn",
+              description: "Đã tự động lưu nháp. Vui lòng kiểm tra và sửa trước khi chốt.",
+            });
+          },
+          onError: () => {
+            toast({ title: "Mã QR đã hết hạn", description: "Không thể lưu nháp tự động. Bấm 'Lưu nháp' để lưu.", variant: "destructive" });
+          },
+        });
+      } else {
+        toast({ title: "Mã QR đã hết hạn", description: "Bấm 'Tạo lại' để tạo mã mới.", variant: "destructive" });
+      }
     }
     return () => clearInterval(timer);
-  }, [qrActive, countdown, toast]);
+  }, [qrActive, countdown, toast, localAttendees, selectedSessionId, saveAttendance]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -153,6 +193,9 @@ export function TeacherAttendancePage() {
   );
   // Derive confirmed status from session's status (completed = confirmed by bulkAttendance)
   const isConfirmed = selectedSession?.status === "completed";
+
+  // Cho phép điểm danh khi: đã chọn session + đã đến giờ (15 phút trước startTime)
+  const canAttend = selectedSessionId > 0 && !!selectedSession && isSessionStarted(selectedSession.startTime);
 
   // Stats
   const total = localAttendees.length;
@@ -181,15 +224,27 @@ export function TeacherAttendancePage() {
     );
   };
 
-  const buildDTO = (confirm: boolean): SaveAttendanceDTO => ({
-    sessionId: selectedSessionId,
-    attendees: localAttendees.map((a) => ({
-      studentId: a.studentId,
-      status: a.status,
-      method: a.method ?? "manual",
-    })),
-    confirm,
-  });
+  // Issue #8: Fix buildDTO — convert studentId to Number, filter pending
+  const buildDTO = (confirm: boolean): SaveAttendanceDTO => {
+    // Khi chốt (confirm=true), convert pending → absent
+    const finalAttendees = confirm
+      ? localAttendees.map((a) =>
+          a.status === "pending" ? { ...a, status: "absent" as AttendanceStatus } : a
+        )
+      : localAttendees;
+
+    return {
+      sessionId: selectedSessionId,
+      attendees: finalAttendees
+        .filter((a) => a.status !== "pending") // Không gửi pending cho BE
+        .map((a) => ({
+          studentId: String(Number(a.studentId) || a.studentId),
+          status: a.status,
+          method: a.method ?? "manual",
+        })),
+      confirm,
+    };
+  };
 
   const handleSaveDraft = () => {
     if (!selectedSessionId) { toast({ title: "Chưa chọn buổi học", variant: "destructive" }); return; }
@@ -229,14 +284,14 @@ export function TeacherAttendancePage() {
           <Button
             variant="outline"
             onClick={handleSaveDraft}
-            disabled={!selectedSessionId || isConfirmed || saveAttendance.isPending}
+            disabled={!canAttend || isConfirmed || saveAttendance.isPending}
           >
             <Save className="w-4 h-4 mr-2" />
             Lưu nháp
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedSessionId || isConfirmed || saveAttendance.isPending}
+            disabled={!canAttend || isConfirmed || saveAttendance.isPending}
             className="btn-primary"
           >
             <ShieldCheck className="w-4 h-4 mr-2" />
@@ -395,10 +450,11 @@ export function TeacherAttendancePage() {
                       });
                     }}
                     className="w-full btn-primary h-12 text-base"
-                    disabled={!selectedSessionId || isConfirmed || generateQr.isPending}
+                    disabled={!selectedSessionId || isConfirmed || generateQr.isPending || (selectedSession ? !isSessionStarted(selectedSession.startTime) : false)}
+                    title={selectedSession && !isSessionStarted(selectedSession.startTime) ? "Chưa đến giờ học (có thể bật trước 5 phút)" : undefined}
                   >
                     <QrCode className="w-5 h-5 mr-2" />
-                    {generateQr.isPending ? "Đang tạo..." : "Hiển thị mã QR"}
+                    {generateQr.isPending ? "Đang tạo..." : selectedSession && !isSessionStarted(selectedSession.startTime) ? "Chưa đến giờ" : "Hiển thị mã QR"}
                   </Button>
                 )}
               </div>
@@ -446,6 +502,15 @@ export function TeacherAttendancePage() {
           </Card>
 
           {/* Student list */}
+          <div className="relative">
+            {/* Overlay khi chưa đến giờ điểm danh */}
+            {selectedSessionId > 0 && !canAttend && !isConfirmed && (
+              <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center gap-2">
+                <Clock className="w-8 h-8 text-muted-foreground/50" />
+                <p className="text-sm font-medium text-muted-foreground">Chưa đến giờ điểm danh</p>
+                <p className="text-xs text-muted-foreground/70">Có thể bắt đầu trước giờ học 5 phút</p>
+              </div>
+            )}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-lg font-display">Danh sách chi tiết</CardTitle>
@@ -512,23 +577,27 @@ export function TeacherAttendancePage() {
                         </div>
                       </div>
 
-                      {/* Attendance action buttons */}
+                      {/* Attendance action buttons — chỉ cho phép khi QR đã hết hiệu lực */}
                       <div className="flex items-center gap-1.5 sm:pl-4 sm:border-l border-border/50">
-                        {(["present", "late", "absent_excused", "absent"] as AttendanceStatus[]).map(
-                          (s) => (
-                            <Button
-                              key={s}
-                              size="sm"
-                              variant={student.status === s ? "default" : "outline"}
-                              className={`h-8 px-2 text-xs ${student.status === s ? "" : "text-muted-foreground"}`}
-                              onClick={() => updateStudentStatus(student.studentId, s)}
-                              disabled={isConfirmed}
-                              title={ATTENDANCE_STATUS_LABELS[s]}
-                            >
-                              {s === "present" ? "Có mặt" :
-                               s === "late" ? "Muộn" :
-                               s === "absent_excused" ? "Có phép" : "Vắng"}
-                            </Button>
+                        {qrActive ? (
+                          <span className="text-xs text-muted-foreground italic">Đang chờ QR...</span>
+                        ) : (
+                          (["present", "late", "absent_excused", "absent"] as AttendanceStatus[]).map(
+                            (s) => (
+                              <Button
+                                key={s}
+                                size="sm"
+                                variant={student.status === s ? "default" : "outline"}
+                                className={`h-8 px-2 text-xs ${student.status === s ? "" : "text-muted-foreground"}`}
+                                onClick={() => updateStudentStatus(student.studentId, s)}
+                                disabled={isConfirmed || !canAttend}
+                                title={ATTENDANCE_STATUS_LABELS[s]}
+                              >
+                                {s === "present" ? "Có mặt" :
+                                 s === "late" ? "Muộn" :
+                                 s === "absent_excused" ? "Có phép" : "Vắng"}
+                              </Button>
+                            )
                           )
                         )}
                       </div>
@@ -538,6 +607,7 @@ export function TeacherAttendancePage() {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
 
