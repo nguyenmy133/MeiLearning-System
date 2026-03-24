@@ -20,6 +20,7 @@ export interface ClassInfo {
     accessExpiresAt?: string;
     totalSessions: number;
     completedSessions: number;
+    studentCount: number;
 }
 
 export interface ClassSession {

@@ -23,6 +23,7 @@ import com.meilearning.backend.service.ClassService;
 import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -126,6 +127,28 @@ public class ClassController {
                 .map(enrollment -> classService.getById(enrollment.getClassEntity().getId()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(classes);
+    }
+
+    /**
+     * Student xem danh sách bạn cùng lớp (chỉ trả tên, không trả SĐT/email — privacy).
+     * Chỉ cho phép nếu student đã enroll lớp đó.
+     */
+    @GetMapping("/{id}/classmates")
+    @Operation(summary = "Lấy danh sách bạn cùng lớp (student, chỉ tên)")
+    @PreAuthorize("hasRole('student')")
+    public ResponseEntity<?> getClassmates(@PathVariable Long id) {
+        Student me = SecurityUtils.getCurrentStudent(studentRepository);
+        if (!classEnrollmentRepository.existsByStudentIdAndClassEntityId(me.getId(), id)) {
+            return ResponseEntity.status(403).body("Bạn không thuộc lớp này");
+        }
+        List<Map<String, Object>> classmates = classEnrollmentRepository.findByClassEntityId(id).stream()
+                .map(e -> {
+                    Map<String, Object> map = new java.util.LinkedHashMap<>();
+                    map.put("id", e.getStudent().getId());
+                    map.put("name", e.getStudent().getUser().getName());
+                    return map;
+                }).toList();
+        return ResponseEntity.ok(classmates);
     }
 
 

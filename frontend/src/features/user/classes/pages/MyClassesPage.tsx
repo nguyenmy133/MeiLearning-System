@@ -1,13 +1,11 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo } from "react";
 import {
   BookOpen,
   GraduationCap,
   Calendar,
   Clock,
   MapPin,
-  ClipboardCheck,
-  FileText,
+  Users,
   Info,
 } from "lucide-react";
 import {
@@ -21,6 +19,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 import { useMyClasses } from "@/features/user/schedule/hooks";
 import type { ClassInfo, ClassStatus } from "@/features/user/schedule/types";
 
@@ -71,10 +77,28 @@ const formatExpiryDate = (isoDate?: string) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
+// ── Classmates Hook ──────────────────────────────────────────────────────
+
+function useClassmates(classId: string | null) {
+  return useQuery({
+    queryKey: ["classmates", classId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/classes/${classId}/classmates`) as any;
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!classId,
+  });
+}
+
 // ── Component ───────────────────────────────────────────────────────────
 
 export function MyClassesPage() {
   const { data: classes = [], isLoading } = useMyClasses();
+  const [classmatesDialog, setClassmatesDialog] = useState<{
+    open: boolean;
+    classId: string;
+    className: string;
+  }>({ open: false, classId: "", className: "" });
 
   // Auto-group: active classes first, completed/closed after
   const { activeClasses, completedClasses } = useMemo(() => {
@@ -144,7 +168,13 @@ export function MyClassesPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeClasses.map((cls) => (
-              <ClassCard key={cls.id} cls={cls} />
+              <ClassCard
+                key={cls.id}
+                cls={cls}
+                onViewClassmates={() =>
+                  setClassmatesDialog({ open: true, classId: cls.id, className: cls.name })
+                }
+              />
             ))}
           </div>
         </section>
@@ -164,18 +194,97 @@ export function MyClassesPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {completedClasses.map((cls) => (
-              <ClassCard key={cls.id} cls={cls} />
+              <ClassCard
+                key={cls.id}
+                cls={cls}
+                onViewClassmates={() =>
+                  setClassmatesDialog({ open: true, classId: cls.id, className: cls.name })
+                }
+              />
             ))}
           </div>
         </section>
       )}
+
+      {/* Classmates Dialog */}
+      <ClassmatesDialog
+        open={classmatesDialog.open}
+        onOpenChange={(open) => setClassmatesDialog((prev) => ({ ...prev, open }))}
+        classId={classmatesDialog.classId}
+        className={classmatesDialog.className}
+      />
     </div>
+  );
+}
+
+// ── Classmates Dialog ───────────────────────────────────────────────────
+
+function ClassmatesDialog({
+  open,
+  onOpenChange,
+  classId,
+  className,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  classId: string;
+  className: string;
+}) {
+  const { data: classmates = [], isLoading } = useClassmates(open ? classId : null);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            {className}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? "Đang tải..." : `${classmates.length} học viên`}
+          </p>
+        </DialogHeader>
+        <div className="max-h-[360px] overflow-y-auto space-y-1 -mx-2">
+          {isLoading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2">
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ))
+            : classmates.map((mate: any, idx: number) => (
+                <div
+                  key={mate.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                      {getInitials(mate.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {mate.name}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{idx + 1}</span>
+                </div>
+              ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 // ── Class Card ──────────────────────────────────────────────────────────
 
-function ClassCard({ cls }: { cls: ClassInfo }) {
+function ClassCard({
+  cls,
+  onViewClassmates,
+}: {
+  cls: ClassInfo;
+  onViewClassmates: () => void;
+}) {
   const isActive = cls.status === "active" || cls.status === "upcoming";
   const expiryDate = formatExpiryDate(cls.accessExpiresAt);
 
@@ -232,6 +341,10 @@ function ClassCard({ cls }: { cls: ClassInfo }) {
             <MapPin className="w-4 h-4 flex-shrink-0" />
             <span>{cls.room}</span>
           </div>
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 flex-shrink-0" />
+            <span>{cls.studentCount} học viên</span>
+          </div>
         </div>
 
         {/* Access expiry for completed classes */}
@@ -247,32 +360,17 @@ function ClassCard({ cls }: { cls: ClassInfo }) {
           </div>
         )}
 
-        {/* Quick action buttons */}
-        <div className="flex gap-2 pt-1">
-          {isActive && (
-            <>
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5" asChild>
-                <Link to="/user/schedule">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Xem lịch
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5" asChild>
-                <Link to="/user/attendance">
-                  <ClipboardCheck className="w-3.5 h-3.5" />
-                  Điểm danh
-                </Link>
-              </Button>
-            </>
-          )}
-          {!isActive && (
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5" asChild>
-              <Link to="/user/documents">
-                <FileText className="w-3.5 h-3.5" />
-                Xem tài liệu
-              </Link>
-            </Button>
-          )}
+        {/* Action button */}
+        <div className="pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5"
+            onClick={onViewClassmates}
+          >
+            <Users className="w-3.5 h-3.5" />
+            Danh sách lớp
+          </Button>
         </div>
       </CardContent>
     </Card>

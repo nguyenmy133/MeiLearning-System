@@ -39,6 +39,7 @@ function mapBackendClassToClassInfo(raw: any): ClassInfo {
     accessExpiresAt: undefined,
     totalSessions: raw.totalSessions ?? 0,
     completedSessions: raw.completedSessions ?? 0,
+    studentCount: raw.students ?? 0,
   };
 }
 
