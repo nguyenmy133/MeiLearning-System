@@ -5,6 +5,8 @@ import com.meilearning.backend.dto.request.UpdateTeacherRequest;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TeacherResponse;
 import com.meilearning.backend.dto.response.TeacherStatsResponse;
+import com.meilearning.backend.dto.response.PendingTaskResponse;
+import java.util.List;
 
 public interface TeacherService {
     PageResponse<TeacherResponse> getAll(String search, String subject, String status, int page, int limit);
@@ -16,4 +18,6 @@ public interface TeacherService {
     void lockAccount(Long id);
     void unlockAccount(Long id);
     TeacherStatsResponse getStats();
+    /** Pending tasks (leave requests + unattended sessions) for current teacher */
+    List<PendingTaskResponse> getMyPendingTasks(String username);
 }

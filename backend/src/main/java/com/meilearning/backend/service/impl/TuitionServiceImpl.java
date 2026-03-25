@@ -17,8 +17,9 @@ import com.meilearning.backend.entity.ClassEntity;
 import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.entity.AttendanceRecord;
 import com.meilearning.backend.entity.TuitionInvoice;
-import com.meilearning.backend.entity.enums.AttendanceStatus;
+
 import com.meilearning.backend.entity.enums.InvoiceStatus;
 import com.meilearning.backend.exception.BusinessException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
@@ -341,7 +342,7 @@ public class TuitionServiceImpl implements TuitionService {
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
 
-        // Lấy sessions trong tháng
+        // Lấy sessions trong tháng (chỉ count)
         List<ClassSession> sessions = sessionRepository
                 .findByClassEntityIdAndDateBetween(classId, start, end);
 
@@ -351,13 +352,20 @@ public class TuitionServiceImpl implements TuitionService {
         int absentUnexcused = 0;
         int absentExcused = 0;
 
-        for (ClassSession session : sessions) {
-            var record = attendanceRepository
-                    .findBySessionIdAndStudentId(session.getId(), studentId);
+        // Single batch query thay vì N+1 per session
+        List<AttendanceRecord> allRecords = attendanceRepository
+                .findByStudentAndClassAndDateRange(studentId, classId, start, end);
 
-            if (record.isPresent()) {
-                AttendanceStatus status = record.get().getStatus();
-                switch (status) {
+        // Index by sessionId để tra cứu nhanh
+        java.util.Map<Long, AttendanceRecord> recordMap = new java.util.HashMap<>();
+        for (AttendanceRecord r : allRecords) {
+            recordMap.put(r.getSession().getId(), r);
+        }
+
+        for (ClassSession session : sessions) {
+            AttendanceRecord record = recordMap.get(session.getId());
+            if (record != null) {
+                switch (record.getStatus()) {
                     case present -> present++;
                     case late -> late++;
                     case absent -> absentUnexcused++;
@@ -378,7 +386,7 @@ public class TuitionServiceImpl implements TuitionService {
         int monthValue = Integer.parseInt(parts[0]);
         int year = Integer.parseInt(parts[1]);
         YearMonth ym = YearMonth.of(year, monthValue);
-        return ym.plusMonths(1).atDay(15);
+        return ym.plusMonths(1).atDay(com.meilearning.backend.util.BusinessConstants.TUITION_DUE_DAY);
     }
 
     // ── Reminder Methods ─────────────────────────────────────────────

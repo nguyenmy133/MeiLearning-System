@@ -3,6 +3,7 @@ package com.meilearning.backend.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -169,7 +171,7 @@ public class ClassServiceImpl implements ClassService {
         try {
             scheduleService.generateSessions(entity.getId());
         } catch (Exception e) {
-            // Log but don't fail class creation
+            log.error("Lớp '{}' đã tạo nhưng không thể generate sessions: {}", entity.getName(), e.getMessage(), e);
         }
 
         return classMapper.toResponse(entity);
@@ -358,7 +360,6 @@ public class ClassServiceImpl implements ClassService {
     }
 
     /** Parse schedule JSON string → List<Map> */
-    @SuppressWarnings("unchecked")
     private List<Map<String, Object>> parseScheduleJson(String json) {
         if (json == null || json.isBlank()) return Collections.emptyList();
         try {
@@ -410,5 +411,29 @@ public class ClassServiceImpl implements ClassService {
             map.put("enrolledAt", e.getEnrolledAt() != null ? e.getEnrolledAt().toString() : null);
             return map;
         }).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClassResponse> getEnrolledClassesByStudent(Long studentId) {
+        return enrollmentRepository.findByStudentId(studentId)
+                .stream()
+                .map(enrollment -> getById(enrollment.getClassEntity().getId()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getClassmates(Long classId, Long currentStudentId) {
+        if (!enrollmentRepository.existsByStudentIdAndClassEntityId(currentStudentId, classId)) {
+            throw new com.meilearning.backend.exception.BusinessException("Bạn không thuộc lớp này");
+        }
+        return enrollmentRepository.findByClassEntityId(classId).stream()
+                .map(e -> {
+                    Map<String, Object> map = new java.util.LinkedHashMap<>();
+                    map.put("id", e.getStudent().getId());
+                    map.put("name", e.getStudent().getUser().getName());
+                    return map;
+                }).toList();
     }
 }

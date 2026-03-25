@@ -128,7 +128,8 @@ public class NotificationDispatcher {
 
     private String truncateForSms(String text) {
         if (text == null) return "";
-        return text.length() <= 155 ? text : text.substring(0, 152) + "...";
+        return text.length() <= com.meilearning.backend.util.BusinessConstants.SMS_MAX_LENGTH
+                ? text : text.substring(0, com.meilearning.backend.util.BusinessConstants.SMS_MAX_LENGTH - 3) + "...";
     }
 
     private String buildEmailHtml(String type, String title, String content, String userName) {

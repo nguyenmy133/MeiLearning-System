@@ -18,4 +18,8 @@ public interface ClassService {
     void endClass(Long id);
     ClassStatsResponse getStats();
     List<Map<String, Object>> getEnrolledStudents(Long classId);
+    /** Lấy danh sách lớp đã enroll của student */
+    List<ClassResponse> getEnrolledClassesByStudent(Long studentId);
+    /** Lấy danh sách bạn cùng lớp (chỉ tên, privacy) */
+    List<Map<String, Object>> getClassmates(Long classId, Long currentStudentId);
 }

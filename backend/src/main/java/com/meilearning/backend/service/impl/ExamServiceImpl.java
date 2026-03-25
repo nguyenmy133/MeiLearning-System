@@ -77,26 +77,7 @@ public class ExamServiceImpl implements ExamService {
         // Build questions vào collection trước khi save
         // → CascadeType.ALL sẽ tự persist questions cùng exam
         if (req.getQuestions() != null && !req.getQuestions().isEmpty()) {
-            final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
-            for (var qr : req.getQuestions()) {
-                // Validate: MC questions must have correctAnswer
-                if ("multiple-choice".equals(qr.getType())
-                        && (qr.getCorrectAnswer() == null || qr.getCorrectAnswer().isBlank())) {
-                    throw new BusinessException("Câu hỏi trắc nghiệm \"" + qr.getQuestion()
-                            + "\" chưa chọn đáp án đúng.");
-                }
-                ExamQuestion q = new ExamQuestion();
-                q.setExam(exam);
-                q.setOrderIndex(idx.getAndIncrement());
-                q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
-                q.setQuestionText(qr.getQuestion());
-                q.setOptions(qr.getOptions());
-                q.setCorrectAnswer(qr.getCorrectAnswer());
-                q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
-                q.setExplanation(qr.getExplanation());
-                exam.getQuestions().add(q);
-            }
-            exam.setTotalQuestions(exam.getQuestions().size());
+            buildQuestions(exam, req.getQuestions());
         }
 
         // Save 1 lần duy nhất — cascade persist questions
@@ -141,27 +122,7 @@ public class ExamServiceImpl implements ExamService {
             if (req.getQuestions() != null) {
                 // Dùng collection clear → orphanRemoval = true sẽ DELETE
                 exam.getQuestions().clear();
-
-                final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
-                for (var qr : req.getQuestions()) {
-                    // Validate: MC questions must have correctAnswer
-                    if ("multiple-choice".equals(qr.getType())
-                            && (qr.getCorrectAnswer() == null || qr.getCorrectAnswer().isBlank())) {
-                        throw new BusinessException("Câu hỏi trắc nghiệm \"" + qr.getQuestion()
-                                + "\" chưa chọn đáp án đúng.");
-                    }
-                    ExamQuestion q = new ExamQuestion();
-                    q.setExam(exam);
-                    q.setOrderIndex(idx.getAndIncrement());
-                    q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
-                    q.setQuestionText(qr.getQuestion());
-                    q.setOptions(qr.getOptions());
-                    q.setCorrectAnswer(qr.getCorrectAnswer());
-                    q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
-                    q.setExplanation(qr.getExplanation());
-                    exam.getQuestions().add(q);
-                }
-                exam.setTotalQuestions(exam.getQuestions().size());
+                buildQuestions(exam, req.getQuestions());
             }
         }
 
@@ -231,20 +192,8 @@ public class ExamServiceImpl implements ExamService {
                     resp.setMyScore(er.getScore() != null ? er.getScore().doubleValue() : null);
                     resp.setMyPassed(er.getPassed());
                     resp.setMyTimeSpent(er.getTimeSpent());
-                    // Compute grading status from answer details
-                    String gradingStatus = "no_essay";
-                    List<ExamAnswerDetail> details = er.getAnswerDetails();
-                    if (details != null && !details.isEmpty()) {
-                        boolean hasEssay = false;
-                        boolean allGraded = true;
-                        for (ExamAnswerDetail d : details) {
-                            if ("essay".equals(d.getQuestion().getType())) {
-                                hasEssay = true;
-                                if (d.getEssayScore() == null) allGraded = false;
-                            }
-                        }
-                        if (hasEssay) gradingStatus = allGraded ? "graded" : "pending";
-                    }
+                    String gradingStatus = com.meilearning.backend.mapper.AcademicMapper
+                            .computeGradingStatus(er.getAnswerDetails());
                     resp.setMyGradingStatus(gradingStatus);
                 }
                 resp.setMyDurationMinutes(resp.getDuration());
@@ -258,6 +207,28 @@ public class ExamServiceImpl implements ExamService {
                 .limit(limit)
                 .totalPages(result.getTotalPages())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ExamResponse> getAllForCurrentUser(String status, int page, int limit) {
+        Long teacherId = null;
+        List<Long> studentClassIds = null;
+        Long currentStudentId = null;
+
+        if (com.meilearning.backend.util.SecurityUtils.isStudent()
+                && !com.meilearning.backend.util.SecurityUtils.isAdmin()) {
+            Student student = com.meilearning.backend.util.SecurityUtils.getCurrentStudent(studentRepository);
+            currentStudentId = student.getId();
+            studentClassIds = enrollmentRepository.findByStudentId(student.getId())
+                    .stream().map(e -> e.getClassEntity().getId()).toList();
+        } else if (com.meilearning.backend.util.SecurityUtils.isTeacher()
+                && !com.meilearning.backend.util.SecurityUtils.isAdmin()) {
+            Teacher teacher = com.meilearning.backend.util.SecurityUtils.getCurrentTeacher(teacherRepository);
+            teacherId = teacher.getId();
+        }
+
+        return getAll(teacherId, studentClassIds, currentStudentId, status, page, limit);
     }
 
     @Override
@@ -416,7 +387,7 @@ public class ExamServiceImpl implements ExamService {
             correctCount = req.getCorrectAnswers() != null ? req.getCorrectAnswers() : 0;
         }
 
-        boolean passed = score.compareTo(BigDecimal.valueOf(50)) >= 0;
+        boolean passed = score.compareTo(com.meilearning.backend.util.BusinessConstants.PASSING_SCORE) >= 0;
 
         ExamResult result = ExamResult.builder()
                 .exam(exam)
@@ -490,6 +461,32 @@ public class ExamServiceImpl implements ExamService {
         int count = (int) resultRepository.countByExamId(exam.getId());
         double avg = count > 0 ? resultRepository.averageScoreByExamId(exam.getId()) : 0;
         return mapper.toExamResponse(exam, count, avg);
+    }
+
+    /**
+     * Build ExamQuestion entities từ request list vào exam.questions collection.
+     * Validate MC questions phải có correctAnswer.
+     */
+    private void buildQuestions(Exam exam, List<com.meilearning.backend.dto.request.QuestionRequest> requests) {
+        final java.util.concurrent.atomic.AtomicInteger idx = new java.util.concurrent.atomic.AtomicInteger(1);
+        for (var qr : requests) {
+            if ("multiple-choice".equals(qr.getType())
+                    && (qr.getCorrectAnswer() == null || qr.getCorrectAnswer().isBlank())) {
+                throw new BusinessException("Câu hỏi trắc nghiệm \"" + qr.getQuestion()
+                        + "\" chưa chọn đáp án đúng.");
+            }
+            ExamQuestion q = new ExamQuestion();
+            q.setExam(exam);
+            q.setOrderIndex(idx.getAndIncrement());
+            q.setType(qr.getType() != null ? qr.getType() : "multiple-choice");
+            q.setQuestionText(qr.getQuestion());
+            q.setOptions(qr.getOptions());
+            q.setCorrectAnswer(qr.getCorrectAnswer());
+            q.setPoints(qr.getPoints() != null ? qr.getPoints() : 1);
+            q.setExplanation(qr.getExplanation());
+            exam.getQuestions().add(q);
+        }
+        exam.setTotalQuestions(exam.getQuestions().size());
     }
 
     @Override
@@ -596,7 +593,7 @@ public class ExamServiceImpl implements ExamService {
 
         examResult.setScore(newScore);
         examResult.setCorrectAnswers(correctCount);
-        examResult.setPassed(newScore.compareTo(BigDecimal.valueOf(50)) >= 0);
+        examResult.setPassed(newScore.compareTo(com.meilearning.backend.util.BusinessConstants.PASSING_SCORE) >= 0);
         resultRepository.save(examResult);
 
         // 5. Notify student: teacher đã chấm bài tự luận

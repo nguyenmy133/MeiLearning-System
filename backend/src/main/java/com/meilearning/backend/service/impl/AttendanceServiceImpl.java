@@ -219,12 +219,14 @@ public class AttendanceServiceImpl implements AttendanceService {
             throw new BusinessException("Bạn đã điểm danh buổi học này rồi.");
         }
 
-        // 5. Determine status: present or late
+        // 5. Determine status: present or late (đọc ngưỡng từ QR Settings)
         LocalTime now = LocalTime.now();
         AttendanceStatus status = AttendanceStatus.present;
         if (session.getStartTime() != null) {
             long minutesLate = java.time.Duration.between(session.getStartTime(), now).toMinutes();
-            if (minutesLate > 15) { // 15 min default late threshold
+            QrSettings qrSettings = qrSettingsRepository.findAll().stream().findFirst()
+                    .orElse(QrSettings.builder().lateThresholdMinutes(10).build());
+            if (minutesLate > qrSettings.getLateThresholdMinutes()) {
                 status = AttendanceStatus.late;
             }
         }
@@ -247,23 +249,26 @@ public class AttendanceServiceImpl implements AttendanceService {
         YearMonth ym = month != null ? YearMonth.parse(month) : YearMonth.now();
         LocalDate startDate = ym.atDay(1);
         LocalDate endDate = ym.atEndOfMonth();
-        List<ClassSession> sessions = classId != null
-                ? sessionRepository.findByClassEntityIdAndDateBetween(classId, startDate, endDate)
-                : sessionRepository.findByDateBetween(startDate, endDate);
-        long totalSessions = sessions.size();
+
+        // Single aggregate query instead of N+1 per-session loop
+        List<Object[]> statusCounts = classId != null
+                ? attendanceRepository.countByStatusForClassAndMonth(classId, startDate, endDate)
+                : attendanceRepository.countByStatusForMonth(startDate, endDate);
+
+        long totalSessions = classId != null
+                ? attendanceRepository.countSessionsForClassAndMonth(classId, startDate, endDate)
+                : attendanceRepository.countSessionsForMonth(startDate, endDate);
+
         long presentCount = 0, absentCount = 0, lateCount = 0, excusedCount = 0;
-        for (ClassSession session : sessions) {
-            List<AttendanceRecord> records = attendanceRepository.findBySessionId(session.getId());
-            for (AttendanceRecord r : records) {
-                switch (r.getStatus()) {
-                    case present -> presentCount++;
-                    case absent -> absentCount++;
-                    case late -> lateCount++;
-                    case absent_excused -> excusedCount++;
-
-                }
+        for (Object[] row : statusCounts) {
+            AttendanceStatus status = (AttendanceStatus) row[0];
+            long count = (Long) row[1];
+            switch (status) {
+                case present -> presentCount = count;
+                case absent -> absentCount = count;
+                case late -> lateCount = count;
+                case absent_excused -> excusedCount = count;
             }
-
         }
 
         long totalRecords = presentCount + absentCount + lateCount + excusedCount;
@@ -279,6 +284,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .build();
 
     }
+
 
     @Override
     @Transactional(readOnly = true)

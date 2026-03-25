@@ -2,9 +2,11 @@ package com.meilearning.backend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.meilearning.backend.entity.AttendanceRecord;
 import com.meilearning.backend.entity.enums.AttendanceStatus;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 @Repository
@@ -24,14 +26,58 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     @Query("SELECT COUNT(ar) FROM AttendanceRecord ar " +
             "WHERE ar.student.id = :studentId AND ar.status = :status " +
-
             "AND ar.session.classEntity.id = :classId")
-
     long countByStudentIdAndClassIdAndStatus(Long studentId, Long classId, AttendanceStatus status);
 
     @Query("SELECT COUNT(ar) FROM AttendanceRecord ar WHERE ar.student.id = :studentId " +
             "AND ar.session.classEntity.id = :classId")
-
     long countByStudentIdAndClassId(Long studentId, Long classId);
 
+    // ── C4: Aggregate attendance stats — eliminates N+1 in AttendanceService.getStats() ──
+
+    @Query("SELECT ar.status, COUNT(ar) FROM AttendanceRecord ar " +
+            "WHERE ar.session.classEntity.id = :classId " +
+            "AND ar.session.date BETWEEN :startDate AND :endDate " +
+            "GROUP BY ar.status")
+    List<Object[]> countByStatusForClassAndMonth(@Param("classId") Long classId,
+                                                 @Param("startDate") LocalDate startDate,
+                                                 @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT ar.status, COUNT(ar) FROM AttendanceRecord ar " +
+            "WHERE ar.session.date BETWEEN :startDate AND :endDate " +
+            "GROUP BY ar.status")
+    List<Object[]> countByStatusForMonth(@Param("startDate") LocalDate startDate,
+                                         @Param("endDate") LocalDate endDate);
+
+    // ── C4: Total sessions count for stats ──
+
+    @Query("SELECT COUNT(DISTINCT s.id) FROM ClassSession s " +
+            "WHERE s.classEntity.id = :classId " +
+            "AND s.date BETWEEN :startDate AND :endDate")
+    long countSessionsForClassAndMonth(@Param("classId") Long classId,
+                                       @Param("startDate") LocalDate startDate,
+                                       @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(DISTINCT s.id) FROM ClassSession s " +
+            "WHERE s.date BETWEEN :startDate AND :endDate")
+    long countSessionsForMonth(@Param("startDate") LocalDate startDate,
+                               @Param("endDate") LocalDate endDate);
+
+    // ── C5: Batch query for tuition breakdown — eliminates N+1 in TuitionService ──
+
+    @Query("SELECT ar FROM AttendanceRecord ar " +
+            "WHERE ar.student.id = :studentId " +
+            "AND ar.session.classEntity.id = :classId " +
+            "AND ar.session.date BETWEEN :startDate AND :endDate")
+    List<AttendanceRecord> findByStudentAndClassAndDateRange(
+            @Param("studentId") Long studentId,
+            @Param("classId") Long classId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    // ── Student: filtered by class ──
+
+    List<AttendanceRecord> findByStudentIdAndSessionClassEntityId(Long studentId, Long classId);
+
 }
+

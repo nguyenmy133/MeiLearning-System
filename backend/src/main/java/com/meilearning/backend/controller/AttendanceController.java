@@ -13,9 +13,8 @@ import com.meilearning.backend.dto.response.AttendanceStatsResponse;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.QrTokenResponse;
 import com.meilearning.backend.entity.Student;
-import com.meilearning.backend.repository.StudentRepository;
+import com.meilearning.backend.util.CurrentUserResolver;
 import com.meilearning.backend.service.AttendanceService;
-import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
 
@@ -27,7 +26,7 @@ import java.util.List;
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
-    private final StudentRepository studentRepository;
+    private final CurrentUserResolver currentUser;
 
     @GetMapping
     @Operation(summary = "Lấy danh sách điểm danh theo buổi")
@@ -131,7 +130,7 @@ public class AttendanceController {
     @PreAuthorize("hasRole('student')")
     public ResponseEntity<AttendanceResponse> qrTokenCheckIn(
             @RequestParam String token) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        Student student = currentUser.getStudent();
         return ResponseEntity.ok(attendanceService.qrTokenCheckIn(token, student.getId()));
     }
 
@@ -164,10 +163,8 @@ public class AttendanceController {
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<AttendanceResponse> updateRecord(
             @PathVariable Long id,
-            @RequestBody java.util.Map<String, String> body) {
-        String status = body.get("status");
-        String note = body.get("note");
-        return ResponseEntity.ok(attendanceService.updateRecord(id, status, note));
+            @Valid @RequestBody com.meilearning.backend.dto.request.UpdateAttendanceStatusRequest request) {
+        return ResponseEntity.ok(attendanceService.updateRecord(id, request.status(), request.note()));
     }
 
     // ── Student: Personal attendance ──────────────────────────────────────
@@ -177,7 +174,7 @@ public class AttendanceController {
     @PreAuthorize("hasRole('student')")
     public ResponseEntity<List<AttendanceResponse>> getMyAttendance(
             @RequestParam(required = false) Long classId) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        Student student = currentUser.getStudent();
         return ResponseEntity.ok(attendanceService.getStudentRecords(student.getId(), classId));
     }
 

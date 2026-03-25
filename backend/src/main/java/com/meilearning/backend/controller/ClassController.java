@@ -7,24 +7,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.meilearning.backend.dto.request.CreateClassRequest;
 import com.meilearning.backend.dto.request.UpdateClassRequest;
 import com.meilearning.backend.dto.response.ClassResponse;
 import com.meilearning.backend.dto.response.ClassStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
-import com.meilearning.backend.repository.ClassEnrollmentRepository;
-import com.meilearning.backend.repository.StudentRepository;
-import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.entity.Student;
+import com.meilearning.backend.entity.Teacher;
+import com.meilearning.backend.util.CurrentUserResolver;
 import com.meilearning.backend.service.ClassService;
-import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @RestController
@@ -35,9 +29,7 @@ import java.util.stream.Collectors;
 public class ClassController {
 
     private final ClassService classService;
-    private final TeacherRepository teacherRepository;
-    private final ClassEnrollmentRepository classEnrollmentRepository;
-    private final StudentRepository studentRepository;
+    private final CurrentUserResolver currentUser;
 
     @GetMapping
     @Operation(summary = "Lấy danh sách lớp học")
@@ -51,7 +43,11 @@ public class ClassController {
             @RequestParam(defaultValue = "10") int limit) {
 
         // Teacher chỉ xem lớp mình dạy — auto-filter teacherId
-        Long resolvedTeacherId = resolveTeacherIdIfNeeded(teacherId);
+        Long resolvedTeacherId = teacherId;
+        if (currentUser.isTeacher() && !currentUser.isAdmin()) {
+            Teacher teacher = currentUser.getTeacher();
+            resolvedTeacherId = teacher.getId();
+        }
 
         return ResponseEntity.ok(classService.getAll(search, subject, facility, status, resolvedTeacherId, page, limit));
     }
@@ -60,11 +56,8 @@ public class ClassController {
     @GetMapping("/{id}")
     @Operation(summary = "Lấy chi tiết lớp học")
     public ResponseEntity<ClassResponse> getById(@PathVariable Long id) {
-
         return ResponseEntity.ok(classService.getById(id));
-
     }
-
 
 
     @PostMapping
@@ -79,7 +72,6 @@ public class ClassController {
     public ResponseEntity<ClassResponse> update(@PathVariable Long id,
                                                  @Valid @RequestBody UpdateClassRequest request) {
         return ResponseEntity.ok(classService.update(id, request));
-
     }
 
 
@@ -121,12 +113,8 @@ public class ClassController {
     @Operation(summary = "Lấy lớp đã đăng ký của học viên (JWT)")
     @PreAuthorize("hasRole('student')")
     public ResponseEntity<List<ClassResponse>> getMyEnrolledClasses(Principal principal) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
-        List<ClassResponse> classes = classEnrollmentRepository.findByStudentId(student.getId())
-                .stream()
-                .map(enrollment -> classService.getById(enrollment.getClassEntity().getId()))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(classes);
+        Student student = currentUser.getStudent();
+        return ResponseEntity.ok(classService.getEnrolledClassesByStudent(student.getId()));
     }
 
     /**
@@ -137,45 +125,8 @@ public class ClassController {
     @Operation(summary = "Lấy danh sách bạn cùng lớp (student, chỉ tên)")
     @PreAuthorize("hasRole('student')")
     public ResponseEntity<?> getClassmates(@PathVariable Long id) {
-        Student me = SecurityUtils.getCurrentStudent(studentRepository);
-        if (!classEnrollmentRepository.existsByStudentIdAndClassEntityId(me.getId(), id)) {
-            return ResponseEntity.status(403).body("Bạn không thuộc lớp này");
-        }
-        List<Map<String, Object>> classmates = classEnrollmentRepository.findByClassEntityId(id).stream()
-                .map(e -> {
-                    Map<String, Object> map = new java.util.LinkedHashMap<>();
-                    map.put("id", e.getStudent().getId());
-                    map.put("name", e.getStudent().getUser().getName());
-                    return map;
-                }).toList();
-        return ResponseEntity.ok(classmates);
+        Student me = currentUser.getStudent();
+        return ResponseEntity.ok(classService.getClassmates(id, me.getId()));
     }
 
-
-    // ── Helper: resolve teacherId cho teacher role ──────────────────────────
-
-    /**
-     * Nếu user hiện tại là teacher → tự động lấy teacherId của họ.
-     * Admin có thể truyền bất kỳ teacherId hoặc null (xem tất cả).
-     */
-    private Long resolveTeacherIdIfNeeded(Long requestedTeacherId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return requestedTeacherId;
-
-        boolean isTeacher = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_teacher"));
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_admin"));
-
-        if (isTeacher && !isAdmin) {
-            // Teacher → bắt buộc filter theo teacherId của chính mình
-            String username = auth.getName();
-            return teacherRepository.findByUserUsername(username)
-                    .map(t -> t.getId())
-                    .orElse(requestedTeacherId);
-        }
-
-        // Admin → dùng teacherId từ request (hoặc null = xem tất cả)
-        return requestedTeacherId;
-    }
 }

@@ -98,24 +98,25 @@ public class AcademicMapper {
     }
 
 
-    public ExamResultResponse toResultResponse(ExamResult result) {
-        // Compute grading status from answer details
-        String gradingStatus = "no_essay";
-        if (result.getAnswerDetails() != null) {
-            boolean hasEssay = false;
-            boolean allGraded = true;
-            for (ExamAnswerDetail detail : result.getAnswerDetails()) {
-                if ("essay".equals(detail.getQuestion().getType())) {
-                    hasEssay = true;
-                    if (detail.getEssayScore() == null) {
-                        allGraded = false;
-                    }
-                }
-            }
-            if (hasEssay) {
-                gradingStatus = allGraded ? "graded" : "pending";
+    /**
+     * Compute grading status from answer details — centralized logic.
+     * Used by toResultResponse, toExamScoreItem, and ExamServiceImpl enrichment.
+     */
+    public static String computeGradingStatus(java.util.List<ExamAnswerDetail> details) {
+        if (details == null || details.isEmpty()) return "no_essay";
+        boolean hasEssay = false;
+        boolean allGraded = true;
+        for (ExamAnswerDetail d : details) {
+            if (d.getQuestion() != null && "essay".equals(d.getQuestion().getType())) {
+                hasEssay = true;
+                if (d.getEssayScore() == null) allGraded = false;
             }
         }
+        return hasEssay ? (allGraded ? "graded" : "pending") : "no_essay";
+    }
+
+    public ExamResultResponse toResultResponse(ExamResult result) {
+        String gradingStatus = computeGradingStatus(result.getAnswerDetails());
 
         return ExamResultResponse.builder()
                 .id(result.getId())
@@ -182,20 +183,7 @@ public class AcademicMapper {
                 ? result.getScore().divide(java.math.BigDecimal.TEN, 2, java.math.RoundingMode.HALF_UP)
                 : java.math.BigDecimal.ZERO;
 
-        // Compute grading status from answer details
-        String gradingStatus = "no_essay";
-        var details = result.getAnswerDetails();
-        if (details != null && !details.isEmpty()) {
-            boolean hasEssay = false;
-            boolean allGraded = true;
-            for (var d : details) {
-                if (d.getQuestion() != null && "essay".equals(d.getQuestion().getType())) {
-                    hasEssay = true;
-                    if (d.getEssayScore() == null) allGraded = false;
-                }
-            }
-            if (hasEssay) gradingStatus = allGraded ? "graded" : "pending";
-        }
+        String gradingStatus = computeGradingStatus(result.getAnswerDetails());
 
         return ExamScoreItem.builder()
                 .examId(result.getExam().getId())

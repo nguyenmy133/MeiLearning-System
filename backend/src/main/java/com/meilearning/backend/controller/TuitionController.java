@@ -14,9 +14,8 @@ import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.TuitionInvoiceResponse;
 import com.meilearning.backend.dto.response.TuitionStatsResponse;
 import com.meilearning.backend.entity.Student;
-import com.meilearning.backend.repository.StudentRepository;
+import com.meilearning.backend.util.CurrentUserResolver;
 import com.meilearning.backend.service.TuitionService;
-import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
 @RestController
@@ -26,7 +25,7 @@ import java.util.List;
 public class TuitionController {
 
     private final TuitionService tuitionService;
-    private final StudentRepository studentRepository;
+    private final CurrentUserResolver currentUser;
 
     @GetMapping
     @Operation(summary = "Lấy danh sách hóa đơn (Admin)")
@@ -54,7 +53,7 @@ public class TuitionController {
     @Operation(summary = "Hóa đơn của học viên đang đăng nhập")
     @PreAuthorize("hasRole('student')")
     public ResponseEntity<List<TuitionInvoiceResponse>> getMyInvoices(Principal principal) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        Student student = currentUser.getStudent();
         return ResponseEntity.ok(tuitionService.getByStudent(student.getId()));
     }
 

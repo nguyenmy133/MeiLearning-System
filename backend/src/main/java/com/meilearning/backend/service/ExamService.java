@@ -18,6 +18,8 @@ public interface ExamService {
     ExamResponse getByIdForStudent(Long id);
     ExamResponse update(Long id, UpdateExamRequest request);
     PageResponse<ExamResponse> getAll(Long teacherId, List<Long> studentClassIds, Long currentStudentId, String status, int page, int limit);
+    /** Resolve current user role and filter exams accordingly — called from controller */
+    PageResponse<ExamResponse> getAllForCurrentUser(String status, int page, int limit);
     List<ExamResponse> getAll(Long teacherId, String status);
     ExamResponse publish(Long id);
     void delete(Long id);

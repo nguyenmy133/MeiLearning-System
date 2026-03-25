@@ -11,12 +11,11 @@ import com.meilearning.backend.dto.request.UpdateGradeRequest;
 import com.meilearning.backend.dto.response.GradeResponse;
 import com.meilearning.backend.dto.response.GradeStatsResponse;
 import com.meilearning.backend.entity.Student;
-import com.meilearning.backend.repository.StudentRepository;
+import com.meilearning.backend.util.CurrentUserResolver;
 import com.meilearning.backend.service.GradeService;
-import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/v1/grades")
@@ -26,7 +25,7 @@ import java.util.Map;
 public class GradeController {
 
     private final GradeService gradeService;
-    private final StudentRepository studentRepository;
+    private final CurrentUserResolver currentUser;
 
     @GetMapping
     @Operation(summary = "Điểm theo lớp")
@@ -47,7 +46,7 @@ public class GradeController {
     @Operation(summary = "Điểm của học viên đang đăng nhập")
     @PreAuthorize("hasRole('student')")
     public ResponseEntity<List<GradeResponse>> getMyGrades(Principal principal) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        Student student = currentUser.getStudent();
         return ResponseEntity.ok(gradeService.getByStudent(student.getId()));
     }
 
@@ -69,8 +68,7 @@ public class GradeController {
     public ResponseEntity<GradeResponse> updateComment(
             @PathVariable Long classId,
             @PathVariable Long studentId,
-            @RequestBody Map<String, String> body) {
-        String comment = body.get("comment");
-        return ResponseEntity.ok(gradeService.updateComment(classId, studentId, comment));
+            @Valid @RequestBody com.meilearning.backend.dto.request.UpdateGradeCommentRequest request) {
+        return ResponseEntity.ok(gradeService.updateComment(classId, studentId, request.comment()));
     }
 }

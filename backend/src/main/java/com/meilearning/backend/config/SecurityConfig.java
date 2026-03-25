@@ -36,21 +36,29 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import com.meilearning.backend.security.JwtAuthenticationFilter;
 import com.meilearning.backend.security.RateLimitFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // cho phép @PreAuthorize trªn method
-@RequiredArgsConstructor
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
         private final RateLimitFilter rateLimitFilter;
+
+        @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+        private String allowedOriginsRaw;
+
+        public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RateLimitFilter rateLimitFilter) {
+            this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+            this.rateLimitFilter = rateLimitFilter;
+        }
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -98,7 +106,11 @@ public class SecurityConfig {
 
                 CorsConfiguration config = new CorsConfiguration();
 
-                config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+                List<String> origins = Arrays.stream(allowedOriginsRaw.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList();
+                config.setAllowedOrigins(origins);
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(true);

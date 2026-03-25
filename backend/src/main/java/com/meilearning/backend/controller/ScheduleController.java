@@ -2,6 +2,7 @@ package com.meilearning.backend.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,9 +12,8 @@ import com.meilearning.backend.dto.request.UpdateSessionRequest;
 import com.meilearning.backend.dto.response.ClassSessionResponse;
 import com.meilearning.backend.dto.response.ScheduleResponse;
 import com.meilearning.backend.entity.Student;
-import com.meilearning.backend.repository.StudentRepository;
+import com.meilearning.backend.util.CurrentUserResolver;
 import com.meilearning.backend.service.ScheduleService;
-import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
 @RestController
@@ -24,7 +24,7 @@ import java.util.List;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
-    private final StudentRepository studentRepository;
+    private final CurrentUserResolver currentUser;
 
     @GetMapping("/schedule")
     @Operation(summary = "Lấy lịch tổng (admin)")
@@ -65,7 +65,7 @@ public class ScheduleController {
             Principal principal,
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "week") String view) {
-        Student student = SecurityUtils.getCurrentStudent(studentRepository);
+        Student student = currentUser.getStudent();
         return ResponseEntity.ok(scheduleService.getStudentSchedule(student.getId(), date, view));
     }
 
@@ -109,7 +109,7 @@ public class ScheduleController {
     @PostMapping("/sessions")
     @Operation(summary = "Thêm buổi học bù / thêm")
     @PreAuthorize("hasRole('admin')")
-    public ResponseEntity<ClassSessionResponse> addSession(@RequestBody CreateSessionRequest request) {
+    public ResponseEntity<ClassSessionResponse> addSession(@Valid @RequestBody CreateSessionRequest request) {
         return ResponseEntity.ok(scheduleService.addSession(request));
     }
 
@@ -118,7 +118,7 @@ public class ScheduleController {
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<ClassSessionResponse> updateSession(
             @PathVariable Long id,
-            @RequestBody UpdateSessionRequest request) {
+            @Valid @RequestBody UpdateSessionRequest request) {
         return ResponseEntity.ok(scheduleService.updateSession(id, request));
     }
 

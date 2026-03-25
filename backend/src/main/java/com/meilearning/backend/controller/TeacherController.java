@@ -14,16 +14,8 @@ import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.dto.response.PendingTaskResponse;
 import com.meilearning.backend.dto.response.TeacherResponse;
 import com.meilearning.backend.dto.response.TeacherStatsResponse;
-import com.meilearning.backend.entity.enums.RequestStatus;
-import com.meilearning.backend.entity.enums.RequesterType;
-import com.meilearning.backend.entity.enums.SessionStatus;
-import com.meilearning.backend.repository.ClassSessionRepository;
-import com.meilearning.backend.repository.LeaveRequestRepository;
-import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.TeacherService;
 import java.security.Principal;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -33,9 +25,6 @@ import java.util.List;
 public class TeacherController {
 
     private final TeacherService teacherService;
-    private final TeacherRepository teacherRepository;
-    private final ClassSessionRepository sessionRepository;
-    private final LeaveRequestRepository leaveRepository;
 
     // ── Admin-only endpoints ──────────────────────────────────────────────────
 
@@ -115,57 +104,12 @@ public class TeacherController {
     // ── Teacher self-service endpoints ────────────────────────────────────────
 
     /**
-     * Aggregate pending tasks từ:
-     *   1. Đơn nghỉ học viên chưa duyệt
-     *   2. Buổi học hôm nay chưa điểm danh
+     * Aggregate pending tasks — logic đã chuyển sang TeacherService.
      */
     @GetMapping("/me/pending-tasks")
     @Operation(summary = "Pending tasks của giáo viên đang đăng nhập")
     @PreAuthorize("hasRole('teacher')")
     public ResponseEntity<List<PendingTaskResponse>> getMyPendingTasks(Principal principal) {
-        var teacherOpt = teacherRepository.findByUserUsername(principal.getName());
-        if (teacherOpt.isEmpty()) return ResponseEntity.ok(List.of());
-
-        var teacher = teacherOpt.get();
-        List<PendingTaskResponse> tasks = new ArrayList<>();
-
-        // 1. Pending leave requests trong session của teacher
-        var allSessions = sessionRepository.findByClassEntityTeacherId(teacher.getId());
-        var sessionIds = allSessions.stream().map(s -> s.getId()).toList();
-        if (!sessionIds.isEmpty()) {
-            long pendingLeaves = leaveRepository.findBySessionIdIn(sessionIds)
-                    .stream()
-                    .filter(lr -> lr.getStatus() == RequestStatus.pending
-                            && lr.getRequesterType() == RequesterType.student)
-                    .count();
-            if (pendingLeaves > 0) {
-                tasks.add(PendingTaskResponse.builder()
-                        .type("leave")
-                        .title("Đơn xin nghỉ chưa duyệt")
-                        .description(pendingLeaves + " đơn xin nghỉ của học viên đang chờ duyệt")
-                        .count((int) pendingLeaves)
-                        .urgent(true)
-                        .build());
-            }
-        }
-
-        // 2. Buổi học hôm nay chưa điểm danh
-        LocalDate today = LocalDate.now();
-        long undoneToday = sessionRepository
-                .findByClassEntityTeacherIdAndDate(teacher.getId(), today)
-                .stream()
-                .filter(s -> s.getStatus() == SessionStatus.upcoming)
-                .count();
-        if (undoneToday > 0) {
-            tasks.add(PendingTaskResponse.builder()
-                    .type("attendance")
-                    .title("Buổi học chưa điểm danh")
-                    .description("Hôm nay có " + undoneToday + " buổi học chưa được điểm danh")
-                    .count((int) undoneToday)
-                    .urgent(false)
-                    .build());
-        }
-
-        return ResponseEntity.ok(tasks);
+        return ResponseEntity.ok(teacherService.getMyPendingTasks(principal.getName()));
     }
 }

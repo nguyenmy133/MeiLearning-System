@@ -13,9 +13,8 @@ import com.meilearning.backend.dto.response.LeaveRequestResponse;
 import com.meilearning.backend.dto.response.LeaveStatsResponse;
 import com.meilearning.backend.dto.response.PageResponse;
 import com.meilearning.backend.entity.User;
-import com.meilearning.backend.repository.UserRepository;
+import com.meilearning.backend.util.CurrentUserResolver;
 import com.meilearning.backend.service.LeaveService;
-import com.meilearning.backend.util.SecurityUtils;
 import java.security.Principal;
 import java.util.List;
 
@@ -27,7 +26,7 @@ import java.util.List;
 public class LeaveController {
 
     private final LeaveService leaveService;
-    private final UserRepository userRepository;
+    private final CurrentUserResolver currentUser;
 
     @GetMapping
     @Operation(summary = "Danh sách đơn nghỉ phép")
@@ -69,7 +68,7 @@ public class LeaveController {
     @GetMapping("/me")
     @Operation(summary = "Đơn nghỉ phép của người dùng đang đăng nhập")
     public ResponseEntity<List<LeaveRequestResponse>> getMyLeaves(Principal principal) {
-        User user = SecurityUtils.getCurrentUser(userRepository);
+        User user = currentUser.getUser();
         return ResponseEntity.ok(leaveService.getByRequester(user.getId()));
     }
 
@@ -90,7 +89,7 @@ public class LeaveController {
             Principal principal,
             @Valid @RequestBody CreateLeaveRequest request) {
         // Override requesterId từ JWT — chống giả mạo
-        User user = SecurityUtils.getCurrentUser(userRepository);
+        User user = currentUser.getUser();
         request.setRequesterId(user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(leaveService.create(request));
     }
@@ -105,8 +104,7 @@ public class LeaveController {
     public ResponseEntity<LeaveRequestResponse> approve(
             Principal principal,
             @PathVariable Long id) {
-        User reviewer = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new com.meilearning.backend.exception.ResourceNotFoundException("Reviewer not found"));
+        User reviewer = currentUser.getUser();
         return ResponseEntity.ok(leaveService.approve(id, reviewer.getId()));
     }
 
@@ -121,8 +119,7 @@ public class LeaveController {
             Principal principal,
             @PathVariable Long id,
             @RequestParam String reason) {
-        User reviewer = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new com.meilearning.backend.exception.ResourceNotFoundException("Reviewer not found"));
+        User reviewer = currentUser.getUser();
         return ResponseEntity.ok(leaveService.reject(id, reviewer.getId(), reason));
     }
 
@@ -134,7 +131,7 @@ public class LeaveController {
     public ResponseEntity<Void> cancel(
             Principal principal,
             @PathVariable Long id) {
-        User user = SecurityUtils.getCurrentUser(userRepository);
+        User user = currentUser.getUser();
         leaveService.cancel(id, user.getId());
         return ResponseEntity.ok().build();
     }

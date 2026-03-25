@@ -24,10 +24,16 @@ import com.meilearning.backend.exception.DuplicateResourceException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.TeacherMapper;
 import com.meilearning.backend.repository.ClassRepository;
+import com.meilearning.backend.repository.ClassSessionRepository;
+import com.meilearning.backend.repository.LeaveRequestRepository;
 import com.meilearning.backend.repository.SubjectRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.repository.UserRepository;
 import com.meilearning.backend.service.TeacherService;
+import com.meilearning.backend.dto.response.PendingTaskResponse;
+import com.meilearning.backend.entity.enums.RequestStatus;
+import com.meilearning.backend.entity.enums.RequesterType;
+import com.meilearning.backend.entity.enums.SessionStatus;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +47,8 @@ public class TeacherServiceImpl implements TeacherService {
     private final UserRepository userRepository;
     private final SubjectRepository subjectRepository;
     private final ClassRepository classRepository;
+    private final ClassSessionRepository sessionRepository;
+    private final LeaveRequestRepository leaveRepository;
     private final TeacherMapper teacherMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -283,4 +291,54 @@ public class TeacherServiceImpl implements TeacherService {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PendingTaskResponse> getMyPendingTasks(String username) {
+        var teacherOpt = teacherRepository.findByUserUsername(username);
+        if (teacherOpt.isEmpty()) return List.of();
+
+        var teacher = teacherOpt.get();
+        List<PendingTaskResponse> tasks = new ArrayList<>();
+
+        // 1. Pending leave requests trong session của teacher
+        var allSessions = sessionRepository.findByClassEntityTeacherId(teacher.getId());
+        var sessionIds = allSessions.stream().map(s -> s.getId()).toList();
+        if (!sessionIds.isEmpty()) {
+            long pendingLeaves = leaveRepository.findBySessionIdIn(sessionIds)
+                    .stream()
+                    .filter(lr -> lr.getStatus() == RequestStatus.pending
+                            && lr.getRequesterType() == RequesterType.student)
+                    .count();
+            if (pendingLeaves > 0) {
+                tasks.add(PendingTaskResponse.builder()
+                        .type("leave")
+                        .title("Đơn xin nghỉ chưa duyệt")
+                        .description(pendingLeaves + " đơn xin nghỉ của học viên đang chờ duyệt")
+                        .count((int) pendingLeaves)
+                        .urgent(true)
+                        .build());
+            }
+        }
+
+        // 2. Buổi học hôm nay chưa điểm danh
+        LocalDate today = LocalDate.now();
+        long undoneToday = sessionRepository
+                .findByClassEntityTeacherIdAndDate(teacher.getId(), today)
+                .stream()
+                .filter(s -> s.getStatus() == SessionStatus.upcoming)
+                .count();
+        if (undoneToday > 0) {
+            tasks.add(PendingTaskResponse.builder()
+                    .type("attendance")
+                    .title("Buổi học chưa điểm danh")
+                    .description("Hôm nay có " + undoneToday + " buổi học chưa được điểm danh")
+                    .count((int) undoneToday)
+                    .urgent(false)
+                    .build());
+        }
+
+        return tasks;
+    }
+
 }
+
