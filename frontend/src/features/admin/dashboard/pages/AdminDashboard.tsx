@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { StatCard } from "@/features/admin/components/StatCard";
 import { ChartTooltip } from "@/features/admin/components/ChartTooltip";
+import { useNavigate } from "react-router-dom";
 import { useDashboardData } from "../hooks";
 import type { SessionStatus } from "../types";
 
@@ -80,6 +81,7 @@ function PageSkeleton() {
 
 export function AdminDashboard() {
   const { data, isLoading } = useDashboardData();
+  const navigate = useNavigate();
 
   if (isLoading || !data) return <PageSkeleton />;
 
@@ -250,7 +252,7 @@ export function AdminDashboard() {
               <BookOpen className="w-4 h-4 text-primary" />
               Lịch học hôm nay
             </CardTitle>
-            <Button variant="ghost" size="sm" className="text-primary text-xs">
+            <Button variant="ghost" size="sm" className="text-primary text-xs" onClick={() => navigate("/admin/schedule")}>
               Xem lịch <ChevronRight className="w-3 h-3 ml-1" />
             </Button>
           </CardHeader>
@@ -319,6 +321,7 @@ export function AdminDashboard() {
                     variant="ghost"
                     size="sm"
                     className="text-primary text-xs flex-shrink-0"
+                    onClick={() => alert.link && navigate(alert.link)}
                   >
                     {alert.action}
                     <ChevronRight className="w-3 h-3 ml-1" />
@@ -335,7 +338,7 @@ export function AdminDashboard() {
                 <CreditCard className="w-4 h-4 text-destructive" />
                 Học phí quá hạn
               </CardTitle>
-              <Button variant="ghost" size="sm" className="text-primary text-xs">
+              <Button variant="ghost" size="sm" className="text-primary text-xs" onClick={() => navigate("/admin/tuition")}>
                 Xem tất cả <ChevronRight className="w-3 h-3 ml-1" />
               </Button>
             </CardHeader>

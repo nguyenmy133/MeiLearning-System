@@ -6,10 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import com.meilearning.backend.dto.response.AttendanceStatsResponse;
+import com.meilearning.backend.dto.response.AcademicReportResponse;
+import com.meilearning.backend.dto.response.FinancialReportResponse;
 import com.meilearning.backend.dto.response.ReportsOverviewResponse;
-import com.meilearning.backend.dto.response.TuitionStatsResponse;
 import com.meilearning.backend.service.ReportsService;
+
 @RestController
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor
@@ -26,17 +27,14 @@ public class ReportsController {
     }
 
     @GetMapping("/attendance")
-    @Operation(summary = "Báo cáo điểm danh")
-    public ResponseEntity<AttendanceStatsResponse> getAttendanceReport(
-            @RequestParam(required = false) Long classId,
-            @RequestParam(required = false) String month) {
-        return ResponseEntity.ok(reportsService.getAttendanceReport(classId, month));
+    @Operation(summary = "Báo cáo học thuật (điểm danh theo lớp, HV theo môn, xu hướng)")
+    public ResponseEntity<AcademicReportResponse> getAcademicReport() {
+        return ResponseEntity.ok(reportsService.getAcademicReport());
     }
 
     @GetMapping("/tuition")
-    @Operation(summary = "Báo cáo học phí / doanh thu")
-    public ResponseEntity<TuitionStatsResponse> getTuitionReport(
-            @RequestParam(required = false) String month) {
-        return ResponseEntity.ok(reportsService.getTuitionReport(month));
+    @Operation(summary = "Báo cáo tài chính (doanh thu theo tháng, theo môn, tổng hợp thu phí)")
+    public ResponseEntity<FinancialReportResponse> getFinancialReport() {
+        return ResponseEntity.ok(reportsService.getFinancialReport());
     }
 }

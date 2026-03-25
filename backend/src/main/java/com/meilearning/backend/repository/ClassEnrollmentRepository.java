@@ -20,4 +20,14 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
 
     void deleteByStudentIdAndClassEntityId(Long studentId, Long classId);
 
+    // ── Reports queries ──────────────────────────────────────────────
+
+    /** Số học viên theo môn (qua class → subject) */
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT ce.classEntity.subject.name, COUNT(ce) " +
+        "FROM ClassEnrollment ce WHERE ce.classEntity.status IN ('active', 'upcoming') " +
+        "GROUP BY ce.classEntity.subject.name"
+    )
+    java.util.List<Object[]> countStudentsBySubject();
+
 }

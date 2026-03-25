@@ -32,4 +32,34 @@ public interface TuitionInvoiceRepository
     @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid' AND t.month = :month")
     long sumRevenueByMonth(String month);
 
+    // ── Reports aggregation queries ──────────────────────────────────
+
+    /** Tổng tiền đã thu (paid) */
+    @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid'")
+    long sumCollectedRevenue();
+
+    /** Tổng tiền chưa thu (pending) */
+    @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'pending'")
+    long sumPendingRevenue();
+
+    /** Tổng tiền quá hạn (overdue) */
+    @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'overdue'")
+    long sumOverdueRevenue();
+
+    /** Doanh thu theo từng tháng (paid only) - trả về Object[] {month, sum} */
+    @Query("SELECT t.month, COALESCE(SUM(t.totalAmount - t.discountAmount), 0) " +
+           "FROM TuitionInvoice t WHERE t.status = 'paid' GROUP BY t.month ORDER BY t.month")
+    List<Object[]> sumRevenueGroupByMonth();
+
+    /** Doanh thu theo môn (qua class → subject) - trả về Object[] {subjectName, sum} */
+    @Query("SELECT t.classEntity.subject.name, COALESCE(SUM(t.totalAmount - t.discountAmount), 0) " +
+           "FROM TuitionInvoice t WHERE t.status = 'paid' GROUP BY t.classEntity.subject.name")
+    List<Object[]> sumRevenueGroupBySubject();
+
+    /** Doanh thu theo ngày paid (cho dashboard 7 ngày) - trả về Object[] {paidDate, sum} */
+    @Query("SELECT t.paidDate, COALESCE(SUM(t.totalAmount - t.discountAmount), 0) " +
+           "FROM TuitionInvoice t WHERE t.status = 'paid' AND t.paidDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY t.paidDate ORDER BY t.paidDate")
+    List<Object[]> sumRevenueByPaidDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
+
 }
