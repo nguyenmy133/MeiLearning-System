@@ -28,6 +28,8 @@ public class QrSettingsServiceImpl implements QrSettingsService {
         QrSettings settings = getOrCreateSettings();
         if (request.getEnabled() != null) settings.setEnabled(request.getEnabled());
         if (request.getExpiryMinutes() != null) settings.setExpiryMinutes(request.getExpiryMinutes());
+        if (request.getLateThresholdMinutes() != null) settings.setLateThresholdMinutes(request.getLateThresholdMinutes());
+        if (request.getAllowRegenerate() != null) settings.setAllowRegenerate(request.getAllowRegenerate());
         qrSettingsRepository.save(settings);
         return toResponse(settings);
     }
@@ -38,7 +40,8 @@ public class QrSettingsServiceImpl implements QrSettingsService {
     private QrSettings getOrCreateSettings() {
         return qrSettingsRepository.findAll().stream().findFirst()
                 .orElseGet(() -> qrSettingsRepository.save(
-                        QrSettings.builder().enabled(true).expiryMinutes(5).build()));
+                        QrSettings.builder().enabled(true).expiryMinutes(5)
+                                .lateThresholdMinutes(10).allowRegenerate(true).build()));
     }
 
     private QrSettingsResponse toResponse(QrSettings s) {
@@ -46,6 +49,8 @@ public class QrSettingsServiceImpl implements QrSettingsService {
                 .id(s.getId())
                 .enabled(Boolean.TRUE.equals(s.getEnabled()))
                 .expiryMinutes(s.getExpiryMinutes())
+                .lateThresholdMinutes(s.getLateThresholdMinutes() != null ? s.getLateThresholdMinutes() : 10)
+                .allowRegenerate(Boolean.TRUE.equals(s.getAllowRegenerate()))
                 .build();
     }
 }

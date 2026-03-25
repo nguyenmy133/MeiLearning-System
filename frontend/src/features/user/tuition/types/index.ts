@@ -1,29 +1,19 @@
 // ─── Tuition Types ────────────────────────────────────────────────────────────
 // Business Rule (Billing):
-//   Billable sessions = PRESENT + ABSENT_UNEXCUSED
+//   Billable sessions = PRESENT + ABSENT_UNEXCUSED + LATE
 //   Non-billable     = ABSENT_EXCUSED (approved leave)
 //   Formula: Total = billableSessions * pricePerSession
 
 export type InvoiceStatus = "pending" | "paid" | "overdue" | "reviewing";
 
-export interface TuitionSession {
-    sessionId: string;
-    date: string;   // "YYYY-MM-DD"
-    className: string;
-    status: "PRESENT" | "ABSENT_EXCUSED" | "ABSENT_UNEXCUSED" | "LATE";
-    /** Computed from status */
-    isBillable: boolean;
-    pricePerSession: number;
-}
-
 export interface TuitionInvoice {
-    id: string;
-    month: string;          // "YYYY-MM"
-    classId: string;
+    id: number;
+    month: string;          // "MM/YYYY"
+    classId: number;
     className: string;
     status: InvoiceStatus;
     dueDate: string;        // "YYYY-MM-DD"
-    issuedAt: string;       // ISO timestamp
+    createdAt: string;      // ISO timestamp
     paidAt?: string;
 
     // ─── Breakdown ─────────────────────────────────────────
@@ -42,7 +32,7 @@ export interface TuitionInvoice {
 }
 
 export interface PaymentQRPayload {
-    invoiceId: string;
+    invoiceId: number;
     amount: number;
 }
 

@@ -10,12 +10,17 @@ export async function getMyInvoices(month?: string): Promise<TuitionInvoice[]> {
   return [];
 }
 
-export async function getInvoiceById(id: string): Promise<TuitionInvoice> {
+export async function getInvoiceById(id: number): Promise<TuitionInvoice> {
   const { data } = await apiClient.get(`/tuition/${id}`);
   return data;
 }
 
-export async function initiatePayment(payload: { invoiceId: string; amount: number }, method = "qr_transfer"): Promise<TuitionInvoice> {
-  const { data } = await apiClient.post(`/tuition/${payload.invoiceId}/pay`, { paymentMethod: method });
+export async function initiatePayment(
+  payload: { invoiceId: number; amount: number },
+  method = "qr_transfer"
+): Promise<TuitionInvoice> {
+  const { data } = await apiClient.post(`/tuition/${payload.invoiceId}/pay`, {
+    paymentMethod: method,
+  });
   return data;
 }

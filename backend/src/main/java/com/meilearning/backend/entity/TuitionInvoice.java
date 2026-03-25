@@ -57,6 +57,26 @@ public class TuitionInvoice extends BaseEntity {
     @Builder.Default
     private Integer billableSessions = 0;
 
+    @Column(name = "total_sessions")
+    @Builder.Default
+    private Integer totalSessions = 0;
+
+    @Column(name = "present_sessions")
+    @Builder.Default
+    private Integer presentSessions = 0;
+
+    @Column(name = "absent_excused_sessions")
+    @Builder.Default
+    private Integer absentExcusedSessions = 0;
+
+    @Column(name = "absent_unexcused_sessions")
+    @Builder.Default
+    private Integer absentUnexcusedSessions = 0;
+
+    @Column(name = "late_sessions")
+    @Builder.Default
+    private Integer lateSessions = 0;
+
     /** Snapshot giá/buổi tại thá»i điểm tạo hóa đơn */
 
     @Column(name = "price_per_session", nullable = false)

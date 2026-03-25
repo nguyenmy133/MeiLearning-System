@@ -24,6 +24,8 @@ public interface TuitionInvoiceRepository
 
     long countByStatus(InvoiceStatus status);
 
+    List<TuitionInvoice> findByStatusIn(java.util.Collection<InvoiceStatus> statuses);
+
     @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid'")
     long sumTotalRevenue();
 

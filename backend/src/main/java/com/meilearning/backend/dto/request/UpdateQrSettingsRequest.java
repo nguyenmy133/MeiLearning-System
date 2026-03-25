@@ -7,4 +7,6 @@ import lombok.Setter;
 public class UpdateQrSettingsRequest {
     private Boolean enabled;
     private Integer expiryMinutes;
+    private Integer lateThresholdMinutes;
+    private Boolean allowRegenerate;
 }

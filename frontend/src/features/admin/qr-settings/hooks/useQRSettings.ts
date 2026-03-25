@@ -9,7 +9,7 @@ const qrSettingsKeys = {
 };
 
 export function useQRSettings() {
-  return useQuery({
+  return useQuery<QRSettings>({
     queryKey: qrSettingsKeys.detail(),
     queryFn: getQRSettings,
   });
@@ -18,7 +18,7 @@ export function useQRSettings() {
 export function useUpdateQRSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (settings: QRSettings) => updateQRSettings(settings),
+    mutationFn: (settings: Partial<QRSettings>) => updateQRSettings(settings),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qrSettingsKeys.all });
       toast.success("Đã lưu cấu hình");

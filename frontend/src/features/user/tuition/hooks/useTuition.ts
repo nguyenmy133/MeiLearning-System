@@ -6,7 +6,7 @@ import { getMyInvoices, getInvoiceById, initiatePayment } from "../services";
 export const tuitionKeys = {
     all: ["user-tuition"] as const,
     list: (month?: string) => [...tuitionKeys.all, "list", month] as const,
-    detail: (id: string) => [...tuitionKeys.all, "detail", id] as const,
+    detail: (id: number) => [...tuitionKeys.all, "detail", id] as const,
 };
 
 export function useMyInvoices(month?: string) {
@@ -16,7 +16,7 @@ export function useMyInvoices(month?: string) {
     });
 }
 
-export function useInvoiceDetail(id: string) {
+export function useInvoiceDetail(id: number) {
     return useQuery({
         queryKey: tuitionKeys.detail(id),
         queryFn: () => getInvoiceById(id),

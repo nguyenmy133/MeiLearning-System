@@ -27,4 +27,12 @@ public class QrSettings extends BaseEntity {
     @Column(name = "expiry_minutes", nullable = false)
     @Builder.Default
     private Integer expiryMinutes = 5;
+
+    @Column(name = "late_threshold_minutes", nullable = false)
+    @Builder.Default
+    private Integer lateThresholdMinutes = 10;
+
+    @Column(name = "allow_regenerate", nullable = false)
+    @Builder.Default
+    private Boolean allowRegenerate = true;
 }

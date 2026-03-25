@@ -7,6 +7,8 @@ import {
   approveInvoice,
   confirmCashPayment,
   generateMonthlyInvoices,
+  remindAll,
+  remindOne,
 } from "../services";
 
 // ── Query key factory ─────────────────────────────────────────────────────────
@@ -39,7 +41,7 @@ export function useTuitionStats() {
 export function useApproveInvoice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => approveInvoice(id),
+    mutationFn: (id: number) => approveInvoice(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: tuitionKeys.all });
       toast.success("Đã duyệt và xác nhận thanh toán");
@@ -53,7 +55,7 @@ export function useApproveInvoice() {
 export function useConfirmCashPayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => confirmCashPayment(id),
+    mutationFn: (id: number) => confirmCashPayment(id),
     onSuccess: (invoice) => {
       qc.invalidateQueries({ queryKey: tuitionKeys.all });
       toast.success(`Đã xác nhận thu tiền mặt từ ${invoice.studentName}`);
@@ -70,19 +72,44 @@ export function useGenerateMonthlyInvoices() {
     mutationFn: (month: string) => generateMonthlyInvoices(month),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: tuitionKeys.all });
-      const generated = data?.generated ?? 0;
-      const skipped = data?.skipped ?? 0;
-      if (generated === 0 && skipped === 0) {
+      const generated = Array.isArray(data) ? data.length : 0;
+      if (generated === 0) {
         toast.info("Không có hóa đơn nào cần tạo cho tháng này.");
       } else {
-        toast.success(
-          `Đã tạo ${generated} hóa đơn mới` +
-            (skipped > 0 ? ` (bỏ qua ${skipped} học viên đã có bill)` : "")
-        );
+        toast.success(`Đã tạo ${generated} hóa đơn mới`);
       }
     },
     onError: (err: Error) => {
       toast.error(err.message || "Không thể tạo hóa đơn. Vui lòng thử lại.");
+    },
+  });
+}
+
+export function useRemindAll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => remindAll(),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: tuitionKeys.all });
+      toast.success(
+        `Đã gửi nhắc nợ thành công ${data.sent} hóa đơn` +
+          (data.failed > 0 ? ` (${data.failed} thất bại)` : "")
+      );
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gửi nhắc nợ thất bại");
+    },
+  });
+}
+
+export function useRemindOne() {
+  return useMutation({
+    mutationFn: (id: number) => remindOne(id),
+    onSuccess: () => {
+      toast.success("Đã gửi nhắc nợ (Email + SMS + Zalo)");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gửi nhắc nợ thất bại");
     },
   });
 }

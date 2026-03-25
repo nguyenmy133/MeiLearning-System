@@ -18,6 +18,11 @@ public class TuitionInvoiceResponse {
     // Invoice
     private String month;
     private Integer billableSessions;
+    private Integer totalSessions;
+    private Integer presentSessions;
+    private Integer absentExcusedSessions;
+    private Integer absentUnexcusedSessions;
+    private Integer lateSessions;
     private Long pricePerSession;
     private Long totalAmount;
     private Long discountAmount;

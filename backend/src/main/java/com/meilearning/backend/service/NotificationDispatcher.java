@@ -11,12 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 /**
  * Notification Dispatcher — quyết định gửi qua kênh nào dựa trên severity.
  *
  * LOW    → In-App only
  * MEDIUM → In-App + Email
- * HIGH   → In-App + Email + SMS
+ * HIGH   → In-App + Email + SMS + Zalo ZNS
  */
 @Slf4j
 @Service
@@ -27,15 +29,10 @@ public class NotificationDispatcher {
     private final StudentRepository studentRepository;
     private final EmailService emailService;
     private final SmsService smsService;
+    private final ZaloService zaloService;
 
     /**
      * Dispatch thông báo qua các kênh phù hợp.
-     *
-     * @param user     người nhận
-     * @param type     loại thông báo (e.g. "absence", "tuition", "grade")
-     * @param title    tiêu đề
-     * @param content  nội dung
-     * @param severity mức độ quan trọng
      */
     @Transactional
     public void dispatch(User user, String type, String title, String content,
@@ -67,10 +64,11 @@ public class NotificationDispatcher {
             }
         }
 
-        // 3. HIGH: Gửi SMS (ưu tiên parentPhone cho student)
+        // 3. HIGH: Gửi SMS + Zalo ZNS (ưu tiên parentPhone cho student)
         if (severity == NotificationSeverity.HIGH) {
             String phone = resolvePhone(user);
             if (phone != null && !phone.isBlank()) {
+                // SMS
                 try {
                     String smsContent = truncateForSms(title + ": " + content);
                     boolean sent = smsService.sendSms(phone, smsContent);
@@ -78,8 +76,22 @@ public class NotificationDispatcher {
                 } catch (Exception e) {
                     log.error("❌ SMS dispatch failed for {}: {}", phone, e.getMessage());
                 }
+
+                // Zalo ZNS
+                if (zaloService.isEnabled()) {
+                    try {
+                        Map<String, String> znsData = Map.of(
+                                "title", title,
+                                "content", content,
+                                "student_name", user.getName() != null ? user.getName() : ""
+                        );
+                        zaloService.sendZns(phone, null, znsData);
+                    } catch (Exception e) {
+                        log.error("❌ Zalo ZNS dispatch failed for {}: {}", phone, e.getMessage());
+                    }
+                }
             } else {
-                log.warn("⚠️ No phone number found for user {} — skipping SMS", user.getUsername());
+                log.warn("⚠️ No phone number found for user {} — skipping SMS/Zalo", user.getUsername());
             }
         }
 
@@ -88,32 +100,23 @@ public class NotificationDispatcher {
                 notification.getId(), notification.getEmailSent(), notification.getSmsSent());
     }
 
-    /**
-     * Shortcut: dispatch LOW severity (In-App only)
-     */
+    /** Shortcut: dispatch LOW severity (In-App only) */
     public void notifyInApp(User user, String type, String title, String content) {
         dispatch(user, type, title, content, NotificationSeverity.LOW);
     }
 
-    /**
-     * Shortcut: dispatch MEDIUM severity (In-App + Email)
-     */
+    /** Shortcut: dispatch MEDIUM severity (In-App + Email) */
     public void notifyWithEmail(User user, String type, String title, String content) {
         dispatch(user, type, title, content, NotificationSeverity.MEDIUM);
     }
 
-    /**
-     * Shortcut: dispatch HIGH severity (In-App + Email + SMS)
-     */
+    /** Shortcut: dispatch HIGH severity (In-App + Email + SMS + Zalo) */
     public void notifyUrgent(User user, String type, String title, String content) {
         dispatch(user, type, title, content, NotificationSeverity.HIGH);
     }
 
-    /**
-     * Resolve phone number — cho student ưu tiên parentPhone.
-     */
+    /** Resolve phone number — cho student ưu tiên parentPhone. */
     private String resolvePhone(User user) {
-        // Nếu là student → lấy parentPhone
         if (user.getRole() == User.Role.student) {
             return studentRepository.findByUserId(user.getId())
                     .map(Student::getParentPhone)
@@ -128,9 +131,6 @@ public class NotificationDispatcher {
         return text.length() <= 155 ? text : text.substring(0, 152) + "...";
     }
 
-    /**
-     * Build simple HTML email body.
-     */
     private String buildEmailHtml(String type, String title, String content, String userName) {
         return """
                 <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">

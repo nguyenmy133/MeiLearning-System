@@ -10,4 +10,6 @@ public class QrSettingsResponse {
     private Long id;
     private boolean enabled;
     private int expiryMinutes;
+    private int lateThresholdMinutes;
+    private boolean allowRegenerate;
 }

@@ -1,7 +1,8 @@
-import { QRSettings } from "../types";
+import type { QRSettings } from "../types";
 
 export const mockQRSettings: QRSettings = {
-  expiryTime: 5,
-  lateThreshold: 10,
+  enabled: true,
+  expiryMinutes: 5,
+  lateThresholdMinutes: 10,
   allowRegenerate: true,
 };

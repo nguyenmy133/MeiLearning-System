@@ -23,7 +23,6 @@ import java.util.List;
 @RequestMapping("/api/v1/tuition")
 @RequiredArgsConstructor
 @Tag(name = "Tuition", description = "Quản lý học phí")
-@PreAuthorize("hasRole('admin')")
 public class TuitionController {
 
     private final TuitionService tuitionService;
@@ -31,6 +30,7 @@ public class TuitionController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách hóa đơn (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<PageResponse<TuitionInvoiceResponse>> getAll(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String month,
@@ -68,6 +68,7 @@ public class TuitionController {
 
     @PostMapping
     @Operation(summary = "Tạo hóa đơn thủ công (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<TuitionInvoiceResponse> create(
             @Valid @RequestBody CreateTuitionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -76,6 +77,7 @@ public class TuitionController {
 
     @PostMapping("/generate")
     @Operation(summary = "Tự động tạo hóa đơn tháng (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<List<TuitionInvoiceResponse>> generateMonthly(
             @RequestParam String month) {
         return ResponseEntity.ok(tuitionService.generateMonthlyInvoices(month));
@@ -92,26 +94,45 @@ public class TuitionController {
 
     @PatchMapping("/{id}/confirm")
     @Operation(summary = "Xác nhận thanh toán (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<TuitionInvoiceResponse> confirm(@PathVariable Long id) {
         return ResponseEntity.ok(tuitionService.confirm(id));
     }
 
     @PatchMapping("/{id}/reject")
     @Operation(summary = "Từ chối thanh toán (Admin)")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<TuitionInvoiceResponse> reject(@PathVariable Long id) {
         return ResponseEntity.ok(tuitionService.reject(id));
     }
 
     @GetMapping("/overdue")
     @Operation(summary = "Danh sách hóa đơn quá hạn")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<List<TuitionInvoiceResponse>> getOverdue() {
         return ResponseEntity.ok(tuitionService.getOverdue());
     }
 
     @GetMapping("/stats")
     @Operation(summary = "Thống kê học phí + doanh thu")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<TuitionStatsResponse> getStats(
             @RequestParam(required = false) String month) {
         return ResponseEntity.ok(tuitionService.getStats(month));
+    }
+
+    @PostMapping("/remind-all")
+    @Operation(summary = "Nhắc nợ hàng loạt (Email + SMS + Zalo)")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<java.util.Map<String, Integer>> remindAll() {
+        return ResponseEntity.ok(tuitionService.remindAll());
+    }
+
+    @PostMapping("/{id}/remind")
+    @Operation(summary = "Nhắc nợ 1 hóa đơn (Email + SMS + Zalo)")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<Void> remind(@PathVariable Long id) {
+        tuitionService.remind(id);
+        return ResponseEntity.ok().build();
     }
 }

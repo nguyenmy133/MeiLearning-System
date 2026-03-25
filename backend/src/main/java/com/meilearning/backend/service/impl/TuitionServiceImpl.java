@@ -38,6 +38,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -53,7 +54,16 @@ public class TuitionServiceImpl implements TuitionService {
     private final TuitionMapper tuitionMapper;
     private final NotificationDispatcher notificationDispatcher;
 
-    // â”€â”€ Create Invoice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Breakdown record ─────────────────────────────────────────────
+
+    /**
+     * Kết quả phân tích attendance cho tính học phí.
+     */
+    private record SessionBreakdown(
+            int total, int present, int late, int absentUnexcused, int absentExcused, int billable
+    ) {}
+
+    // ── Create Invoice ───────────────────────────────────────────────
 
     @Override
     public TuitionInvoiceResponse create(CreateTuitionRequest request) {
@@ -64,21 +74,23 @@ public class TuitionServiceImpl implements TuitionService {
         ClassEntity classEntity = classRepository.findById(request.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + request.getClassId()));
 
-        // Tính billable sessions
-
-        int billable = calculateBillableSessions(student.getId(), classEntity.getId(), request.getMonth());
+        // Tính billable sessions + breakdown
+        SessionBreakdown breakdown = calculateSessionBreakdown(student.getId(), classEntity.getId(), request.getMonth());
 
         long pricePerSession = classEntity.getPricePerSession();
-
-        long totalAmount = billable * pricePerSession;
-
+        long totalAmount = breakdown.billable() * pricePerSession;
         long discount = request.getDiscountAmount() != null ? request.getDiscountAmount() : 0L;
 
         TuitionInvoice invoice = TuitionInvoice.builder()
                 .student(student)
                 .classEntity(classEntity)
                 .month(request.getMonth())
-                .billableSessions(billable)
+                .billableSessions(breakdown.billable())
+                .totalSessions(breakdown.total())
+                .presentSessions(breakdown.present())
+                .lateSessions(breakdown.late())
+                .absentUnexcusedSessions(breakdown.absentUnexcused())
+                .absentExcusedSessions(breakdown.absentExcused())
                 .pricePerSession(pricePerSession)
                 .totalAmount(totalAmount)
                 .discountAmount(discount)
@@ -101,10 +113,9 @@ public class TuitionServiceImpl implements TuitionService {
         }
 
         return tuitionMapper.toResponse(invoice);
-
     }
 
-    // â”€â”€ Auto-generate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Auto-generate ────────────────────────────────────────────────
 
     @Override
     public List<TuitionInvoiceResponse> generateMonthlyInvoices(String month) {
@@ -112,54 +123,52 @@ public class TuitionServiceImpl implements TuitionService {
         List<TuitionInvoiceResponse> results = new ArrayList<>();
 
         // Lấy tất cả enrollments active
-
         List<ClassEnrollment> enrollments = enrollmentRepository.findAll();
 
         for (ClassEnrollment enrollment : enrollments) {
             Long studentId = enrollment.getStudent().getId();
-
             Long classId = enrollment.getClassEntity().getId();
 
             // Skip nếu đã có invoice cho tháng này
-
             List<TuitionInvoice> existing = invoiceRepository
-
                     .findByStudentIdAndMonth(studentId, month);
 
             boolean alreadyExists = existing.stream()
                     .anyMatch(i -> i.getClassEntity().getId().equals(classId));
 
             if (alreadyExists) continue;
-            int billable = calculateBillableSessions(studentId, classId, month);
 
-            if (billable == 0) continue;
+            SessionBreakdown breakdown = calculateSessionBreakdown(studentId, classId, month);
+
+            if (breakdown.billable() == 0) continue;
+
             ClassEntity classEntity = enrollment.getClassEntity();
-
             long pricePerSession = classEntity.getPricePerSession();
 
             TuitionInvoice invoice = TuitionInvoice.builder()
                     .student(enrollment.getStudent())
                     .classEntity(classEntity)
                     .month(month)
-                    .billableSessions(billable)
+                    .billableSessions(breakdown.billable())
+                    .totalSessions(breakdown.total())
+                    .presentSessions(breakdown.present())
+                    .lateSessions(breakdown.late())
+                    .absentUnexcusedSessions(breakdown.absentUnexcused())
+                    .absentExcusedSessions(breakdown.absentExcused())
                     .pricePerSession(pricePerSession)
-                    .totalAmount((long) billable * pricePerSession)
+                    .totalAmount((long) breakdown.billable() * pricePerSession)
                     .dueDate(calculateDueDate(month))
                     .build();
 
             invoice = invoiceRepository.save(invoice);
-
             results.add(tuitionMapper.toResponse(invoice));
-
         }
 
         log.info("Generated {} invoices for month {}", results.size(), month);
-
         return results;
-
     }
 
-    // â”€â”€ Query â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Query ────────────────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
@@ -190,95 +199,71 @@ public class TuitionServiceImpl implements TuitionService {
     @Override
     @Transactional(readOnly = true)
     public List<TuitionInvoiceResponse> getAll(String status, String month, Long studentId) {
-
         List<TuitionInvoice> invoices;
-
         if (studentId != null) {
             invoices = invoiceRepository.findByStudentId(studentId);
-
         } else if (month != null) {
             invoices = invoiceRepository.findByMonth(month);
-
         } else if (status != null) {
             invoices = invoiceRepository.findByStatus(InvoiceStatus.valueOf(status));
-
         } else {
             invoices = invoiceRepository.findAll();
-
         }
-
         return invoices.stream().map(tuitionMapper::toResponse).toList();
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TuitionInvoiceResponse> getByStudent(Long studentId) {
-
         return invoiceRepository.findByStudentId(studentId).stream()
                 .map(tuitionMapper::toResponse).toList();
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public TuitionInvoiceResponse getById(Long id) {
-
         TuitionInvoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
-
         return tuitionMapper.toResponse(invoice);
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TuitionInvoiceResponse> getOverdue() {
-
         return invoiceRepository.findByStatus(InvoiceStatus.overdue).stream()
                 .map(tuitionMapper::toResponse).toList();
-
     }
 
-    // â”€â”€ Payment Flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Payment Flow ─────────────────────────────────────────────────
 
     @Override
     public TuitionInvoiceResponse pay(Long id, PayTuitionRequest request) {
-
         TuitionInvoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         if (invoice.getStatus() != InvoiceStatus.pending
                 && invoice.getStatus() != InvoiceStatus.overdue) {
-
             throw new BusinessException("Chỉ có thể thanh toán hóa đơn pending hoặc overdue.");
-
         }
 
         invoice.setStatus(InvoiceStatus.reviewing);
         invoice.setPaymentMethod(request.getPaymentMethod());
         invoice.setPaymentProofUrl(request.getPaymentProofUrl());
-
         invoice = invoiceRepository.save(invoice);
-
         return tuitionMapper.toResponse(invoice);
-
     }
 
     @Override
     public TuitionInvoiceResponse confirm(Long id) {
-
         TuitionInvoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         if (invoice.getStatus() != InvoiceStatus.reviewing) {
             throw new BusinessException("Chỉ xác nhận hóa đơn đang ở trạng thái reviewing.");
-
         }
 
         invoice.setStatus(InvoiceStatus.paid);
         invoice.setPaidDate(LocalDate.now());
-
         invoice = invoiceRepository.save(invoice);
 
         // Notify student: payment confirmed
@@ -291,26 +276,21 @@ public class TuitionServiceImpl implements TuitionService {
                             + " lớp " + invoice.getClassEntity().getName() + " đã được xác nhận."
             );
         }
-
         return tuitionMapper.toResponse(invoice);
-
     }
 
     @Override
     public TuitionInvoiceResponse reject(Long id) {
-
         TuitionInvoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn: " + id));
 
         if (invoice.getStatus() != InvoiceStatus.reviewing) {
             throw new BusinessException("Chỉ từ chối hóa đơn đang reviewing.");
-
         }
 
         invoice.setStatus(InvoiceStatus.pending);
         invoice.setPaymentMethod(null);
         invoice.setPaymentProofUrl(null);
-
         invoice = invoiceRepository.save(invoice);
 
         // Notify student: payment rejected
@@ -324,19 +304,15 @@ public class TuitionServiceImpl implements TuitionService {
                             + " bị từ chối. Vui lòng liên hệ admin để biết thêm chi tiết."
             );
         }
-
         return tuitionMapper.toResponse(invoice);
-
     }
 
-    // â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Stats ────────────────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
     public TuitionStatsResponse getStats(String month) {
-
         String currentMonth = month != null ? month
-
                 : LocalDate.now().format(DateTimeFormatter.ofPattern("MM/yyyy"));
 
         return TuitionStatsResponse.builder()
@@ -348,88 +324,120 @@ public class TuitionServiceImpl implements TuitionService {
                 .totalRevenue(invoiceRepository.sumTotalRevenue())
                 .monthRevenue(invoiceRepository.sumRevenueByMonth(currentMonth))
                 .build();
-
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Helpers ──────────────────────────────────────────────────────
 
     /**
-
-     * Tính billable sessions = PRESENT + ABSENT + LATE (không tính ABSENT_EXCUSED)
-
+     * Tính breakdown attendance cho 1 student trong 1 lớp, 1 tháng.
+     * Billable = PRESENT + ABSENT + LATE (không tính ABSENT_EXCUSED)
      */
-
-    private int calculateBillableSessions(Long studentId, Long classId, String monthStr) {
-
-        // Parse month "MM/YYYY" â†’ date range
-
+    private SessionBreakdown calculateSessionBreakdown(Long studentId, Long classId, String monthStr) {
+        // Parse month "MM/YYYY" -> date range
         String[] parts = monthStr.split("/");
-
         int monthValue = Integer.parseInt(parts[0]);
-
         int year = Integer.parseInt(parts[1]);
-
         YearMonth ym = YearMonth.of(year, monthValue);
-
         LocalDate start = ym.atDay(1);
-
         LocalDate end = ym.atEndOfMonth();
 
         // Lấy sessions trong tháng
-
         List<ClassSession> sessions = sessionRepository
-
                 .findByClassEntityIdAndDateBetween(classId, start, end);
 
-        int billable = 0;
+        int total = sessions.size();
+        int present = 0;
+        int late = 0;
+        int absentUnexcused = 0;
+        int absentExcused = 0;
 
         for (ClassSession session : sessions) {
             var record = attendanceRepository
-
                     .findBySessionIdAndStudentId(session.getId(), studentId);
 
             if (record.isPresent()) {
                 AttendanceStatus status = record.get().getStatus();
-
-                // Billable: present + absent (không phép) + late
-
-                if (status == AttendanceStatus.present
-                        || status == AttendanceStatus.absent
-
-                        || status == AttendanceStatus.late) {
-
-                    billable++;
-
+                switch (status) {
+                    case present -> present++;
+                    case late -> late++;
+                    case absent -> absentUnexcused++;
+                    case absent_excused -> absentExcused++;
                 }
-
-                // absent_excused â†’ không tính tiền
-
             }
-
         }
 
-        return billable;
-
+        int billable = present + absentUnexcused + late;
+        return new SessionBreakdown(total, present, late, absentUnexcused, absentExcused, billable);
     }
 
     /**
-
      * Due date = ngày 15 tháng sau
-
      */
-
     private LocalDate calculateDueDate(String monthStr) {
-
         String[] parts = monthStr.split("/");
-
         int monthValue = Integer.parseInt(parts[0]);
-
         int year = Integer.parseInt(parts[1]);
-
         YearMonth ym = YearMonth.of(year, monthValue);
-
         return ym.plusMonths(1).atDay(15);
-
     }
 
+    // ── Reminder Methods ─────────────────────────────────────────────
+
+    @Override
+    public java.util.Map<String, Integer> remindAll() {
+        List<TuitionInvoice> unpaid = invoiceRepository.findByStatusIn(
+                List.of(InvoiceStatus.pending, InvoiceStatus.overdue)
+        );
+
+        int sent = 0;
+        int failed = 0;
+
+        for (TuitionInvoice invoice : unpaid) {
+            try {
+                sendReminder(invoice);
+                sent++;
+            } catch (Exception e) {
+                log.error("❌ Reminder failed for invoice {}: {}", invoice.getId(), e.getMessage());
+                failed++;
+            }
+        }
+
+        log.info("📢 Remind all completed: sent={}, failed={}", sent, failed);
+        return java.util.Map.of("sent", sent, "failed", failed);
+    }
+
+    @Override
+    public void remind(Long invoiceId) {
+        TuitionInvoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại: " + invoiceId));
+
+        if (invoice.getStatus() != InvoiceStatus.pending && invoice.getStatus() != InvoiceStatus.overdue) {
+            throw new BusinessException("Chỉ có thể nhắc nợ hóa đơn chưa thanh toán hoặc quá hạn");
+        }
+
+        sendReminder(invoice);
+    }
+
+    private void sendReminder(TuitionInvoice invoice) {
+        Student student = invoice.getStudent();
+        if (student == null || student.getUser() == null) {
+            log.warn("⚠️ Invoice {} has no linked student/user — skipping reminder", invoice.getId());
+            return;
+        }
+
+        String className = invoice.getClassEntity() != null ? invoice.getClassEntity().getName() : "N/A";
+        String title = "Nhắc nợ học phí tháng " + invoice.getMonth();
+        String content = String.format(
+                "Học viên %s có hóa đơn học phí lớp %s tháng %s chưa thanh toán. "
+                        + "Số tiền: %,.0fđ. Hạn thanh toán: %s. Vui lòng thanh toán sớm.",
+                student.getUser().getName(),
+                className,
+                invoice.getMonth(),
+                invoice.getTotalAmount(),
+                invoice.getDueDate() != null ? invoice.getDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A"
+        );
+
+        // notifyUrgent → In-App + Email + SMS (parentPhone) + Zalo ZNS
+        notificationDispatcher.notifyUrgent(student.getUser(), "tuition_reminder", title, content);
+    }
 }

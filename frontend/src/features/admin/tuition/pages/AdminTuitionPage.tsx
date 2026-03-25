@@ -24,6 +24,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -53,7 +59,7 @@ import {
   BookOpen,
   Loader2,
   FileText,
-  MessageCircle,
+  Bell,
 } from "lucide-react";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 import { toast } from "sonner";
@@ -63,12 +69,13 @@ import {
   useApproveInvoice,
   useConfirmCashPayment,
   useGenerateMonthlyInvoices,
+  useRemindAll,
+  useRemindOne,
 } from "../hooks";
 import type { TuitionInvoice, TuitionQueryParams } from "../types";
-import {
-  INVOICE_STATUS_LABELS,
-} from "../types";
+import { INVOICE_STATUS_LABELS } from "../types";
 import { useClassOptions, useMonthOptions } from "@/hooks/useClassOptions";
+import { exportInvoiceListPdf, exportReceiptPdf } from "@/lib/pdf-generator";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const formatCurrency = (amount: number) =>
@@ -160,6 +167,11 @@ export function AdminTuitionPage() {
   const [confirmCashTarget, setConfirmCashTarget] =
     useState<TuitionInvoice | null>(null);
 
+  // ── New UI states ──────────────────────────────────────────────────────────
+  const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false);
+  const [remindAllConfirmOpen, setRemindAllConfirmOpen] = useState(false);
+  const [detailInvoice, setDetailInvoice] = useState<TuitionInvoice | null>(null);
+
   // ── Data ──────────────────────────────────────────────────────────────────
   const queryParams: TuitionQueryParams = {
     search: searchTerm || undefined,
@@ -179,6 +191,8 @@ export function AdminTuitionPage() {
   const approveMutation = useApproveInvoice();
   const cashMutation = useConfirmCashPayment();
   const generateMutation = useGenerateMonthlyInvoices();
+  const remindAllMutation = useRemindAll();
+  const remindOneMutation = useRemindOne();
 
   const handleConfirmCash = () => {
     if (!confirmCashTarget) return;
@@ -186,6 +200,14 @@ export function AdminTuitionPage() {
       onSuccess: () => setConfirmCashTarget(null),
     });
   };
+
+  const currentMonthStr = `${String(new Date().getMonth() + 1).padStart(2, "0")}/${new Date().getFullYear()}`;
+  const generateTargetMonth = filterMonth !== "all" ? filterMonth : currentMonthStr;
+
+  // Count unpaid for remind button
+  const unpaidCount = invoices.filter(
+    (p) => p.status === "pending" || p.status === "overdue"
+  ).length;
 
   // ── Stats cards ───────────────────────────────────────────────────────────
   const statCards = [
@@ -255,48 +277,48 @@ export function AdminTuitionPage() {
             Quản lý hóa đơn học phí
           </CardTitle>
           <div className="flex flex-wrap gap-2">
+            {/* PDF Export */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                toast.info(
-                  `Đang xuất PDF tổng hợp cho ${invoices.length} hóa đơn...`
-                )
-              }
+              disabled={invoices.length === 0}
+              onClick={() => {
+                exportInvoiceListPdf(invoices);
+                toast.success("Đã xuất PDF tổng hợp thành công");
+              }}
             >
               <FileText className="w-4 h-4 mr-1" />
               Xuất PDF tổng hợp
             </Button>
+
+            {/* Remind All */}
             <Button
               variant="outline"
               size="sm"
-              className="border-green-500/40 text-green-600 hover:bg-green-50 hover:text-green-700"
-              onClick={() => {
-                const count = invoices.filter(
-                  (p) => p.status === "pending" || p.status === "overdue"
-                ).length;
-                toast.info(`Đang gửi Zalo nhắc nợ hàng loạt tới ${count} phụ huynh...`);
-              }}
+              className="border-orange-500/40 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+              disabled={unpaidCount === 0 || remindAllMutation.isPending}
+              onClick={() => setRemindAllConfirmOpen(true)}
             >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              Gửi Zalo hàng loạt
+              {remindAllMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Bell className="w-4 h-4 mr-1" />
+              )}
+              Gửi nhắc nợ ({unpaidCount})
             </Button>
+
+            {/* Generate Invoices */}
             <Button
               size="sm"
               disabled={generateMutation.isPending}
-              onClick={() => {
-                const currentMonthStr = `${String(new Date().getMonth() + 1).padStart(2, "0")}/${new Date().getFullYear()}`;
-                generateMutation.mutate(
-                  filterMonth !== "all" ? filterMonth : currentMonthStr
-                );
-              }}
+              onClick={() => setGenerateConfirmOpen(true)}
             >
               {generateMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (
                 <TrendingUp className="w-4 h-4 mr-1" />
               )}
-              Chốt công & Tạo Bill
+              Chốt công &amp; Tạo Bill
             </Button>
           </div>
         </CardHeader>
@@ -392,7 +414,7 @@ export function AdminTuitionPage() {
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={payment.studentAvatar} />
                           <AvatarFallback>
-                            {payment.studentName
+                            {(payment.studentName ?? "?")
                               .split(" ")
                               .map((n) => n[0])
                               .join("")}
@@ -406,14 +428,12 @@ export function AdminTuitionPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end gap-1">
-                        {payment.details.map((d, idx) => (
-                          <div key={idx} className="text-xs text-muted-foreground">
-                            {d.className}:{" "}
-                            <span className="font-medium text-foreground">
-                              {d.billableSessions} buổi
-                            </span>
-                          </div>
-                        ))}
+                        <div className="text-xs text-muted-foreground">
+                          {payment.className}:{" "}
+                          <span className="font-medium text-foreground">
+                            {payment.billableSessions} buổi
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-medium text-primary">
@@ -460,14 +480,14 @@ export function AdminTuitionPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
+                            {/* Xem phiếu thu — opens detail dialog */}
                             <DropdownMenuItem
-                              onClick={() =>
-                                toast.info("Xem phiếu thu — tính năng đang phát triển")
-                              }
+                              onClick={() => setDetailInvoice(payment)}
                             >
                               <Eye className="w-4 h-4 mr-2 text-muted-foreground" />
                               Xem phiếu thu
                             </DropdownMenuItem>
+
                             {(payment.status === "pending" ||
                               payment.status === "overdue") && (
                               <>
@@ -478,23 +498,27 @@ export function AdminTuitionPage() {
                                   <CheckCircle2 className="w-4 h-4 mr-2" />
                                   Xác nhận thu tiền mặt
                                 </DropdownMenuItem>
+
+                                {/* Gửi nhắc nợ */}
                                 <DropdownMenuItem
-                                  onClick={() =>
-                                    toast.info(
-                                      `Gửi Zalo nhắc nợ tới ${payment.studentName}`
-                                    )
-                                  }
+                                  disabled={remindOneMutation.isPending}
+                                  onClick={() => remindOneMutation.mutate(payment.id)}
                                 >
                                   <Send className="w-4 h-4 mr-2" />
-                                  Gửi Zalo nhắc nợ
+                                  {remindOneMutation.isPending
+                                    ? "Đang gửi..."
+                                    : "Gửi nhắc nợ (SMS + Zalo)"}
                                 </DropdownMenuItem>
                               </>
                             )}
+
+                            {/* Tải biên lai PDF */}
                             {payment.status === "paid" && (
                               <DropdownMenuItem
-                                onClick={() =>
-                                  toast.info("Tải biên lai PDF — tính năng đang phát triển")
-                                }
+                                onClick={() => {
+                                  exportReceiptPdf(payment);
+                                  toast.success("Đã tải biên lai PDF");
+                                }}
                               >
                                 <Download className="w-4 h-4 mr-2 text-muted-foreground" />
                                 Tải biên lai PDF
@@ -518,17 +542,17 @@ export function AdminTuitionPage() {
           open={!!selectedPaymentForQR}
           onOpenChange={(open) => !open && setSelectedPaymentForQR(null)}
           paymentInfo={{
-            invoiceId: selectedPaymentForQR.id,
-            studentId: selectedPaymentForQR.studentRef,
+            invoiceId: String(selectedPaymentForQR.id),
+            studentId: String(selectedPaymentForQR.studentId),
             studentName: selectedPaymentForQR.studentName,
             amount: selectedPaymentForQR.totalAmount,
-            description: `Học phí tháng ${selectedPaymentForQR.month}`,
+            description: `Học phí tháng ${selectedPaymentForQR.month} — ${selectedPaymentForQR.className}`,
             dueDate: selectedPaymentForQR.dueDate,
           }}
         />
       )}
 
-      {/* Confirm cash payment dialog */}
+      {/* ── Confirm Cash Payment Dialog ─────────────────────────────────────── */}
       <AlertDialog
         open={!!confirmCashTarget}
         onOpenChange={(open) => !open && setConfirmCashTarget(null)}
@@ -564,6 +588,193 @@ export function AdminTuitionPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Generate Invoices Confirm Dialog ─────────────────────────────────── */}
+      <AlertDialog
+        open={generateConfirmOpen}
+        onOpenChange={setGenerateConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chốt công &amp; Tạo Bill</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Bạn sắp tạo hóa đơn học phí cho tháng{" "}
+                  <span className="font-semibold text-foreground">
+                    {generateTargetMonth}
+                  </span>
+                  .
+                </p>
+                <p className="text-sm">
+                  Hệ thống sẽ tính toán số buổi học và tạo hóa đơn cho tất cả học viên.
+                  Những học viên đã có bill tháng này sẽ được bỏ qua.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={generateMutation.isPending}
+              onClick={() => {
+                generateMutation.mutate(generateTargetMonth);
+                setGenerateConfirmOpen(false);
+              }}
+            >
+              {generateMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              Xác nhận tạo bill
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Remind All Confirm Dialog ──────────────────────────────────────── */}
+      <AlertDialog
+        open={remindAllConfirmOpen}
+        onOpenChange={setRemindAllConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gửi nhắc nợ hàng loạt</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Sẽ gửi thông báo nhắc nợ tới{" "}
+                  <span className="font-semibold text-foreground">
+                    {unpaidCount} phụ huynh
+                  </span>{" "}
+                  qua các kênh:
+                </p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>📩 Email</li>
+                  <li>📱 SMS (số điện thoại phụ huynh)</li>
+                  <li>💬 Zalo (nếu đã cấu hình OA)</li>
+                  <li>🔔 Thông báo trong hệ thống</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={remindAllMutation.isPending}
+              onClick={() => {
+                remindAllMutation.mutate();
+                setRemindAllConfirmOpen(false);
+              }}
+            >
+              {remindAllMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              Gửi nhắc nợ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Invoice Detail Dialog ──────────────────────────────────────────── */}
+      <Dialog
+        open={!!detailInvoice}
+        onOpenChange={(open) => !open && setDetailInvoice(null)}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Chi tiết phiếu thu #{detailInvoice?.id}</DialogTitle>
+          </DialogHeader>
+          {detailInvoice && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Học viên</p>
+                  <p className="font-medium">{detailInvoice.studentName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Lớp</p>
+                  <p className="font-medium">{detailInvoice.className}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Tháng</p>
+                  <p className="font-medium">{detailInvoice.month}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Trạng thái</p>
+                  <InvoiceStatusBadge status={detailInvoice.status} />
+                </div>
+              </div>
+
+              <div className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm">
+                <h4 className="font-semibold text-foreground">Chi tiết buổi học</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Có mặt:</span>
+                    <span className="font-medium">{detailInvoice.presentSessions ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Đi muộn:</span>
+                    <span className="font-medium">{detailInvoice.lateSessions ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vắng không phép:</span>
+                    <span className="font-medium">{detailInvoice.absentUnexcusedSessions ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-blue-600">Vắng có phép:</span>
+                    <span className="font-medium text-blue-600">{detailInvoice.absentExcusedSessions ?? 0}</span>
+                  </div>
+                </div>
+                <div className="border-t pt-2 flex justify-between font-semibold">
+                  <span>Buổi tính phí:</span>
+                  <span>{detailInvoice.billableSessions ?? 0} buổi</span>
+                </div>
+              </div>
+
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Đơn giá / buổi:</span>
+                  <span>{formatCurrency(detailInvoice.pricePerSession ?? 0)}</span>
+                </div>
+                {detailInvoice.discountAmount > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>Giảm giá{detailInvoice.discountReason ? ` (${detailInvoice.discountReason})` : ""}:</span>
+                    <span>-{formatCurrency(detailInvoice.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                  <span>Tổng tiền:</span>
+                  <span className="text-primary">{formatCurrency(detailInvoice.totalAmount)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                <div>
+                  <span>Hạn TT: {detailInvoice.dueDate ?? "N/A"}</span>
+                </div>
+                <div>
+                  <span>Ngày tạo: {detailInvoice.createdAt ? new Date(detailInvoice.createdAt).toLocaleDateString("vi-VN") : "N/A"}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    exportReceiptPdf(detailInvoice);
+                    toast.success("Đã tải biên lai PDF");
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Tải biên lai PDF
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

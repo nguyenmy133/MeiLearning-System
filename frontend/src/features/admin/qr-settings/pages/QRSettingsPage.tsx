@@ -14,17 +14,17 @@ export function QRSettingsPage() {
   const update = useUpdateQRSettings();
 
   // Remote settings as source of truth
-  const remote = data ?? { expiryTime: 5, lateThreshold: 10, allowRegenerate: true };
+  const remote = data ?? { expiryMinutes: 5, lateThresholdMinutes: 10, allowRegenerate: true };
 
   // Local state for input fields (avoids re-save on every keystroke)
-  const [expiryTime, setExpiryTime] = useState(remote.expiryTime);
-  const [lateThreshold, setLateThreshold] = useState(remote.lateThreshold);
+  const [expiryMinutes, setExpiryMinutes] = useState(remote.expiryMinutes);
+  const [lateThresholdMinutes, setLateThresholdMinutes] = useState(remote.lateThresholdMinutes);
 
   // Sync local state when remote changes
   useEffect(() => {
     if (data) {
-      setExpiryTime(data.expiryTime);
-      setLateThreshold(data.lateThreshold);
+      setExpiryMinutes(data.expiryMinutes);
+      setLateThresholdMinutes(data.lateThresholdMinutes);
     }
   }, [data]);
 
@@ -43,21 +43,21 @@ export function QRSettingsPage() {
     (overrides?: Partial<typeof remote>) => {
       update.reset();
       update.mutate({
-        expiryTime,
-        lateThreshold,
+        expiryMinutes,
+        lateThresholdMinutes,
         allowRegenerate: remote.allowRegenerate,
         ...overrides,
       });
     },
-    [expiryTime, lateThreshold, remote.allowRegenerate, update]
+    [expiryMinutes, lateThresholdMinutes, remote.allowRegenerate, update]
   );
 
   // Toggle switch → auto-save immediately
   const handleToggle = (checked: boolean) => {
     update.reset();
     update.mutate({
-      expiryTime,
-      lateThreshold,
+      expiryMinutes,
+      lateThresholdMinutes,
       allowRegenerate: checked,
     });
   };
@@ -91,9 +91,9 @@ export function QRSettingsPage() {
               type="number"
               min={1}
               max={30}
-              value={expiryTime}
-              onChange={(e) => setExpiryTime(parseInt(e.target.value) || 5)}
-              onBlur={() => saveConfig({ expiryTime })}
+              value={expiryMinutes}
+              onChange={(e) => setExpiryMinutes(parseInt(e.target.value) || 5)}
+              onBlur={() => saveConfig({ expiryMinutes })}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">
@@ -111,9 +111,9 @@ export function QRSettingsPage() {
               type="number"
               min={5}
               max={60}
-              value={lateThreshold}
-              onChange={(e) => setLateThreshold(parseInt(e.target.value) || 10)}
-              onBlur={() => saveConfig({ lateThreshold })}
+              value={lateThresholdMinutes}
+              onChange={(e) => setLateThresholdMinutes(parseInt(e.target.value) || 10)}
+              onBlur={() => saveConfig({ lateThresholdMinutes })}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">

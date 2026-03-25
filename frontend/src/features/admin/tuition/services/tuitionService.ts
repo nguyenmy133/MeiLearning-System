@@ -56,12 +56,21 @@ export async function getTuitionStats(month?: string) {
 
 export const getInvoices = getTuitionInvoices;
 
-export async function approveInvoice(id: string) {
+export async function approveInvoice(id: number) {
   const { data } = await apiClient.patch(`/tuition/${id}/confirm`);
   return data;
 }
 
-export async function confirmCashPayment(id: string) {
+export async function confirmCashPayment(id: number) {
   const { data } = await apiClient.post(`/tuition/${id}/pay`, { paymentMethod: "cash" });
   return data;
+}
+
+export async function remindAll(): Promise<{ sent: number; failed: number }> {
+  const { data } = await apiClient.post("/tuition/remind-all");
+  return data;
+}
+
+export async function remindOne(id: number): Promise<void> {
+  await apiClient.post(`/tuition/${id}/remind`);
 }

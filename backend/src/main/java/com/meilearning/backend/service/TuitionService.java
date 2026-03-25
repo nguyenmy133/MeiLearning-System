@@ -47,4 +47,10 @@ public interface TuitionService {
 
     TuitionStatsResponse getStats(String month);
 
+    /** Nhắc nợ hàng loạt — gửi thông báo tới tất cả student có hóa đơn pending/overdue */
+    java.util.Map<String, Integer> remindAll();
+
+    /** Nhắc nợ 1 hóa đơn cụ thể */
+    void remind(Long invoiceId);
+
 }

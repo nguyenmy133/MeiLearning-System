@@ -26,7 +26,7 @@ const getStatusColor = (status: InvoiceStatus) => {
 
 export function TuitionPage() {
   const [qrPaymentOpen, setQrPaymentOpen] = useState(false);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
 
   const { data: invoices = [], isLoading } = useMyInvoices();
   const initPayment = useInitiatePayment();
@@ -37,10 +37,11 @@ export function TuitionPage() {
   });
 
   const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
+  const reviewingInvoices = invoices.filter((i) => i.status === "reviewing");
   const paidInvoices = invoices.filter((i) => i.status === "paid");
   const selectedInvoice = invoices.find((i) => i.id === selectedInvoiceId);
 
-  const handlePayClick = (invoiceId: string) => {
+  const handlePayClick = (invoiceId: number) => {
     setSelectedInvoiceId(invoiceId);
     setQrPaymentOpen(true);
   };
@@ -99,7 +100,7 @@ export function TuitionPage() {
                           <div>
                             <p className="font-semibold text-foreground text-lg">{invoice.className}</p>
                             <p className="text-sm text-muted-foreground">
-                              Tháng {invoice.month.split("-").reverse().join("/")}
+                              Tháng {invoice.month}
                             </p>
                           </div>
                           <Badge variant="outline" className={`text-xs ${getStatusColor(invoice.status)}`}>
@@ -112,13 +113,13 @@ export function TuitionPage() {
                           <div className="flex justify-between text-muted-foreground">
                             <span>Có mặt / Đi muộn / Vắng không phép</span>
                             <span className="font-medium text-foreground">
-                              {invoice.presentSessions + invoice.lateSessions + invoice.absentUnexcusedSessions} buổi
+                              {(invoice.presentSessions ?? 0) + (invoice.lateSessions ?? 0) + (invoice.absentUnexcusedSessions ?? 0)} buổi
                             </span>
                           </div>
                           <div className="flex justify-between text-muted-foreground">
                             <span>Vắng có phép (miễn phí)</span>
                             <span className="font-medium text-blue-600">
-                              {invoice.absentExcusedSessions} buổi
+                              {invoice.absentExcusedSessions ?? 0} buổi
                             </span>
                           </div>
                           <div className="flex justify-between text-muted-foreground border-t pt-1 mt-1">
@@ -140,21 +141,51 @@ export function TuitionPage() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        {invoice.status === "reviewing" ? (
-                          <Button disabled className="bg-blue-600 text-white gap-2">
-                            <CheckCircle className="h-4 w-4" />
-                            Chờ đối soát
-                          </Button>
-                        ) : (
-                          <Button
-                            className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
-                            onClick={() => handlePayClick(invoice.id)}
-                          >
-                            <QrCode className="h-4 w-4" />
-                            Thanh toán QR
-                          </Button>
-                        )}
+                        <Button
+                          className="bg-warning text-warning-foreground hover:bg-warning/90 gap-2"
+                          onClick={() => handlePayClick(invoice.id)}
+                        >
+                          <QrCode className="h-4 w-4" />
+                          Thanh toán QR
+                        </Button>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Reviewing invoices */}
+          {reviewingInvoices.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-blue-500" />
+                Đang đối soát ({reviewingInvoices.length})
+              </h2>
+              {reviewingInvoices.map((invoice) => (
+                <Card key={invoice.id} className="border-blue-200/30 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="font-semibold text-foreground text-lg">{invoice.className}</p>
+                            <p className="text-sm text-muted-foreground">Tháng {invoice.month}</p>
+                          </div>
+                          <Badge variant="outline" className={`text-xs ${getStatusColor(invoice.status)}`}>
+                            {INVOICE_STATUS_LABELS[invoice.status]}
+                          </Badge>
+                        </div>
+                        <p className="text-2xl font-bold text-blue-600">{formatCurrency(invoice.totalAmount)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invoice.billableSessions} buổi × {formatCurrency(invoice.pricePerSession)}
+                        </p>
+                      </div>
+                      <Button disabled className="bg-blue-600 text-white gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Chờ đối soát
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -181,7 +212,7 @@ export function TuitionPage() {
                           <div>
                             <p className="font-medium text-foreground">{invoice.className}</p>
                             <p className="text-xs text-muted-foreground">
-                              Tháng {invoice.month.split("-").reverse().join("/")}
+                              Tháng {invoice.month}
                               {invoice.paidAt && ` • Thanh toán ${formatDateTime(invoice.paidAt)}`}
                             </p>
                           </div>
@@ -215,7 +246,7 @@ export function TuitionPage() {
           open={qrPaymentOpen}
           onOpenChange={setQrPaymentOpen}
           paymentInfo={{
-            invoiceId: selectedInvoice.id,
+            invoiceId: String(selectedInvoice.id),
             studentId: String(profile?.id ?? ""),
             studentName: profile?.name ?? "Học viên",
             amount: selectedInvoice.totalAmount,

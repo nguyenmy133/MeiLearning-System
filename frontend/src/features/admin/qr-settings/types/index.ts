@@ -1,5 +1,7 @@
 export interface QRSettings {
-  expiryTime: number;
-  lateThreshold: number;
+  id?: number;
+  enabled: boolean;
+  expiryMinutes: number;
+  lateThresholdMinutes: number;
   allowRegenerate: boolean;
 }
