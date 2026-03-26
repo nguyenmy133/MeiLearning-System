@@ -13,8 +13,6 @@ services:
     image: postgres:16-alpine
     container_name: meilearning-db
     restart: unless-stopped
-    env_file:
-      - ./backend/.env
     environment:
       POSTGRES_DB: ${DB_NAME:-meilearning}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -39,8 +37,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    env_file:
-      - ./backend/.env
     environment:
       TZ: Asia/Ho_Chi_Minh
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
@@ -49,9 +45,31 @@ services:
       DB_NAME: ${DB_NAME:-meilearning}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      JWT_SECRET: ${JWT_SECRET:-dGhpcyBpcyBhIHNhbXBsZSBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5IQ==}
+      JWT_SECRET: ${JWT_SECRET:-dGhpcyBpcyBhIHNhbXBsZSBzZWNgnsdfrewga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5IQ==}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      # ── Logging ──
+      LOG_LEVEL_APP: ${LOG_LEVEL_APP:-INFO}
+      LOG_LEVEL_SECURITY: ${LOG_LEVEL_SECURITY:-INFO}
+      # ── JPA ──
+      DDL_AUTO: ${DDL_AUTO:-update}
+      SHOW_SQL: ${SHOW_SQL:-false}
+      # ── Email ──
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # ── SMS (SpeedSMS) ──
+      SPEEDSMS_API_KEY: ${SPEEDSMS_API_KEY:-}
+      SPEEDSMS_SENDER: ${SPEEDSMS_SENDER:-Notify}
+      SPEEDSMS_TYPE: ${SPEEDSMS_TYPE:-2}
+      SPEEDSMS_MAX_PER_DAY: ${SPEEDSMS_MAX_PER_DAY:-3}
+      # ── Zalo ──
+      ZALO_ENABLED: ${ZALO_ENABLED:-false}
+      ZALO_APP_ID: ${ZALO_APP_ID:-}
+      ZALO_APP_SECRET: ${ZALO_APP_SECRET:-}
+      ZALO_OA_ID: ${ZALO_OA_ID:-}
+      ZALO_REFRESH_TOKEN: ${ZALO_REFRESH_TOKEN:-}
+      ZALO_ZNS_TEMPLATE_ID: ${ZALO_ZNS_TEMPLATE_ID:-}
     ports:
       - "${SERVER_PORT:-8080}:8080"
     volumes:
