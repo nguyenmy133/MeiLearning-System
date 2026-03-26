@@ -16,30 +16,10 @@ COPY . .
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
-# ── Stage 2: Serve with Nginx ──────────────────────────────────────
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# SPA routing: redirect all paths to index.html
-RUN echo 'server { \
-    listen 80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    client_max_body_size 10M; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    location /api/ { \
-        proxy_pass http://backend:8080; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-    } \
-    location /uploads/ { \
-        proxy_pass http://backend:8080; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# ── Stage 2: Serve with Caddy ──────────────────────────────────────
+FROM caddy:alpine
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/dist /srv
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
