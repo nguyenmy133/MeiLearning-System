@@ -1,0 +1,24 @@
+# ============================================================================
+# MeiLearning Frontend — Caddyfile
+# ============================================================================
+# Chỉ serve SPA static files. Reverse proxy được xử lý bởi
+# Caddy proxy container ở root level.
+# ============================================================================
+
+:80 {
+    # ── Static SPA files ────────────────────────────────────────────
+    root * /srv
+    try_files {path} /index.html
+    file_server
+
+    # ── Compression ─────────────────────────────────────────────────
+    encode gzip zstd
+
+    # ── Security Headers ────────────────────────────────────────────
+    header {
+        X-Content-Type-Options  nosniff
+        X-Frame-Options         DENY
+        Referrer-Policy         strict-origin-when-cross-origin
+        -Server
+    }
+}
