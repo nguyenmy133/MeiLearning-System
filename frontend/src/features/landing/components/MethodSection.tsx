@@ -45,7 +45,7 @@ export function MethodSection() {
           {/* Connector line */}
           <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-secondary/30 -translate-y-1/2" />
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {steps.map((step, index) => (
               <div
                 key={step.title}
@@ -53,12 +53,12 @@ export function MethodSection() {
                 style={{ animationDelay: `${index * 150}ms` }}
               >
                 {/* Step number */}
-                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6 relative z-10 shadow-lg">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4 sm:mb-6 relative z-10 shadow-lg">
                   <step.icon className="w-7 h-7 text-secondary-foreground" />
                 </div>
 
                 {/* Step label */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 -translate-y-full">
+                <div className="absolute top-2 sm:top-4 left-1/2 -translate-x-1/2 -translate-y-full">
                   <span className="text-xs font-bold text-secondary">
                     BƯỚC {index + 1}
                   </span>

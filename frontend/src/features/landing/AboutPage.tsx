@@ -62,7 +62,7 @@ const TiltCard = ({ children, className = "" }: { children: React.ReactNode; cla
             opacity: isHovered ? 1 : 0,
           }}
         />
-        <div style={{ transform: "translateZ(30px)" }} className="relative z-20 h-full w-full p-8 md:p-10">
+        <div style={{ transform: "translateZ(30px)" }} className="relative z-20 h-full w-full p-6 sm:p-8 md:p-10">
           {children}
         </div>
       </motion.div>
@@ -100,7 +100,7 @@ export function AboutPage() {
               <span className="text-primary font-medium text-sm uppercase tracking-wider mb-4 block">
                 Về chúng tôi
               </span>
-              <h1 className="text-4xl lg:text-5xl font-display font-bold mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold mb-6">
                 Nơi khơi nguồn tri thức, xây dựng tương lai
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">

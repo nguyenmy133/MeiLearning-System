@@ -123,7 +123,7 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background safe-top">
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-card transition-all duration-300 lg:flex ${
           sidebarOpen ? "w-64" : "w-20"
@@ -200,12 +200,12 @@ export function AdminLayout() {
             </div>
             <span className="font-display font-semibold text-foreground">Admin</span>
           </Link>
-          <button onClick={() => setMobileSidebarOpen(false)} className="rounded-lg p-1.5 hover:bg-accent">
+          <button onClick={() => setMobileSidebarOpen(false)} className="rounded-lg p-2 hover:bg-accent touch-target flex items-center justify-center">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-4rem)] px-3 py-4">
+        <ScrollArea className="h-[calc(100vh-4rem)] px-3 py-4 safe-bottom">
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
@@ -231,10 +231,10 @@ export function AdminLayout() {
         </ScrollArea>
       </aside>
 
-      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+      <div className={`flex flex-1 flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
-            <button onClick={() => setMobileSidebarOpen(true)} className="rounded-lg p-2 hover:bg-accent lg:hidden">
+            <button onClick={() => setMobileSidebarOpen(true)} className="rounded-lg p-2 hover:bg-accent lg:hidden touch-target flex items-center justify-center">
               <Menu className="h-5 w-5" />
             </button>
             <h1 className="hidden text-lg font-display font-semibold text-foreground sm:block">{getCurrentPageTitle()}</h1>
@@ -284,7 +284,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 min-w-0 overflow-x-hidden safe-bottom">
           <Outlet />
         </main>
       </div>

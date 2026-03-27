@@ -28,7 +28,7 @@ export function ContactPage() {
         {/* Contact Info Cards */}
         <section className="section-padding">
           <div className="container-custom">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 sm:mb-16">
               {[
                 {
                   icon: MapPin,
@@ -62,7 +62,7 @@ export function ContactPage() {
             </div>
 
             {/* Map placeholder + Form */}
-            <div className="grid lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12">
               <div className="rounded-2xl overflow-hidden bg-muted h-[400px] flex items-center justify-center">
                 <div className="text-center p-8">
                   <MapPin className="w-12 h-12 text-primary/30 mx-auto mb-4" />

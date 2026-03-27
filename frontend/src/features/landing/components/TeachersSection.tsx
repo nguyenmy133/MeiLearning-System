@@ -79,7 +79,7 @@ export function TeachersSection() {
         </motion.div>
 
         {/* Teachers grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {teachers.map((teacher, index) => (
             <motion.div
               key={teacher.id}
@@ -154,7 +154,7 @@ export function TeachersSection() {
 
         {/* Teacher Profile Modal */}
         <Dialog open={!!selectedTeacher} onOpenChange={() => setSelectedTeacher(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             {selectedTeacher && (
               <>
                 <DialogHeader>

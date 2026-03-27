@@ -23,7 +23,7 @@ export function Footer() {
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-secondary/15 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="container-custom relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 sm:gap-10 lg:gap-8 mb-12 sm:mb-16">
           
           {/* Brand Column */}
           <div className="lg:col-span-4 lg:pr-8">
@@ -128,7 +128,7 @@ export function Footer() {
         </div>
 
         {/* Footer Bottom Setup */}
-        <div className="flex flex-col md:flex-row items-center justify-between border-t border-white/10 pt-8 mt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 pt-8 mt-4">
           <p className="text-sm font-medium text-slate-500 mb-4 md:mb-0">
             © {new Date().getFullYear()} MeiLearning. Thiết kế và phát triển với tâm huyết.
           </p>

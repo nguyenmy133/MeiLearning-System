@@ -38,7 +38,7 @@ export function HeroSection() {
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative min-h-screen flex items-center pt-28 pb-20 lg:pt-32 overflow-hidden"
+      className="relative min-h-screen flex items-center pt-24 sm:pt-28 pb-16 sm:pb-20 lg:pt-32 overflow-hidden"
     >
       {/* Background gradient */}
       <div className="absolute inset-0 gradient-bg-hero" />
@@ -76,7 +76,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.1] mb-6 tracking-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold leading-[1.1] mb-4 sm:mb-6 tracking-tight"
             >
               Trung tâm dạy học trực tiếp – 
               <span className="gradient-text-emerald block mt-2 drop-shadow-sm"> học chắc, tiến bộ rõ</span>
@@ -137,13 +137,13 @@ export function HeroSection() {
 
           {/* Image */}
           {/* Image */}
-          <div className="relative mt-12 lg:mt-0 flex items-center justify-center perspective-[2000px]">
+          <div className="relative mt-8 sm:mt-12 lg:mt-0 flex items-center justify-center perspective-[2000px]">
             <motion.div 
               style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
               initial={{ opacity: 0, scale: 0.8, rotateY: -30 }}
               animate={{ opacity: 1, scale: 1, rotateY: 0 }}
               transition={{ duration: 1, type: "spring", bounce: 0.4 }}
-              className="relative w-full max-w-[450px] lg:max-w-[500px] xl:max-w-[550px] aspect-square rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_20px_50px_rgb(0,0,0,0.15)] ring-1 ring-border/50"
+              className="relative w-full max-w-[320px] sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] xl:max-w-[550px] aspect-square rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_20px_50px_rgb(0,0,0,0.15)] ring-1 ring-border/50"
             >
               <div style={{ transform: "translateZ(30px) scale(1.05)" }} className="absolute inset-0 w-full h-full transition-transform duration-300">
                 <img
@@ -162,7 +162,7 @@ export function HeroSection() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
               style={{ x: useTransform(mouseXSpring, [-0.5, 0.5], [-20, 20]), y: useTransform(mouseYSpring, [-0.5, 0.5], [-20, 20]) }}
-              className="absolute -bottom-6 left-0 md:-bottom-8 md:-left-8 bg-background/90 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-border/50 z-20"
+              className="absolute -bottom-4 -left-2 sm:-bottom-6 sm:left-0 md:-bottom-8 md:-left-8 bg-background/90 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-2xl border border-border/50 z-20"
             >
               <div className="flex items-center gap-3 md:gap-4">
                 <motion.div 
@@ -185,7 +185,7 @@ export function HeroSection() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: 1, type: "spring", stiffness: 200 }}
               style={{ x: useTransform(mouseXSpring, [-0.5, 0.5], [15, -15]), y: useTransform(mouseYSpring, [-0.5, 0.5], [15, -15]) }}
-              className="absolute top-10 right-0 lg:-right-8 bg-background/90 backdrop-blur-xl rounded-2xl p-3 md:p-4 shadow-2xl border border-border/50 z-20 hidden sm:block"
+              className="absolute top-4 sm:top-10 -right-2 sm:right-0 lg:-right-8 bg-background/90 backdrop-blur-xl rounded-xl sm:rounded-2xl p-2.5 sm:p-3 md:p-4 shadow-2xl border border-border/50 z-20"
             >
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-3">

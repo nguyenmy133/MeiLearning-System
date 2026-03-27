@@ -138,7 +138,7 @@ export function ExamReview() {
             {examInfo.className} — Xem lại bài thi
           </p>
         </div>
-        <Badge variant="secondary" className="ml-auto flex-shrink-0 gap-1">
+        <Badge variant="secondary" className="ml-auto flex-shrink-0 gap-1 hidden sm:flex">
           <Eye className="h-3.5 w-3.5" />
           Chế độ xem lại
         </Badge>
@@ -242,7 +242,7 @@ export function ExamReview() {
 
       {/* ── Stats Cards ───────────────────────────────────── */}
       {result && (
-        <div className={`grid grid-cols-2 ${hasPendingEssays ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
+        <div className={`grid grid-cols-2 ${hasPendingEssays ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -593,7 +593,7 @@ export function ExamReview() {
       </div>
 
       {/* ── Bottom Actions ────────────────────────────────── */}
-      <div className="flex gap-3 pb-4">
+      <div className="flex flex-wrap gap-3 pb-4">
         <Button variant="outline" onClick={() => navigate("/user/exams")} className="gap-1.5">
           <ChevronLeft className="h-4 w-4" /> Quay lại danh sách
         </Button>

@@ -152,7 +152,7 @@ export function ContactSection() {
               </div>
 
               {/* Need & Time */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-foreground font-medium">Nhu cầu</Label>
                   <Select value={formData.need} onValueChange={(v) => setFormData({ ...formData, need: v })}>

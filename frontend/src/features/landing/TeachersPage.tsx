@@ -122,7 +122,7 @@ export function TeachersPage() {
         {/* Teachers grid */}
         <section className="section-padding">
           <div className="container-custom">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredTeachers.map((teacher) => (
                 <div
                   key={teacher.id}
@@ -182,7 +182,7 @@ export function TeachersPage() {
 
         {/* Teacher Profile Modal */}
         <Dialog open={!!selectedTeacher} onOpenChange={() => setSelectedTeacher(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             {selectedTeacher && (
               <>
                 <DialogHeader>

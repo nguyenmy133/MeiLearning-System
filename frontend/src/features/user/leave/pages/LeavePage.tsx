@@ -197,7 +197,7 @@ export function LeavePage() {
               Tạo yêu cầu mới
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Tạo yêu cầu mới</DialogTitle>
             </DialogHeader>
@@ -312,7 +312,7 @@ export function LeavePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}><CardContent className="p-4"><Skeleton className="h-12 w-full" /></CardContent></Card>
@@ -326,7 +326,7 @@ export function LeavePage() {
                     <ClipboardList className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.total}</p>
                     <p className="text-xs text-muted-foreground">Tổng yêu cầu</p>
                   </div>
                 </div>
@@ -339,7 +339,7 @@ export function LeavePage() {
                     <Clock className="h-5 w-5 text-amber-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.pending}</p>
                     <p className="text-xs text-muted-foreground">Chờ duyệt</p>
                   </div>
                 </div>
@@ -352,7 +352,7 @@ export function LeavePage() {
                     <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{stats.approved}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.approved}</p>
                     <p className="text-xs text-muted-foreground">Đã duyệt</p>
                   </div>
                 </div>
@@ -365,7 +365,7 @@ export function LeavePage() {
                     <XCircle className="h-5 w-5 text-destructive" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{stats.rejected}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.rejected}</p>
                     <p className="text-xs text-muted-foreground">Từ chối</p>
                   </div>
                 </div>
@@ -383,7 +383,7 @@ export function LeavePage() {
         </CardHeader>
         <CardContent>
           {/* Filter tabs */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4 overflow-x-auto">
             {[
               { key: "all" as const, label: "Tất cả", count: stats.total },
               { key: "pending" as const, label: "Chờ duyệt", count: stats.pending },
@@ -431,7 +431,7 @@ export function LeavePage() {
                       : "bg-secondary/50 border-border"
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
                       {getStatusIcon(request.status)}
                       <div className="space-y-1.5">
