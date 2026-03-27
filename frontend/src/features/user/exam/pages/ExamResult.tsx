@@ -59,7 +59,7 @@ export function ExamResult() {
             <Skeleton className="h-4 w-40" />
           </div>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
@@ -188,7 +188,7 @@ export function ExamResult() {
       )}
 
       {/* Stats */}
-      <div className={`grid grid-cols-2 ${hasPendingEssays ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
+      <div className={`grid grid-cols-2 ${hasPendingEssays ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -346,7 +346,7 @@ export function ExamResult() {
               {result.breakdown.map((item, index) => (
                 <div
                   key={item.questionId}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-lg ${
                     item.correct
                       ? "bg-emerald-50 dark:bg-emerald-950/20"
                       : "bg-destructive/5"
@@ -360,7 +360,7 @@ export function ExamResult() {
                     )}
                     <span className="text-sm font-medium">Câu {index + 1}</span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-sm">
                     <span className="text-muted-foreground">
                       Đã chọn:{" "}
                       <span className={item.correct ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
@@ -384,7 +384,7 @@ export function ExamResult() {
       )}
 
       {/* Action buttons */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Button variant="outline" onClick={() => navigate("/user/exams")} className="gap-1.5">
           <ChevronLeft className="h-4 w-4" /> Quay lại danh sách
         </Button>

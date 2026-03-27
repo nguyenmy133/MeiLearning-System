@@ -29,10 +29,10 @@ export function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 safe-top ${
         isScrolled
           ? "glass-card shadow-xl py-3"
-          : "bg-transparent py-5"
+          : "bg-transparent py-4 sm:py-5"
       }`}
     >
       <div className="container-custom flex items-center justify-between">
@@ -76,7 +76,7 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <button
-          className="lg:hidden p-2 text-foreground"
+          className="lg:hidden p-2 text-foreground touch-target flex items-center justify-center"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -85,13 +85,13 @@ export function Header() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-card shadow-lg border-t border-border animate-fade-in">
-          <nav className="container-custom py-4 flex flex-col gap-2">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-card shadow-lg border-t border-border animate-fade-in max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <nav className="container-custom py-4 flex flex-col gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
-                className="py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                className="py-3 px-2 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent/50 rounded-lg transition-colors min-h-[44px] flex items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item.label}

@@ -60,7 +60,7 @@ const SESSION_STATUS_CONFIG: Record<
 function PageSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-24" />
         ))}
@@ -100,9 +100,9 @@ export function AdminDashboard() {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {displayStats.map((stat) => (
           <StatCard
             key={stat.label}
@@ -117,14 +117,15 @@ export function AdminDashboard() {
       </div>
 
       {/* ── Revenue chart + Attendance today ── */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Revenue area chart */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-display flex items-center gap-2">
+              <CardTitle className="text-sm sm:text-base font-display flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-primary" />
-                Doanh thu 7 ngày qua (triệu đồng)
+                <span className="hidden sm:inline">Doanh thu 7 ngày qua (triệu đồng)</span>
+                <span className="sm:hidden">Doanh thu 7 ngày</span>
               </CardTitle>
               <Badge variant="outline" className="text-xs">
                 Tuần này
@@ -132,10 +133,10 @@ export function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={140}>
               <AreaChart
                 data={revenueData}
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+                margin={{ top: 4, right: 4, left: -30, bottom: 0 }}
               >
                 <defs>
                   <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -244,7 +245,7 @@ export function AdminDashboard() {
       </div>
 
       {/* ── Today schedule + Alerts ── */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Today schedule */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">

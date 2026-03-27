@@ -86,7 +86,7 @@ export function QRPaymentModal({ open, onOpenChange, paymentInfo, onPaid }: QRPa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <QrCode className="w-5 h-5" />
@@ -105,7 +105,7 @@ export function QRPaymentModal({ open, onOpenChange, paymentInfo, onPaid }: QRPa
                 <img 
                   src={qrCodeUrl} 
                   alt="QR Code Payment"
-                  className="w-64 h-64 object-contain"
+                  className="w-48 h-48 sm:w-64 sm:h-64 object-contain"
                 />
               </div>
               <Button

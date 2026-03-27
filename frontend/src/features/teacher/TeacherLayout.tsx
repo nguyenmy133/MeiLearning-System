@@ -116,7 +116,7 @@ export function TeacherLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex safe-top">
       {/* Sidebar - Desktop */}
       <aside
         className={`hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 border-r border-border bg-card transition-all duration-300 ${
@@ -201,11 +201,11 @@ export function TeacherLayout() {
             </div>
             <span className="font-display font-semibold text-foreground">MeiLearning</span>
           </Link>
-          <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-accent">
+          <button onClick={() => setMobileSidebarOpen(false)} className="p-2 rounded-lg hover:bg-accent touch-target flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="py-4 px-3">
+        <nav className="py-4 px-3 overflow-y-auto flex-1 safe-bottom">
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
@@ -234,7 +234,7 @@ export function TeacherLayout() {
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
         <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
           <div className="flex items-center gap-4">
-            <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-accent">
+            <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-accent touch-target flex items-center justify-center">
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-lg font-display font-semibold text-foreground hidden sm:block">
@@ -288,7 +288,7 @@ export function TeacherLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6 min-w-0 overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 min-w-0 overflow-x-hidden safe-bottom">
           <Outlet />
         </main>
       </div>

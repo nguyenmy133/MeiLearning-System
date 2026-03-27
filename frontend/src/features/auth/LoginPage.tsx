@@ -234,7 +234,7 @@ export function LoginPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md">
           {/* Back link */}
           <Link
@@ -255,7 +255,7 @@ export function LoginPage() {
             </Link>
           </div>
 
-          <h2 className="text-2xl font-display font-bold mb-2">Đăng nhập</h2>
+          <h2 className="text-xl sm:text-2xl font-display font-bold mb-2">Đăng nhập</h2>
           <p className="text-muted-foreground mb-8">
             Nhập thông tin để truy cập tài khoản của bạn
           </p>

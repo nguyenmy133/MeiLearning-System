@@ -86,23 +86,23 @@ function formatRelativeTime(dateStr: string): string {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Skeleton className="h-28 rounded-2xl" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
         ))}
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-16 rounded-xl" />
         ))}
       </div>
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <Skeleton className="lg:col-span-2 h-72 rounded-xl" />
         <Skeleton className="h-72 rounded-xl" />
       </div>
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Skeleton className="h-56 rounded-xl" />
         <Skeleton className="h-56 rounded-xl" />
       </div>
@@ -170,10 +170,10 @@ export function TeacherDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ── 1. Greeting Banner ── */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground">
-        <h2 className="text-2xl font-display font-bold mb-1">Chào mừng, {user?.name ?? "Giáo viên"}!</h2>
+      <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-4 sm:p-6 text-primary-foreground">
+        <h2 className="text-xl sm:text-2xl font-display font-bold mb-1">Chào mừng, {user?.name ?? "Giáo viên"}!</h2>
         <p className="opacity-90">
           {isLoading
             ? "Đang tải lịch dạy..."
@@ -189,7 +189,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* ── 2. Stat Cards (4 columns) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Lớp hôm nay */}
         <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
@@ -258,7 +258,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* ── 3. Quick Actions ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
           { icon: QrCode, label: "Điểm danh", href: "/teacher/attendance", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
           { icon: FileCheck, label: "Tạo bài thi", href: "/teacher/exams", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" },
@@ -268,7 +268,7 @@ export function TeacherDashboard() {
           <button
             key={action.href}
             onClick={() => navigate(action.href)}
-            className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border hover:bg-accent hover:shadow-md transition-all group"
+            className="flex items-center gap-2 sm:gap-3 p-3 sm:p-3.5 rounded-xl bg-card border border-border hover:bg-accent hover:shadow-md transition-all group min-h-[44px]"
           >
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.color}`}>
               <action.icon className="w-4 h-4" />
@@ -279,11 +279,11 @@ export function TeacherDashboard() {
       </div>
 
       {/* ── 4. Lịch dạy hôm nay (2/3) + Điểm danh hôm nay (1/3) ── */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Timeline lịch dạy */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-display flex items-center gap-2">
+            <CardTitle className="text-base sm:text-lg font-display flex items-center gap-2">
               <Calendar className="w-4.5 h-4.5 text-primary" />
               Lịch dạy hôm nay
             </CardTitle>
@@ -451,7 +451,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* ── 5. Việc cần xử lý (1/2) + Bài thi của tôi (1/2) ── */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Pending tasks */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -581,7 +581,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* ── 6. Thông báo gần đây (1/2) + Bài thi sắp hết hạn (1/2) ── */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Notifications */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">

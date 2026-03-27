@@ -246,7 +246,7 @@ export function ExamTaking() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Top bar */}
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 bg-card border border-border rounded-lg p-3">
         <div className="flex items-center gap-3 min-w-0">
           <BookOpen className="h-5 w-5 text-primary flex-shrink-0" />
           <div className="min-w-0">
@@ -277,7 +277,7 @@ export function ExamTaking() {
       {/* Progress bar */}
       <Progress value={progressPct} className="h-1.5" />
 
-      <div className="grid lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Main — Question area */}
         <div className="lg:col-span-3 space-y-4">
           {currentQuestion && (
@@ -385,7 +385,7 @@ export function ExamTaking() {
               <CardTitle className="text-sm">Bản đồ câu hỏi</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-6 sm:grid-cols-5 gap-1.5">
                 {questions.map((q, idx) => {
                   const isAnswered = answers[q.id] !== undefined;
                   const isFlagged = flagged.has(q.id);
@@ -453,7 +453,7 @@ export function ExamTaking() {
 
       {/* ── Submit confirmation dialog ── */}
       <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Xác nhận nộp bài</DialogTitle>
             <DialogDescription>
@@ -490,7 +490,7 @@ export function ExamTaking() {
 
       {/* ── Exit confirmation dialog ── */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" /> Thoát bài thi

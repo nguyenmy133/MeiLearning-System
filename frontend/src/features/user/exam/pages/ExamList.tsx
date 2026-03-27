@@ -125,7 +125,7 @@ export function ExamList() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ export function ExamList() {
                 <FileText className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{exams.length}</p>
+                <p className="text-xl sm:text-2xl font-bold">{exams.length}</p>
                 <p className="text-xs text-muted-foreground">Tổng bài thi</p>
               </div>
             </div>
@@ -146,7 +146,7 @@ export function ExamList() {
                 <CheckCircle className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{completedExams.length}</p>
+                <p className="text-xl sm:text-2xl font-bold">{completedExams.length}</p>
                 <p className="text-xs text-muted-foreground">Đã hoàn thành</p>
               </div>
             </div>
@@ -159,7 +159,7 @@ export function ExamList() {
                 <Clock className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{todoExams.length}</p>
+                <p className="text-xl sm:text-2xl font-bold">{todoExams.length}</p>
                 <p className="text-xs text-muted-foreground">Cần làm</p>
               </div>
             </div>
@@ -172,7 +172,7 @@ export function ExamList() {
                 <Hourglass className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{pendingGradingCount}</p>
+                <p className="text-xl sm:text-2xl font-bold">{pendingGradingCount}</p>
                 <p className="text-xs text-muted-foreground">Chờ chấm</p>
               </div>
             </div>
@@ -228,7 +228,7 @@ export function ExamList() {
                           : "opacity-80"
                       }`}
                     >
-                      <CardContent className="p-6">
+                      <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                           <div className="flex-1 space-y-3">
                             <div className="flex items-start justify-between gap-4">
@@ -244,7 +244,7 @@ export function ExamList() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-sm">
                               <div className="flex items-center gap-2 text-muted-foreground">
                                 <Clock className="w-4 h-4" />
                                 <span>{exam.durationMinutes} phút</span>
@@ -310,7 +310,7 @@ export function ExamList() {
 
                   return (
                     <Card key={exam.id}>
-                      <CardContent className="p-6">
+                      <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                           <div className="flex-1 space-y-3">
                             <div>
@@ -326,7 +326,7 @@ export function ExamList() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                               <div>
                                 <p className="text-sm text-muted-foreground">Điểm số</p>
                                 <p className={`text-2xl font-bold ${
@@ -398,7 +398,7 @@ export function ExamList() {
               <div className="grid gap-4">
                 {missedExams.map((exam) => (
                   <Card key={exam.id} className="opacity-60">
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center gap-4">
                         <AlertCircle className="w-8 h-8 text-destructive flex-shrink-0" />
                         <div className="flex-1">
@@ -428,7 +428,7 @@ export function ExamList() {
 
       {/* ── Confirmation Dialog ── */}
       <Dialog open={!!confirmExam} onOpenChange={(open) => !open && setConfirmExam(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-warning" />

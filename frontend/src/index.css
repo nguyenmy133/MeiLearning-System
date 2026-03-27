@@ -88,6 +88,11 @@
     --error: 0 84% 60%;
     --error-foreground: 0 0% 100%;
     --error-light: 0 84% 97%;
+
+    /* Scrollbar Colors */
+    --scrollbar-thumb: hsl(160 10% 45% / 0.3);
+    --scrollbar-thumb-hover: hsl(160 10% 45% / 0.5);
+    --scrollbar-track: transparent;
   }
 
   .dark {
@@ -167,6 +172,11 @@
     --error: 0 62% 50%;
     --error-foreground: 0 0% 100%;
     --error-light: 0 62% 15%;
+
+    /* Scrollbar Colors Dark */
+    --scrollbar-thumb: hsl(160 15% 65% / 0.3);
+    --scrollbar-thumb-hover: hsl(160 15% 65% / 0.5);
+    --scrollbar-track: transparent;
   }
 }
 
@@ -223,7 +233,7 @@
   }
 
   .section-padding {
-    @apply py-16 md:py-24 lg:py-32;
+    @apply py-12 sm:py-16 md:py-24 lg:py-32;
   }
 
   /* Glass Morphism Cards */
@@ -247,27 +257,31 @@
 
   /* Premium Buttons */
   .btn-primary {
-    @apply bg-primary text-primary-foreground font-medium px-6 py-3 rounded-lg;
+    @apply bg-primary text-primary-foreground font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg;
     @apply transition-all duration-200 hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5;
     @apply active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+    @apply min-h-[44px];
   }
 
   .btn-secondary {
-    @apply border-2 border-primary text-primary font-medium px-6 py-3 rounded-lg;
+    @apply border-2 border-primary text-primary font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg;
     @apply transition-all duration-200 hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:-translate-y-0.5;
     @apply active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+    @apply min-h-[44px];
   }
 
   .btn-ghost {
-    @apply text-primary font-medium px-6 py-3 rounded-lg;
+    @apply text-primary font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg;
     @apply transition-all duration-200 hover:bg-primary/10;
     @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+    @apply min-h-[44px];
   }
 
   .btn-success {
-    @apply bg-success text-success-foreground font-medium px-6 py-3 rounded-lg;
+    @apply bg-success text-success-foreground font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg;
     @apply transition-all duration-200 hover:bg-success/90 hover:shadow-lg hover:-translate-y-0.5;
     @apply active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2;
+    @apply min-h-[44px];
   }
 
   /* Gradient Text */
@@ -294,22 +308,22 @@
 
   /* Status Badges */
   .badge-success {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
     @apply bg-success/10 text-success border border-success/20;
   }
 
   .badge-warning {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
     @apply bg-warning/10 text-warning border border-warning/20;
   }
 
   .badge-info {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
     @apply bg-info/10 text-info border border-info/20;
   }
 
   .badge-error {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
     @apply bg-error/10 text-error border border-error/20;
   }
 
@@ -318,6 +332,7 @@
     @apply w-full px-4 py-3 rounded-lg border-2 border-input bg-background;
     @apply transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20;
     @apply placeholder:text-muted-foreground;
+    @apply min-h-[44px];
   }
 
   /* Section Backgrounds */
@@ -368,7 +383,50 @@
     }
   }
 
-  /* Custom Scrollbar */
+  /* ─── Custom Scrollbar System ──────────────────────────────────────────── */
+  /* Desktop only - mobile uses native scroll for better UX */
+  @media (min-width: 1024px) {
+    /* Global custom scrollbar for ALL scrollable areas */
+    *::-webkit-scrollbar {
+      width: 6px;
+      height: 4px;
+    }
+    *::-webkit-scrollbar:hover {
+      width: 8px;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 9999px;
+      transition: background 0.2s ease, width 0.2s ease;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hover);
+    }
+    *::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    /* Firefox support */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+  }
+
+  /* Mobile: use native scrollbar */
+  @media (max-width: 1023px) {
+    * {
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Legacy class for backward compat */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -377,20 +435,15 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 4px;
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
+    background: var(--scrollbar-thumb-hover);
   }
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    html {
-      scroll-behavior: smooth;
-    }
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
   @keyframes fadeIn {
