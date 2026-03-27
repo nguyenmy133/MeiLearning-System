@@ -38,7 +38,8 @@ jobs:
             ./backup.sh
 
             echo "📥 Pulling latest code..."
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "🔨 Building & restarting containers..."
             docker compose up -d --build
