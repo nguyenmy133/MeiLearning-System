@@ -13,6 +13,21 @@ services:
     image: postgres:16-alpine
     container_name: meilearning-db
     restart: unless-stopped
+    # ── PostgreSQL Performance Tuning ────────────────────────────────────────
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c work_mem=8MB
+      -c maintenance_work_mem=64MB
+      -c max_connections=50
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c log_min_duration_statement=1000
+      -c log_statement=none
+      -c autovacuum=on
+      -c autovacuum_vacuum_scale_factor=0.05
+      -c autovacuum_analyze_scale_factor=0.025
     environment:
       POSTGRES_DB: ${DB_NAME:-meilearning}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
