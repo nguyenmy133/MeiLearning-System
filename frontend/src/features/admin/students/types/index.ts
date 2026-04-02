@@ -52,6 +52,7 @@ export interface ClassEnrollment {
 export interface Student {
   id: number;
   name: string;
+  username: string;
   email: string;
   phone: string;
   parentPhone: string;

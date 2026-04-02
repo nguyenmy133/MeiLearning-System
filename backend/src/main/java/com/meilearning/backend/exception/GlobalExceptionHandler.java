@@ -8,10 +8,8 @@
 
  *
 
- * Xá»­ lý tập trung tất cả exception â†’ trả về JSON response nhất quán.
-
- * Frontend nhận được format cá»‘ định để hiển thị lỗi.
-
+ * Xử lý tập trung tất cả exception -> trả về JSON response nhất quán.
+ * Frontend nhận được format cố định để hiển thị lỗi.
  * ============================================================================
 
  */
@@ -34,7 +32,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xử­ lý lỗi validation (@Valid / @Validated)
+     * Xử lý lỗi validation (@Valid / @Validated)
 
      */
 
@@ -66,7 +64,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xử­ lý ResourceNotFoundException (404)
+     * Xử lý ResourceNotFoundException (404)
 
      */
 
@@ -85,7 +83,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xử­ lý BusinessException (422 Unprocessable Entity)
+     * Xử lý BusinessException (422 Unprocessable Entity)
 
      */
 
@@ -104,7 +102,7 @@ public class GlobalExceptionHandler {
 
     /**
 
-     * Xử­ lý DuplicateResourceException (409 Conflict)
+     * Xử lý DuplicateResourceException (409 Conflict)
 
      */
 
@@ -134,7 +132,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse body = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message("Ä£ xảy ra lỗi hệ thống. Vui lòng thử lại sau.")
+                .message("Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.")
                 .timestamp(Instant.now())
                 .build();
 

@@ -23,6 +23,7 @@ public class ClassMapper {
                         .id(entity.getTeacher().getId())
                         .name(entity.getTeacher().getUser().getName())
                         .avatar(entity.getTeacher().getUser().getAvatar())
+                        .phone(entity.getTeacher().getUser().getPhone())
                         .build())
                 .facility(entity.getRoom() != null ? entity.getRoom().getFacility().getName() : null)
                 .room(entity.getRoom() != null ? entity.getRoom().getName() : null)

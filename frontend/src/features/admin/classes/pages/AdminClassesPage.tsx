@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   BookOpen, Plus, Search, MoreHorizontal, Edit, Trash2, Eye,
   Users, Calendar, Clock, Filter, MapPin, CheckCircle2, XCircle,
-  Loader2, Info,
+  Loader2, Info, Phone,
 } from "lucide-react";
 
 // ===== Module imports =====
@@ -365,14 +365,13 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
     if (!teacherId) { toast.error("Vui lòng chọn giáo viên"); return; }
     if (!facilityName) { toast.error("Vui lòng chọn cơ sở"); return; }
     if (!room.trim()) { toast.error("Vui lòng chọn phòng học"); return; }
-    if (maxStudents < 1 || maxStudents > 200) {
-      toast.error("Sĩ số tối đa phải từ 1 đến 200");
+    if (maxStudents < 1) {
+      toast.error("Sĩ số tối đa phải lớn hơn 0");
       return;
     }
     if (roomCapacity > 0 && maxStudents > roomCapacity) {
-      if (!window.confirm(`Sĩ số (${maxStudents}) vượt sức chứa phòng (${roomCapacity}). Bạn có chắc muốn tiếp tục?`)) {
-        return;
-      }
+      toast.error(`Sĩ số tối đa (${maxStudents}) không được vượt sức chứa phòng (${roomCapacity}).`);
+      return;
     }
     if (pricePerSession < 0) {
       toast.error("Giá mỗi buổi không được âm");
@@ -495,19 +494,16 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
           <Input
             type="number"
             min={1}
-            max={200}
             value={maxStudents}
             onChange={(e) => setMaxStudents(Number(e.target.value))}
           />
           {roomCapacity > 0 && maxStudents > roomCapacity ? (
-            <p className="text-xs text-amber-600 flex items-center gap-1">
-              ⚠️ Sĩ số ({maxStudents}) vượt sức chứa phòng ({roomCapacity}). Vẫn có thể lưu.
+            <p className="text-xs text-destructive flex items-center gap-1">
+              ⚠️ Sĩ số ({maxStudents}) vượt sức chứa phòng ({roomCapacity}).
             </p>
           ) : roomCapacity > 0 ? (
             <p className="text-xs text-muted-foreground">Sức chứa phòng: {roomCapacity} chỗ.</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">Tối đa 200 học viên.</p>
-          )}
+          ) : null}
         </div>
         <div className="space-y-2">
           <Label>Giá mỗi buổi (VND)</Label>
@@ -1062,12 +1058,27 @@ export function AdminClassesPage() {
 
               {/* Giáo viên */}
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Giáo viên</p>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-9 w-9">
                   <AvatarImage src={viewingClass.teacher.avatar} />
                   <AvatarFallback>{viewingClass.teacher.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
                 </Avatar>
-                <span className="font-medium">{viewingClass.teacher.name}</span>
+                <div>
+                  <p className="font-medium leading-none">
+                    {viewingClass.teacher.name}
+                    <span className="text-muted-foreground ml-2 text-xs font-normal">
+                      Mã GV: {viewingClass.teacher.id}
+                    </span>
+                  </p>
+                  {viewingClass.teacher.phone ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1.5">
+                      <Phone className="w-3 h-3" />
+                      {viewingClass.teacher.phone}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1.5">Chưa cập nhật SĐT</p>
+                  )}
+                </div>
               </div>
 
               {/* Thông tin lớp */}

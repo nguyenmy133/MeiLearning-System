@@ -12,6 +12,7 @@ public class StudentMapper {
     public StudentResponse toResponse(Student student) {
         return StudentResponse.builder()
                 .id(student.getId())
+                .username(student.getUser().getUsername())
                 .name(student.getUser().getName())
                 .email(student.getUser().getEmail())
                 .phone(student.getUser().getPhone())

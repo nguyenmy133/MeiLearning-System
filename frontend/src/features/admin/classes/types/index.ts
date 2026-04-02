@@ -56,6 +56,7 @@ export interface TeacherRef {
   id: number;
   name: string;
   avatar: string;
+  phone?: string;
   subjects: string[];
 }
 
@@ -69,7 +70,7 @@ export interface Class {
   facility: string;
   room: string;
   students: number;       // Số học viên hiện tại
-  maxStudents: number;    // Sĩ số tối đa (1-200)
+  maxStudents: number;    // Sĩ số tối đa (≥1, giới hạn bởi sức chứa phòng)
   pricePerSession: number; // Giá tiền mỗi buổi học (VND) — dùng để tính học phí
   schedule: SessionSlot[];
   startDate: string;      // YYYY-MM-DD

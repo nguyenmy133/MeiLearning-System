@@ -6,6 +6,7 @@ import java.util.List;
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class StudentResponse {
     private Long id;
+    private String username;
     private String name;
     private String email;
     private String phone;

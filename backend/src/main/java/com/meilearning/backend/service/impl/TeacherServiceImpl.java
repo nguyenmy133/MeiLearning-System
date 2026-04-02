@@ -129,6 +129,10 @@ public class TeacherServiceImpl implements TeacherService {
             throw new DuplicateResourceException("Email '" + request.getEmail() + "' đã tồn tại");
 
         }
+        
+        if (request.getPhone() != null && userRepository.existsByPhone(request.getPhone())) {
+            throw new DuplicateResourceException("Số điện thoại '" + request.getPhone() + "' gốc đã tồn tại");
+        }
 
         // 1. Auto-create User account
 
@@ -187,6 +191,12 @@ public class TeacherServiceImpl implements TeacherService {
 
             }
 
+        }
+        
+        if (request.getPhone() != null && !request.getPhone().equals(teacher.getUser().getPhone())) {
+            if (userRepository.existsByPhone(request.getPhone())) {
+                throw new DuplicateResourceException("Số điện thoại '" + request.getPhone() + "' gốc đã tồn tại");
+            }
         }
 
         teacherMapper.updateEntity(request, teacher);

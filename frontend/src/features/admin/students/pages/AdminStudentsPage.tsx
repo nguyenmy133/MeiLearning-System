@@ -240,12 +240,14 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
   );
 
   // Chỉ dùng cho create — username = SĐT (auto)
+  const [username, setUsername] = useState("");
+  const [usernameManuallyEdited, setUsernameManuallyEdited] = useState(false);
   const [password, setPassword] = useState(() => generatePassword());
   const [copied, setCopied] = useState(false);
 
   // ── Inline field errors ──
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [checkingPhone, setCheckingPhone] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   const setError = (field: string, msg: string) =>
@@ -259,7 +261,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const validatePhoneFmt = (value: string) => /^0[0-9]{9}$/.test(value);
+  const validatePhoneFmt = (value: string) => /^0\d{9}$/.test(value);
   const validateEmailFmt = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   // ── Blur handlers with async duplicate check ──
@@ -269,33 +271,35 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     else clearError("name");
   };
 
-  const handlePhoneBlur = async () => {
+  const handlePhoneBlur = () => {
     if (mode === "create" && !phone.trim()) {
-      setError("phone", "Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)");
+      setError("phone", "Vui lòng nhập số điện thoại");
       return;
     }
     if (phone.trim() && !validatePhoneFmt(phone)) {
       setError("phone", "Số điện thoại không hợp lệ (VD: 0901234567)");
       return;
     }
-    if (!phone.trim()) { clearError("phone"); return; }
+    clearError("phone");
+  };
 
-    // Async duplicate check (only on create)
-    if (mode === "create") {
-      try {
-        setCheckingPhone(true);
-        const { checkPhoneExists } = await import("../services/studentService");
-        const exists = await checkPhoneExists(phone);
-        if (exists) {
-          setError("phone", `Số điện thoại "${phone}" đã được sử dụng`);
-        } else {
-          clearError("phone");
-        }
-      } catch { clearError("phone"); }
-      finally { setCheckingPhone(false); }
-    } else {
-      clearError("phone");
+  const handleUsernameBlur = async () => {
+    if (mode !== "create") return;
+    if (!username.trim()) {
+      setError("username", "Tên đăng nhập không được để trống");
+      return;
     }
+    try {
+      setCheckingUsername(true);
+      const { checkPhoneExists } = await import("../services/studentService");
+      const exists = await checkPhoneExists(username);
+      if (exists) {
+        setError("username", `Tên đăng nhập "${username}" đã tồn tại`);
+      } else {
+        clearError("username");
+      }
+    } catch { clearError("username"); }
+    finally { setCheckingUsername(false); }
   };
 
   const handleEmailBlur = async () => {
@@ -337,18 +341,17 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     const errors: Record<string, string> = {};
     if (!name.trim()) errors.name = "Vui lòng nhập họ tên";
     if (email.trim() && !validateEmailFmt(email)) errors.email = "Email không đúng định dạng";
-
-    if (mode === "create") {
-      if (!phone.trim()) errors.phone = "Vui lòng nhập số điện thoại (dùng làm tên đăng nhập)";
-      else if (!validatePhoneFmt(phone)) errors.phone = "Số điện thoại không hợp lệ (VD: 0901234567)";
-      if (!password.trim()) errors.password = "Vui lòng nhập mật khẩu";
-    }
-
     if (phone.trim() && !validatePhoneFmt(phone)) errors.phone = "Số điện thoại không hợp lệ (VD: 0901234567)";
     if (parentPhone.trim() && !validatePhoneFmt(parentPhone)) errors.parentPhone = "SĐT phụ huynh không hợp lệ (VD: 0911234567)";
 
+    if (mode === "create") {
+      if (!phone.trim()) errors.phone = "Vui lòng nhập số điện thoại";
+      if (!username.trim()) errors.username = "Tên đăng nhập không được để trống";
+      if (!password.trim()) errors.password = "Vui lòng nhập mật khẩu";
+    }
+
     // Keep existing async duplicate errors
-    if (fieldErrors.phone?.includes("đã được sử dụng")) errors.phone = fieldErrors.phone;
+    if (fieldErrors.username?.includes("đã tồn tại")) errors.username = fieldErrors.username;
     if (fieldErrors.email?.includes("đã được sử dụng")) errors.email = fieldErrors.email;
 
     setFieldErrors(errors);
@@ -358,7 +361,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     }
 
     if (mode === "create") {
-      onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, username: phone, password } as CreateStudentDTO);
+      onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, username, password } as CreateStudentDTO);
     } else {
       onSubmit({ name, email: email.trim() || undefined, phone, parentPhone: parentPhone || undefined, classes, tuitionStatus } as UpdateStudentDTO);
     }
@@ -390,7 +393,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
           <Input
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) clearError("email"); }}
+            onChange={(e) => { setEmail(e.target.value.replace(/\s/g, "")); if (fieldErrors.email) clearError("email"); }}
             onBlur={handleEmailBlur}
             placeholder="email@gmail.com"
             className={inputErrorClass("email")}
@@ -402,25 +405,25 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
           <Label>Số điện thoại {mode === "create" && <span className="text-destructive">*</span>}</Label>
           <Input
             value={phone}
-            onChange={(e) => { setPhone(e.target.value); if (fieldErrors.phone) clearError("phone"); }}
+            onChange={(e) => { const d = e.target.value.replace(/\D/g, ""); setPhone(d); if (!usernameManuallyEdited) setUsername(d); if (fieldErrors.phone) clearError("phone"); }}
             onBlur={handlePhoneBlur}
             placeholder="0901234567"
+            inputMode="numeric"
+            maxLength={11}
             className={inputErrorClass("phone")}
           />
-          {checkingPhone && <p className="text-[10px] text-muted-foreground">Đang kiểm tra...</p>}
           {fieldErrors.phone && <p className="text-xs text-destructive">{fieldErrors.phone}</p>}
-          {mode === "create" && phone && !fieldErrors.phone && (
-            <p className="text-[10px] text-muted-foreground">Tên đăng nhập sẽ là: <span className="font-mono font-semibold">{phone}</span></p>
-          )}
         </div>
       </div>
       <div className="space-y-2">
         <Label>SĐT Phụ huynh</Label>
         <Input
           value={parentPhone}
-          onChange={(e) => { setParentPhone(e.target.value); if (fieldErrors.parentPhone) clearError("parentPhone"); }}
+          onChange={(e) => { setParentPhone(e.target.value.replace(/\D/g, "")); if (fieldErrors.parentPhone) clearError("parentPhone"); }}
           onBlur={handleParentPhoneBlur}
           placeholder="0911234567"
+          inputMode="numeric"
+          maxLength={11}
           className={inputErrorClass("parentPhone")}
         />
         {fieldErrors.parentPhone && <p className="text-xs text-destructive">{fieldErrors.parentPhone}</p>}
@@ -460,12 +463,30 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Tài khoản hệ thống
           </p>
-          <div className="p-3 rounded-lg bg-secondary/50 space-y-0.5">
-            <p className="text-xs text-muted-foreground">Tên đăng nhập (tự động = Số điện thoại)</p>
-            {phone ? (
-              <p className="font-mono font-semibold text-sm">{phone}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">— nhập SĐT ở trên để tự điền</p>
+          <div className="space-y-2">
+            <Label>Tên đăng nhập <span className="text-destructive">*</span></Label>
+            <Input
+              value={username}
+              onChange={(e) => { setUsername(e.target.value.replace(/\s/g, "").toLowerCase()); setUsernameManuallyEdited(true); if (fieldErrors.username) clearError("username"); }}
+              onBlur={handleUsernameBlur}
+              placeholder="Tự động điền từ SĐT"
+              className={`font-mono ${inputErrorClass("username")}`}
+            />
+            {checkingUsername && <p className="text-[10px] text-muted-foreground">Đang kiểm tra...</p>}
+            {fieldErrors.username && <p className="text-xs text-destructive">{fieldErrors.username}</p>}
+            {fieldErrors.username?.includes("đã tồn tại") && (
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline"
+                onClick={() => { setUsername(phone + "_2"); setUsernameManuallyEdited(true); clearError("username"); }}
+              >
+                👉 Dùng gợi ý: <span className="font-mono font-semibold">{phone}_2</span>
+              </button>
+            )}
+            {!fieldErrors.username && !checkingUsername && (
+              <p className="text-xs text-muted-foreground">
+                Tự động lấy từ SĐT. Có thể thay đổi nếu bị trùng.
+              </p>
             )}
           </div>
           <div className="space-y-2">
@@ -500,7 +521,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
       )}
 
 
-      <Button className="w-full" onClick={handleSubmit} disabled={isPending || checkingPhone || checkingEmail}>
+      <Button className="w-full" onClick={handleSubmit} disabled={isPending || checkingUsername || checkingEmail}>
         {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {mode === "create" ? "Thêm học viên" : "Cập nhật"}
       </Button>
@@ -1259,6 +1280,10 @@ export function AdminStudentsPage() {
                 <div>
                   <p className="text-muted-foreground text-xs">SĐT Phụ huynh</p>
                   <p className="font-medium">{viewingStudent.parentPhone || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Tên đăng nhập</p>
+                  <p className="font-mono font-medium text-primary">{viewingStudent.username || "—"}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Ngày đăng ký</p>
