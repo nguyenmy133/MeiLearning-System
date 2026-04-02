@@ -591,7 +591,7 @@ export function AdminSubjectsPage() {
 
       {/* Add dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Thêm môn học mới</DialogTitle>
           </DialogHeader>
@@ -606,7 +606,7 @@ export function AdminSubjectsPage() {
 
       {/* Edit dialog */}
       <Dialog open={!!editSubject} onOpenChange={(open) => !open && setEditSubject(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa môn học</DialogTitle>
           </DialogHeader>

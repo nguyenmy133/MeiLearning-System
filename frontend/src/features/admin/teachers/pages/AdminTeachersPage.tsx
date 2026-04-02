@@ -187,10 +187,8 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
   };
 
   const validatePhone = (val: string): string => {
-    if (!val.trim()) return "Số điện thoại không được để trống";
-    const digits = val.replace(/[\s\-\.]/g, "");
-    if (!/^\d+$/.test(digits)) return "Số điện thoại chỉ được chứa chữ số";
-    if (digits.length < 10 || digits.length > 11) return "Số điện thoại phải có 10-11 chữ số";
+    if (!val) return "Số điện thoại không được để trống";
+    if (!/^\d{10,11}$/.test(val)) return "Số điện thoại phải có 10-11 chữ số";
     return "";
   };
 
@@ -203,11 +201,12 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
   };
   const isValid = !errors.name && !errors.email && !errors.phone && !errors.username && !errors.password;
 
-  // Auto-fill username từ số điện thoại
+  // Auto-fill username từ số điện thoại — chỉ cho phép chữ số
   const handlePhoneChange = (value: string) => {
-    setPhone(value);
+    const digitsOnly = value.replace(/\D/g, "");
+    setPhone(digitsOnly);
     if (mode === "create" && !usernameManuallyEdited) {
-      setUsername(value.replace(/[\s\-\.]/g, ""));
+      setUsername(digitsOnly);
     }
   };
 
@@ -269,9 +268,10 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
           <Input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
             onBlur={() => markTouched("email")}
             placeholder="email@edu.vn"
+            autoComplete="email"
             className={touched.email && errors.email ? "border-destructive" : ""}
           />
           {touched.email && errors.email && (
@@ -285,6 +285,8 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
             onChange={(e) => handlePhoneChange(e.target.value)}
             onBlur={() => markTouched("phone")}
             placeholder="0901234567"
+            inputMode="numeric"
+            maxLength={11}
             className={touched.phone && errors.phone ? "border-destructive" : ""}
           />
           {touched.phone && errors.phone && (

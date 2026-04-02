@@ -27,6 +27,7 @@ public class ClassResponse {
         private Long id;
         private String name;
         private String avatar;
+        private String phone;
     }
 
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
