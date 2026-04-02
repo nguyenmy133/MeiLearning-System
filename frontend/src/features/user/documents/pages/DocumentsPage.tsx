@@ -87,22 +87,25 @@ export function DocumentsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [playingVideo, setPlayingVideo] = useState<DocumentItem | null>(null);
 
-  const { data: documents = [], isLoading: docsLoading } = useDocuments();
   const { data: courses = [] } = useCourses();
+
+  // Derive numeric classId from selected course for server-side filtering
+  const classIdFilter = selectedCourse !== "all" ? Number(selectedCourse) : undefined;
+  const { data: documents = [], isLoading: docsLoading } = useDocuments(
+    !isNaN(classIdFilter as number) ? classIdFilter : undefined
+  );
 
   const allDocs = documents;
   const fileDocs = documents.filter((d) => d.type !== "video" && d.type !== "youtube");
   const videoDocs = documents.filter((d) => d.type === "video" || d.type === "youtube");
 
+  // Client-side: chỉ filter theo search text (course filter đã xử lý server-side)
   const getFiltered = (items: DocumentItem[]) =>
     items.filter((doc) => {
       const matchesSearch = doc.name
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
-      const matchesCourse =
-        selectedCourse === "all" ||
-        doc.course.includes(courses.find((c) => c.id === selectedCourse)?.name ?? "---");
-      return matchesSearch && matchesCourse;
+      return matchesSearch;
     });
 
   // ── Handlers — FIX: dùng doc.fileUrl trực tiếp thay vì URL tự tạo ────────
