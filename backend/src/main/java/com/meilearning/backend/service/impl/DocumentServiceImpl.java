@@ -70,6 +70,15 @@ public class DocumentServiceImpl implements DocumentService {
             // Teacher: chỉ thấy tài liệu mình upload
             final Long userId = currentUser.getId();
             spec = spec.and((root, q, cb) -> cb.equal(root.get("uploadedBy").get("id"), userId));
+
+            // Teacher + classId filter: thêm JOIN riêng (teacher không có RBAC class filter nên chỉ 1 JOIN)
+            if (classId != null) {
+                spec = spec.and((root, q, cb) -> {
+                    if (q != null) q.distinct(true);
+                    Join<Document, ClassEntity> classJoin = root.join("classes", JoinType.INNER);
+                    return cb.equal(classJoin.get("id"), classId);
+                });
+            }
         } else if (isStudent) {
             // Student: thấy tài liệu của các lớp đã đăng ký
             Student student = studentRepository.findByUserUsername(currentUser.getUsername())
@@ -80,23 +89,29 @@ public class DocumentServiceImpl implements DocumentService {
                 // Chưa đăng ký lớp nào → trả rỗng
                 spec = spec.and((root, q, cb) -> cb.literal(false).isNotNull());
             } else {
-                // ManyToMany: JOIN document.classes và filter theo enrolled class IDs
+                // Dùng 1 JOIN duy nhất cho cả RBAC + classId filter (tránh double JOIN bug)
                 spec = spec.and((root, q, cb) -> {
-                    q.distinct(true);
+                    if (q != null) q.distinct(true);
                     Join<Document, ClassEntity> classJoin = root.join("classes", JoinType.INNER);
+                    if (classId != null) {
+                        // Gộp: enrolled class + specific classId → chỉ trả nếu classId nằm trong enrolled
+                        return cb.and(
+                                classJoin.get("id").in(enrolledClassIds),
+                                cb.equal(classJoin.get("id"), classId)
+                        );
+                    }
                     return classJoin.get("id").in(enrolledClassIds);
                 });
             }
-        }
-        // Admin: không filter → thấy tất cả
-
-        // Filter thêm theo classId nếu có
-        if (classId != null) {
-            spec = spec.and((root, q, cb) -> {
-                q.distinct(true);
-                Join<Document, ClassEntity> classJoin = root.join("classes", JoinType.INNER);
-                return cb.equal(classJoin.get("id"), classId);
-            });
+        } else {
+            // Admin: không filter RBAC → thấy tất cả
+            if (classId != null) {
+                spec = spec.and((root, q, cb) -> {
+                    if (q != null) q.distinct(true);
+                    Join<Document, ClassEntity> classJoin = root.join("classes", JoinType.INNER);
+                    return cb.equal(classJoin.get("id"), classId);
+                });
+            }
         }
 
         Page<Document> result = documentRepository.findAll(spec, pageable);
