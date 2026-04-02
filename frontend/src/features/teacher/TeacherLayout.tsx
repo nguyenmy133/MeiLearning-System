@@ -109,9 +109,9 @@ export function TeacherLayout() {
     navigate("/teacher/notifications");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     queryClient.clear();
-    logout();
+    await logout();
     navigate("/login", { replace: true });
   };
 

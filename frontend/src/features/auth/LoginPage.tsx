@@ -77,9 +77,9 @@ export function LoginPage() {
       const response = await apiClient.post("/auth/login", {
         username: formData.username.trim(),
         password: formData.password,
+        rememberMe: formData.remember,
       }) as any;
 
-      // response = { data: { user, accessToken }, message } (do interceptor trả response.data)
       const { user, accessToken } = response.data;
 
       login(

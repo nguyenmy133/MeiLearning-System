@@ -12,7 +12,10 @@ interface RoleRouteProps extends GuardProps {
 }
 
 export function PublicOnlyRoute({ children }: GuardProps) {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, isInitializing, role } = useAuth();
+
+  // Đang khôi phục session → chờ, không redirect vội
+  if (isInitializing) return null;
 
   if (isAuthenticated && role) {
     return <Navigate to={getRoleHomePath(role)} replace />;
@@ -22,8 +25,11 @@ export function PublicOnlyRoute({ children }: GuardProps) {
 }
 
 export function RoleRoute({ allowRoles, children }: RoleRouteProps) {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, isInitializing, role } = useAuth();
   const location = useLocation();
+
+  // Đang khôi phục session → render nothing, tránh flash về /login
+  if (isInitializing) return null;
 
   if (!isAuthenticated || !role) {
     return <Navigate to="/login" replace state={{ from: location }} />;

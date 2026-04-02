@@ -2,10 +2,10 @@
 # MeiLearning System — Auto Deploy via GitHub Actions
 # ============================================================================
 # Trigger: push vào branch main
-# Flow: SSH vào VPS → backup DB → git pull → docker compose build & restart
+# Flow: SSH vào VPS → backup DB → run migration → git pull → docker compose
 # ============================================================================
 
-name: "\U0001F680 Deploy to VPS"
+name: "🚀 Deploy to VPS"
 
 on:
   push:
@@ -16,7 +16,8 @@ on:
       - 'docker-compose.yml'
       - 'Caddyfile'
       - '.env.example'
-  workflow_dispatch:    # Cho phép trigger thủ công từ GitHub UI
+      - 'docker/**'              # Trigger khi có migration mới
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -24,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: "\U0001F510 Deploy via SSH"
+      - name: "🔐 Deploy via SSH"
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -32,6 +33,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
+            set -e
             cd ~/MeiLearning-System
 
             echo "💾 Backing up database before deploy..."
@@ -41,13 +43,30 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            echo "🗄️ Running database migrations..."
+            cat docker/migrate.sql \
+              | docker exec -i meilearning-db psql \
+                  -U "${DB_USERNAME:-postgres}" \
+                  -d "${DB_NAME:-meilearning}"
+            echo "✅ Migration completed."
+
             echo "🔨 Building & restarting containers..."
             docker compose up -d --build
 
-            echo "⏳ Waiting for backend to start..."
-            sleep 30
+            echo "⏳ Waiting for backend to be ready (max 2 min)..."
+            for i in $(seq 1 12); do
+              if docker exec meilearning-backend curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+                echo "✅ Backend is healthy!"
+                break
+              fi
+              echo "   Attempt $i/12 — waiting 10s..."
+              sleep 10
+            done
 
-            echo "🔍 Checking container status..."
-            docker ps
+            echo "🔍 Container status:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-            echo "✅ Deploy completed!"
+            echo "📋 Backend last 20 lines:"
+            docker logs meilearning-backend --tail 20
+
+            echo "🎉 Deploy completed successfully!"
