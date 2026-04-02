@@ -6,3 +6,7 @@ target
 .gitignore
 README.md
 docs
+
+# AI Tooling
+.agent/
+.gemini/

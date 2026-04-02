@@ -48,3 +48,7 @@ coverage/
 Thumbs.db
 
 docs/
+
+# AI Tooling (local dev only)
+.agent/
+.gemini/

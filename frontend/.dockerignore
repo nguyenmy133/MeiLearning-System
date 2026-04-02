@@ -8,3 +8,7 @@ npm-debug.log*
 .gitignore
 README.md
 docs
+
+# AI Tooling
+.agent/
+.gemini/
