@@ -53,11 +53,17 @@ CREATE INDEX IF NOT EXISTS idx_grades_class
     ON grades(class_id);
 
 -- ── leave_requests ───────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_leave_student
-    ON leave_requests(student_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requester
+    ON leave_requests(requester_id);
 
-CREATE INDEX IF NOT EXISTS idx_leave_teacher
-    ON leave_requests(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_leave_reviewed_by
+    ON leave_requests(reviewed_by_id);
+
+CREATE INDEX IF NOT EXISTS idx_leave_session
+    ON leave_requests(session_id);
+
+CREATE INDEX IF NOT EXISTS idx_leave_status
+    ON leave_requests(status) WHERE status = 'pending';
 
 -- ── reschedule_requests ──────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_reschedule_class
@@ -86,9 +92,9 @@ CREATE INDEX IF NOT EXISTS idx_notifications_unread
 CREATE INDEX IF NOT EXISTS idx_classes_active
     ON classes(teacher_id, status) WHERE status IN ('active', 'upcoming');
 
--- QR Token chưa dùng
+-- QR Token đang active
 CREATE INDEX IF NOT EXISTS idx_qr_token_active
-    ON attendance_qr_tokens(token) WHERE used = false;
+    ON attendance_qr_tokens(token) WHERE active = true;
 
 -- Covering index cho báo cáo điểm danh
 CREATE INDEX IF NOT EXISTS idx_attendance_covering

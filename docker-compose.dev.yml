@@ -1,0 +1,30 @@
+# ============================================================================
+# docker-compose.dev.yml — Local Development Override
+# ============================================================================
+# Dùng: docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up -d --build
+# Truy cập: http://localhost:3001
+#
+# Khác với prod:
+#   - Caddy port 3001 (tránh conflict với Windows port 80)
+#   - Backend expose 8080 ra host (debug bằng Postman/curl nếu cần)
+#   - Spring profile: dev (DDL auto-update, verbose log)
+# ============================================================================
+
+services:
+  backend:
+    ports:
+      - "127.0.0.1:8080:8080"   # Expose để debug bằng Postman/curl nếu cần
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DDL_AUTO: update
+      LOG_LEVEL_APP: DEBUG
+
+  frontend:
+    build:
+      args:
+        VITE_API_BASE_URL: /api/v1   # Relative path → đi qua Caddy
+
+  caddy:
+    ports:
+      - "${CADDY_HTTP_PORT:-3001}:80"    # Local: 3001 → tránh cần quyền admin cho port 80
+      - "${CADDY_HTTPS_PORT:-4433}:443"

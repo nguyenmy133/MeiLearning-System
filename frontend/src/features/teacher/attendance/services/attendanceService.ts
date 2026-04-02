@@ -65,10 +65,12 @@ export async function saveAttendance(_teacherId: number, dto: SaveAttendanceDTO)
   await apiClient.post("/attendance/bulk", {
     sessionId: dto.sessionId,
     attendances: dto.attendees
-      .filter((a) => a.status !== "pending") // BE không có status "pending"
+      .filter((a) => a.status !== "pending" && a.status != null) // BE không có status "pending"
       .map((a) => ({
         studentId: Number(a.studentId), // BE expects Long
-        status: a.status,
+        // Bug fix: BE enum AttendanceStatus dùng lowercase (present, absent, late, absent_excused)
+        // Normalize về lowercase để tránh IllegalArgumentException khi BE gọi valueOf()
+        status: a.status.toLowerCase(),
         note: undefined,
       })),
     confirm: dto.confirm,
@@ -110,11 +112,17 @@ export async function generateQrToken(sessionId: number): Promise<QrTokenRespons
  */
 export async function getActiveQrToken(sessionId: number): Promise<QrTokenResponse | null> {
   try {
-    const { data, status } = await apiClient.get("/attendance/qr/active", {
+    // Bug fix: apiClient interceptor returns response.data (ApiResponse object),
+    // NOT the AxiosResponse — so `status` from destructuring is always undefined.
+    // Backend returns 204 with empty body when no active token exists.
+    // After fix: ApiResponseWrapper returns null → apiClient gets {} → data is falsy.
+    const response = await apiClient.get("/attendance/qr/active", {
       params: { sessionId },
-    });
-    if (status === 204 || !data) return null;
-    return data;
+    }) as any;
+    // response here IS the ApiResponse: { data: QrTokenResponse | null, message: string }
+    const tokenData = response?.data ?? response;
+    if (!tokenData || !tokenData.token) return null;
+    return tokenData;
   } catch {
     return null;
   }

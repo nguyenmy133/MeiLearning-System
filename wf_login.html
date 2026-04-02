@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Login Wireframe</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Chilanka&display=swap');
+    
+    body {
+      background-color: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+      font-family: 'Chilanka', cursive, sans-serif;
+    }
+
+    .browser {
+      width: 900px;
+      height: 600px;
+      background: white;
+      border: 2px solid #333;
+      border-radius: 4px;
+      position: relative;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    /* Browser Header */
+    .browser-header {
+      background: #e0e0e0;
+      border-bottom: 2px solid #333;
+      padding: 10px 10px 0 10px;
+      position: relative;
+    }
+
+    .tab {
+      display: inline-block;
+      background: white;
+      border: 2px solid #333;
+      border-bottom: none;
+      padding: 6px 20px;
+      border-radius: 8px 8px 0 0;
+      font-size: 14px;
+      margin-left: 20px;
+      position: relative;
+      z-index: 2;
+      margin-bottom: -2px;
+    }
+
+    .toolbar {
+      background: white;
+      border-top: 2px solid #333;
+      border-bottom: 2px solid #333;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .address-bar {
+      border: 2px solid #333;
+      border-radius: 20px;
+      padding: 4px 15px;
+      flex-grow: 1;
+      font-size: 14px;
+    }
+
+    /* Content */
+    .content {
+      display: flex;
+      height: calc(100% - 90px);
+    }
+
+    .left-side {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .right-side {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1 {
+      color: #b8860b;
+      font-size: 48px;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+    }
+
+    /* Sketchy Box */
+    .sketch-box {
+      border: 2px solid #333;
+      padding: 30px;
+      width: 320px;
+      background: white;
+      /* Wobbly border effect */
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+    }
+
+    .sketch-input {
+      border: 2px solid #333;
+      padding: 10px;
+      margin-bottom: 15px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 15px 225px 255px 15px/255px 15px 225px 15px;
+      font-family: 'Chilanka', cursive;
+      font-size: 16px;
+      background: transparent;
+    }
+
+    .sketch-label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 16px;
+    }
+
+    .sketch-btn {
+      border: 2px solid #333;
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+      padding: 10px;
+      width: 100%;
+      text-align: center;
+      cursor: pointer;
+      font-family: 'Chilanka', cursive;
+      font-size: 16px;
+      background: transparent;
+      margin-top: 10px;
+    }
+
+    .sketch-link {
+      color: #0066cc;
+      text-decoration: underline;
+      display: block;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="browser">
+    <div class="browser-header">
+      <div class="tab">MeiLearning</div>
+    </div>
+    <div class="toolbar">
+      <span>&larr; &rarr; &#x21bb;</span>
+      <div class="address-bar">http://localhost:5173/login</div>
+    </div>
+
+    <div class="content">
+      <div class="left-side">
+        <h1>MeiLearning</h1>
+        <div class="subtitle">Hệ thống quản lý học tập thông minh</div>
+      </div>
+      <div class="right-side">
+        <div class="sketch-box">
+          <label class="sketch-label">Email hoặc số điện thoại</label>
+          <div class="sketch-input"></div>
+
+          <label class="sketch-label">Mật khẩu</label>
+          <div class="sketch-input"></div>
+
+          <div class="sketch-btn">Đăng nhập</div>
+          
+          <a href="#" class="sketch-link">Quên mật khẩu?</a>
+
+          <div style="text-align:center; margin:15px 0;">──────────</div>
+
+          <div class="sketch-btn">Tạo tài khoản mới</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -416,9 +416,11 @@ public class ClassServiceImpl implements ClassService {
     @Override
     @Transactional(readOnly = true)
     public List<ClassResponse> getEnrolledClassesByStudent(Long studentId) {
+        // Bug fix: getById() per enrollment → N+1 queries (50 enrollments = 51 queries)
+        // Fix: map trực tiếp từ ClassEntity đã được fetch trong enrollment join
         return enrollmentRepository.findByStudentId(studentId)
                 .stream()
-                .map(enrollment -> getById(enrollment.getClassEntity().getId()))
+                .map(enrollment -> classMapper.toResponse(enrollment.getClassEntity()))
                 .toList();
     }
 

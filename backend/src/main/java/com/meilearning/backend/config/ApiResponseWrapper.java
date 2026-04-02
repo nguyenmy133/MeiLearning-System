@@ -8,33 +8,23 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import com.meilearning.backend.dto.response.ApiResponse;
+import com.meilearning.backend.exception.ErrorResponse;
 
 /**
-
  * Auto-wrap tất cả response từ controllers vào ApiResponse.
-
  * Nếu controller đã trả về ApiResponse, sẽ không wrap lại lần nữa.
-
  *
-
  * Kết quả: Tất cả API endpoint đều trả về format:
-
  * { "data": T, "message": "..." }
-
  */
-
 @RestControllerAdvice(basePackages = "com.meilearning.backend.controller")
 public class ApiResponseWrapper implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-
         // Không wrap nếu đã là ApiResponse
-
         return !returnType.getParameterType().equals(ApiResponse.class)
-
                 && !ApiResponse.class.isAssignableFrom(returnType.getParameterType());
-
     }
 
     @Override
@@ -46,30 +36,30 @@ public class ApiResponseWrapper implements ResponseBodyAdvice<Object> {
                                    ServerHttpResponse response) {
 
         // Skip nếu body đã là ApiResponse
-
         if (body instanceof ApiResponse) {
             return body;
-
         }
 
-        // Skip null body (204 No Content)
+        // Bug fix: Skip ErrorResponse từ GlobalExceptionHandler — không double-wrap
+        // ErrorResponse có format riêng { status, message, errors, timestamp }
+        if (body instanceof ErrorResponse) {
+            return body;
+        }
 
+        // Bug fix: KHÔNG wrap null body thành 200 OK
+        // Controller dùng ResponseEntity.noContent().build() → Spring set status 204
+        // Nếu wrap null → Spring thấy có body → đổi thành 200 → FE mất 204
         if (body == null) {
-            return ApiResponse.ok(null, "Thành công");
-
+            return null;
         }
 
         // Swagger/OpenAPI endpoint không wrap
-
         String path = request.getURI().getPath();
-
         if (path.contains("/v3/api-docs") || path.contains("/swagger")) {
             return body;
-
         }
 
         return ApiResponse.ok(body);
-
     }
 
 }
