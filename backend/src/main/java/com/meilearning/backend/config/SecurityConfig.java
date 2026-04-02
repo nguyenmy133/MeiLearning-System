@@ -46,7 +46,7 @@ import java.util.Arrays;
 import java.util.List;
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // cho phép @PreAuthorize trªn method
+@EnableMethodSecurity
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -74,7 +74,9 @@ public class SecurityConfig {
 
                                                 .requestMatchers(
 
-                                                                "/api/v1/auth/login")
+                                                                "/api/v1/auth/login",
+                                                                "/api/v1/auth/refresh",
+                                                                "/api/v1/auth/logout")
 
                                                 .permitAll()
 
