@@ -47,4 +47,11 @@ public interface ClassSessionRepository
     /** Lấy sessions của 1 teacher trong khoảng thời gian, loại trừ status cụ thể */
     List<ClassSession> findByClassEntityTeacherIdAndDateBetweenAndStatusNot(Long teacherId, LocalDate startDate, LocalDate endDate, SessionStatus status);
 
+    /** Lấy sessions tương lai của 1 lớp (dùng khi endClass → cancel sessions) */
+    List<ClassSession> findByClassEntityIdAndDateAfter(Long classId, LocalDate date);
+
+    /** Đếm sessions tương lai chưa bị cancel (dùng cho auto-extend) */
+    long countByClassEntityIdAndDateGreaterThanAndStatusNot(Long classId, LocalDate date, SessionStatus status);
+
 }
+

@@ -50,4 +50,7 @@ public interface ScheduleService {
     /** Xóa buổi học */
     void deleteSession(Long id);
 
+    /** Tự động gia hạn sessions cho lớp active sắp hết lịch (< 2 tuần tương lai) */
+    void extendActiveClassSessions();
+
 }

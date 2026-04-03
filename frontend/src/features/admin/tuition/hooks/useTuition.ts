@@ -106,7 +106,7 @@ export function useRemindOne() {
   return useMutation({
     mutationFn: (id: number) => remindOne(id),
     onSuccess: () => {
-      toast.success("Đã gửi nhắc nợ (Email + SMS + Zalo)");
+      toast.success("Đã gửi nhắc nợ thành công");
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gửi nhắc nợ thất bại");
