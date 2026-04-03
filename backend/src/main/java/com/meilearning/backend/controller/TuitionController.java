@@ -121,14 +121,14 @@ public class TuitionController {
     }
 
     @PostMapping("/remind-all")
-    @Operation(summary = "Nhắc nợ hàng loạt (Email + SMS + Zalo)")
+    @Operation(summary = "Nhắc nợ hàng loạt")
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<java.util.Map<String, Integer>> remindAll() {
         return ResponseEntity.ok(tuitionService.remindAll());
     }
 
     @PostMapping("/{id}/remind")
-    @Operation(summary = "Nhắc nợ 1 hóa đơn (Email + SMS + Zalo)")
+    @Operation(summary = "Nhắc nợ 1 hóa đơn")
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<Void> remind(@PathVariable Long id) {
         tuitionService.remind(id);

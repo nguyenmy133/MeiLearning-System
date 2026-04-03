@@ -32,6 +32,7 @@ public class ClassStatusScheduler {
     @PostConstruct
     public void onStartup() {
         activateUpcomingClasses();
+        scheduleService.extendActiveClassSessions();
     }
 
     @Scheduled(cron = "0 5 0 * * *") // 00:05 mỗi ngày
@@ -60,5 +61,11 @@ public class ClassStatusScheduler {
 
         log.info("Auto-activated {} classes", upcomingClasses.size());
     }
-}
 
+    /** Tự động gia hạn sessions cho lớp active sắp hết lịch — chạy sau khi activate */
+    @Scheduled(cron = "0 10 0 * * *") // 00:10 mỗi ngày (sau activate 5 phút)
+    @Transactional
+    public void autoExtendSessions() {
+        scheduleService.extendActiveClassSessions();
+    }
+}

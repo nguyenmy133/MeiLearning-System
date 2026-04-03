@@ -27,6 +27,7 @@ import com.meilearning.backend.exception.ResourceNotFoundException;
 import com.meilearning.backend.mapper.ClassMapper;
 import com.meilearning.backend.repository.ClassEnrollmentRepository;
 import com.meilearning.backend.repository.ClassRepository;
+import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.RoomRepository;
 import com.meilearning.backend.repository.SubjectRepository;
 import com.meilearning.backend.repository.TeacherRepository;
@@ -49,6 +50,7 @@ public class ClassServiceImpl implements ClassService {
     private final TeacherRepository teacherRepository;
     private final RoomRepository roomRepository;
     private final ClassEnrollmentRepository enrollmentRepository;
+    private final ClassSessionRepository sessionRepository;
     private final ClassMapper classMapper;
     private final ScheduleService scheduleService;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -300,6 +302,19 @@ public class ClassServiceImpl implements ClassService {
         entity.setStatus(ClassStatus.completed);
         entity.setEndDate(LocalDate.now());
         classRepository.save(entity);
+
+        // Cancel tất cả sessions tương lai
+        List<com.meilearning.backend.entity.ClassSession> futureSessions = sessionRepository
+                .findByClassEntityIdAndDateAfter(id, LocalDate.now());
+        for (var s : futureSessions) {
+            if (s.getStatus() == com.meilearning.backend.entity.enums.SessionStatus.upcoming) {
+                s.setStatus(com.meilearning.backend.entity.enums.SessionStatus.cancelled);
+            }
+        }
+        if (!futureSessions.isEmpty()) {
+            sessionRepository.saveAll(futureSessions);
+            log.info("Cancelled {} future sessions for class '{}'", futureSessions.size(), entity.getName());
+        }
     }
 
     @Override

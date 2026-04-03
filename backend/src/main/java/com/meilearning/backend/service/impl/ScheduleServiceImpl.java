@@ -15,6 +15,7 @@ import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.Room;
 import com.meilearning.backend.entity.Teacher;
+import com.meilearning.backend.entity.enums.ClassStatus;
 import com.meilearning.backend.entity.enums.SessionStatus;
 import com.meilearning.backend.entity.enums.SessionType;
 import com.meilearning.backend.exception.ResourceNotFoundException;
@@ -51,54 +52,42 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public void generateSessions(Long classId) {
-
         ClassEntity classEntity = classRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp: " + classId));
 
         if (classEntity.getSchedule() == null || classEntity.getSchedule().isBlank()) {
             log.warn("Lớp {} không có lịch học", classId);
-
             return;
-
         }
 
-        List<Map<String, Object>> slots = parseSchedule(classEntity.getSchedule());
-
-        if (slots.isEmpty()) return;
-        LocalDate startDate = classEntity.getStartDate();
-
         LocalDate endDate = classEntity.getEndDate() != null
-
                 ? classEntity.getEndDate()
+                : classEntity.getStartDate().plusMonths(3);
 
-                : startDate.plusMonths(3); // Default 3 tháng
+        generateSessionsForClass(classEntity, classEntity.getStartDate(), endDate);
+    }
 
-        // Generate sessions cho mỗi slot
+    /**
+     * Core session generation logic — tái sử dụng cho cả create và auto-extend.
+     * Tự skip sessions đã tồn tại (idempotent).
+     */
+    private void generateSessionsForClass(ClassEntity classEntity, LocalDate fromDate, LocalDate untilDate) {
+        List<Map<String, Object>> slots = parseSchedule(classEntity.getSchedule());
+        if (slots.isEmpty()) return;
 
         for (Map<String, Object> slot : slots) {
             int weekday = ((Number) slot.get("weekday")).intValue();
-
             String startTimeStr = (String) slot.get("startTime");
-
             String endTimeStr = (String) slot.get("endTime");
-
-            DayOfWeek dayOfWeek = DayOfWeek.of(weekday == 0 ? 7 : weekday); // 0=CN â†’ 7
-
+            DayOfWeek dayOfWeek = DayOfWeek.of(weekday == 0 ? 7 : weekday);
             LocalTime startTime = LocalTime.parse(startTimeStr);
-
             LocalTime endTime = LocalTime.parse(endTimeStr);
 
-            // Tìm ngày đầu tiên phù hợp
+            LocalDate current = fromDate.with(TemporalAdjusters.nextOrSame(dayOfWeek));
 
-            LocalDate current = startDate.with(TemporalAdjusters.nextOrSame(dayOfWeek));
-
-            while (!current.isAfter(endDate)) {
-                // Kiểm tra đã tồn tại chưa
-
+            while (!current.isAfter(untilDate)) {
                 List<ClassSession> existing = sessionRepository
-
-                        .findByClassEntityIdAndDate(classId, current);
-
+                        .findByClassEntityIdAndDate(classEntity.getId(), current);
                 boolean alreadyExists = existing.stream()
                         .anyMatch(s -> s.getStartTime().equals(startTime));
 
@@ -109,19 +98,12 @@ public class ScheduleServiceImpl implements ScheduleService {
                             .startTime(startTime)
                             .endTime(endTime)
                             .build();
-
                     sessionRepository.save(session);
-
                 }
-
                 current = current.plusWeeks(1);
-
             }
-
         }
-
-        log.info("Ä£ generate sessions cho lớp {}", classEntity.getName());
-
+        log.info("Đã generate sessions cho lớp {}", classEntity.getName());
     }
 
     @Override
@@ -148,7 +130,10 @@ public class ScheduleServiceImpl implements ScheduleService {
         ensureSessionsGenerated();
 
         List<ClassSession> sessions = sessionRepository
-                .findByDateBetweenAndStatusNot(range[0], range[1], SessionStatus.cancelled);
+                .findByDateBetweenAndStatusNot(range[0], range[1], SessionStatus.cancelled)
+                .stream()
+                .filter(s -> s.getClassEntity().getStatus() != ClassStatus.completed)
+                .toList();
 
         // Filter by facility if specified
         if (facilityId != null) {
@@ -175,7 +160,10 @@ public class ScheduleServiceImpl implements ScheduleService {
         var range = getDateRange(baseDate, view);
 
         List<ClassSession> sessions = sessionRepository
-                .findByClassEntityTeacherIdAndDateBetweenAndStatusNot(teacherId, range[0], range[1], SessionStatus.cancelled);
+                .findByClassEntityTeacherIdAndDateBetweenAndStatusNot(teacherId, range[0], range[1], SessionStatus.cancelled)
+                .stream()
+                .filter(s -> s.getClassEntity().getStatus() != ClassStatus.completed)
+                .toList();
 
         return buildScheduleResponse(sessions, range[0], range[1], view);
 
@@ -219,7 +207,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         // Lấy tất cả sessions trong range cho các class đã enrolled
 
-        List<ClassSession> allSessions = sessionRepository.findByDateBetweenAndStatusNot(range[0], range[1], SessionStatus.cancelled);
+        List<ClassSession> allSessions = sessionRepository
+                .findByDateBetweenAndStatusNot(range[0], range[1], SessionStatus.cancelled)
+                .stream()
+                .filter(s -> s.getClassEntity().getStatus() != ClassStatus.completed)
+                .toList();
 
         List<ClassSession> filtered = allSessions.stream()
                 .filter(s -> classIds.contains(s.getClassEntity().getId()))
@@ -386,6 +378,34 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         session = sessionRepository.save(session);
         return sessionMapper.toResponse(session);
+    }
+
+    @Override
+    @Transactional
+    public void extendActiveClassSessions() {
+        List<ClassEntity> activeClasses = classRepository.findByStatus(ClassStatus.active);
+        LocalDate today = LocalDate.now();
+        int extended = 0;
+
+        for (ClassEntity c : activeClasses) {
+            if (c.getSchedule() == null || c.getSchedule().isBlank()) continue;
+            if (c.getEndDate() != null) continue; // lớp có endDate cố định → không extend
+
+            long futureCount = sessionRepository
+                    .countByClassEntityIdAndDateGreaterThanAndStatusNot(
+                            c.getId(), today, SessionStatus.cancelled);
+
+            if (futureCount < 14) {
+                generateSessionsForClass(c, today, today.plusMonths(1));
+                extended++;
+                log.info("Auto-extended sessions for class '{}' (id={}), had {} future sessions",
+                        c.getName(), c.getId(), futureCount);
+            }
+        }
+
+        if (extended > 0) {
+            log.info("Auto-extended sessions for {} classes", extended);
+        }
     }
 
     @Override

@@ -507,7 +507,7 @@ export function AdminTuitionPage() {
                                   <Send className="w-4 h-4 mr-2" />
                                   {remindOneMutation.isPending
                                     ? "Đang gửi..."
-                                    : "Gửi nhắc nợ (SMS + Zalo)"}
+                                    : "Gửi nhắc nợ"}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -651,7 +651,7 @@ export function AdminTuitionPage() {
                 <ul className="list-disc list-inside text-sm space-y-1">
                   <li>📩 Email</li>
                   <li>📱 SMS (số điện thoại phụ huynh)</li>
-                  <li>💬 Zalo (nếu đã cấu hình OA)</li>
+
                   <li>🔔 Thông báo trong hệ thống</li>
                 </ul>
               </div>
