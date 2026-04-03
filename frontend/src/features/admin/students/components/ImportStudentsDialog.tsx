@@ -20,6 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Upload,
   Download,
   FileSpreadsheet,
@@ -79,7 +86,7 @@ interface ParsedRow {
 
 // ─── Template builder ────────────────────────────────────────────────────────
 
-function downloadTemplate(classNames?: string[]) {
+function downloadTemplate(classNames?: string[], defaultClassName?: string) {
   const ws = XLSX.utils.aoa_to_sheet([
     ["Họ và tên (*)", "Số điện thoại (*)", "SĐT Phụ huynh", "Email", "Lớp đăng ký (tên lớp, cách nhau bằng dấu phẩy)"],
   ]);
@@ -87,16 +94,22 @@ function downloadTemplate(classNames?: string[]) {
 
   // Set cột SĐT (B) và SĐT Phụ huynh (C) thành format Text
   // để Excel giữ nguyên số 0 đầu khi user nhập
-  for (let row = 2; row <= 1000; row++) {
+  for (let row = 2; row <= 100; row++) {
     const cellB = XLSX.utils.encode_cell({ r: row - 1, c: 1 }); // col B
     const cellC = XLSX.utils.encode_cell({ r: row - 1, c: 2 }); // col C
     if (!ws[cellB]) ws[cellB] = { t: 's', v: '' };
     if (!ws[cellC]) ws[cellC] = { t: 's', v: '' };
     ws[cellB].z = '@';
     ws[cellC].z = '@';
+
+    // Pre-fill tên lớp nếu admin đã chọn lớp gán tự động
+    if (defaultClassName) {
+      const cellE = XLSX.utils.encode_cell({ r: row - 1, c: 4 }); // col E
+      ws[cellE] = { t: 's', v: defaultClassName };
+    }
   }
   // Cập nhật range để bao gồm các cell đã format
-  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 999, c: 4 } });
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 99, c: 4 } });
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Danh sách học viên");
@@ -141,6 +154,7 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
   const [importedIndices, setImportedIndices] = useState<number[]>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const createMutation = useCreateStudent();
   const { data: classOptions } = useEnrollableClassOptions();
@@ -151,6 +165,7 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
     setRows([]);
     setImportedIndices([]);
     setImportProgress(0);
+    setSelectedClassId(null);
     onOpenChange(false);
   };
 
@@ -162,7 +177,22 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "", raw: false });
 
-        const parsed: ParsedRow[] = raw.map((r, idx) => {
+        // Lọc dòng không có thông tin bắt buộc (tên hoặc SĐT)
+        // Không dùng Object.values vì cột lớp có thể pre-fill từ template
+        const filteredRaw = raw.filter((r) => {
+          const name = String(r["Họ và tên (*)"] ?? r["Họ và tên"] ?? "").trim();
+          const phone = String(r["Số điện thoại (*)"] ?? r["Số điện thoại"] ?? "").trim();
+          return name !== "" || phone !== "";
+        });
+
+        // Giới hạn cứng 100 dòng
+        const MAX_IMPORT_ROWS = 100;
+        if (filteredRaw.length > MAX_IMPORT_ROWS) {
+          toast.error(`File có ${filteredRaw.length} dòng dữ liệu, vượt giới hạn ${MAX_IMPORT_ROWS} học viên/lần. Vui lòng giảm bớt.`);
+          return;
+        }
+
+        const parsed: ParsedRow[] = filteredRaw.map((r, idx) => {
           const name = String(r["Họ và tên (*)"] ?? r["Họ và tên"] ?? "").trim();
           let phone = String(r["Số điện thoại (*)"] ?? r["Số điện thoại"] ?? "").trim();
           let parentPhone = String(r["SĐT Phụ huynh"] ?? "").trim();
@@ -236,7 +266,9 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
         phone: r.phone,
         parentPhone: r.parentPhone,
         email: r.email,
-        classes: parseClasses(r.classes, classOptions ?? []),
+        classes: selectedClassId
+          ? [{ classId: selectedClassId, className: (classOptions ?? []).find((c) => c.id === selectedClassId)?.name ?? "" }]
+          : parseClasses(r.classes, classOptions ?? []),
         username: r.phone,       // phone = username
         password: r.password,
       };
@@ -296,13 +328,40 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
                 </AlertDescription>
               </Alert>
 
+              {/* Chọn lớp gán tự động */}
+              <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
+                <div>
+                  <p className="text-sm font-medium">Gán lớp tự động <span className="text-muted-foreground font-normal">(tùy chọn)</span></p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Nếu chọn, tất cả học viên sẽ được gán vào lớp này. Template tải về sẽ điền sẵn tên lớp.</p>
+                </div>
+                <Select
+                  value={selectedClassId ? String(selectedClassId) : "none"}
+                  onValueChange={(v) => setSelectedClassId(v === "none" ? null : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Không chọn — dùng cột lớp trong file" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Không chọn — dùng cột lớp trong file</SelectItem>
+                    {(classOptions ?? []).map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Download template */}
               <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                 <div>
                   <p className="text-sm font-medium">Bước 1: Tải template mẫu</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">File có sẵn tiêu đề cột. Sheet "Danh sách lớp" chứa tên các lớp đang/sắp hoạt động.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    File có sẵn tiêu đề cột{selectedClassId ? " + tên lớp đã chọn" : ""}. Sheet "Danh sách lớp" chứa tên các lớp.
+                  </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => downloadTemplate((classOptions ?? []).map((c) => c.name))} className="gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => downloadTemplate(
+                  (classOptions ?? []).map((c) => c.name),
+                  selectedClassId ? (classOptions ?? []).find((c) => c.id === selectedClassId)?.name : undefined
+                )} className="gap-2 shrink-0">
                   <Download className="w-4 h-4" />
                   Tải template
                 </Button>
@@ -378,7 +437,11 @@ export function ImportStudentsDialog({ open, onOpenChange }: Props) {
                         </TableCell>
                         <TableCell className="font-medium">{r.name || <span className="text-destructive italic">Trống</span>}</TableCell>
                         <TableCell className="font-mono text-sm">{r.phone || <span className="text-destructive italic">Trống</span>}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{r.classes || "—"}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
+                          {selectedClassId
+                            ? <Badge variant="outline" className="text-[10px]">{(classOptions ?? []).find((c) => c.id === selectedClassId)?.name}</Badge>
+                            : (r.classes || "—")}
+                        </TableCell>
                         <TableCell>
                           {r.errors.length === 0 ? (
                             <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px]">

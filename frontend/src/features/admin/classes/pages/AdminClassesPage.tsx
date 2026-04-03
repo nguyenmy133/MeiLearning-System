@@ -865,12 +865,14 @@ export function AdminClassesPage() {
                             <Users className="w-4 h-4 mr-2" />
                             Danh sách HV
                           </DropdownMenuItem>
+                          {cls.status !== "completed" && (
                           <DropdownMenuItem
                             onClick={() => setEditingClass(cls)}
                           >
                             <Edit className="w-4 h-4 mr-2" />
                             Chỉnh sửa
                           </DropdownMenuItem>
+                          )}
                           {/* Kết thúc lớp — chỉ active/upcoming */}
                           {(cls.status === "active" ||
                             cls.status === "upcoming") && (

@@ -39,7 +39,7 @@ export async function getAttendanceStats(params?: { classId?: number; month?: st
   try {
     const { data } = await apiClient.get("/attendance/stats", { params });
     return {
-      totalStudents: data?.totalSessions ?? 0,
+      todayPresent: data?.todayPresentCount ?? 0,
       averageRate: data?.attendanceRate != null ? Math.round(data.attendanceRate) : 0,
       totalLate: data?.lateCount ?? 0,
       alertCount: data?.absentCount ?? 0,
@@ -49,7 +49,7 @@ export async function getAttendanceStats(params?: { classId?: number; month?: st
     };
   } catch {
     return {
-      totalStudents: 0,
+      todayPresent: 0,
       averageRate: 0,
       totalLate: 0,
       alertCount: 0,

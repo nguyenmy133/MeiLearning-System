@@ -69,7 +69,7 @@ export interface AbsentAlert {
 }
 
 export interface AttendanceStats {
-  totalStudents: number;
+  todayPresent: number;
   averageRate: number;
   totalLate: number;
   alertCount: number;

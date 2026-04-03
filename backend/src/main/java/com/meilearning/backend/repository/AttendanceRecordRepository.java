@@ -63,6 +63,28 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     long countSessionsForMonth(@Param("startDate") LocalDate startDate,
                                @Param("endDate") LocalDate endDate);
 
+    // ── C4b: Distinct student count for stats ──
+
+    @Query("SELECT COUNT(DISTINCT ar.student.id) FROM AttendanceRecord ar " +
+            "WHERE ar.session.classEntity.id = :classId " +
+            "AND ar.session.date BETWEEN :startDate AND :endDate")
+    long countDistinctStudentsForClassAndMonth(@Param("classId") Long classId,
+                                               @Param("startDate") LocalDate startDate,
+                                               @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(DISTINCT ar.student.id) FROM AttendanceRecord ar " +
+            "WHERE ar.session.date BETWEEN :startDate AND :endDate")
+    long countDistinctStudentsForMonth(@Param("startDate") LocalDate startDate,
+                                       @Param("endDate") LocalDate endDate);
+
+    // ── C4c: Today's present count for stats card ──
+
+    @Query("SELECT COUNT(DISTINCT ar.student.id) FROM AttendanceRecord ar " +
+            "WHERE ar.session.date = :today " +
+            "AND ar.status IN (com.meilearning.backend.entity.enums.AttendanceStatus.present, " +
+            "com.meilearning.backend.entity.enums.AttendanceStatus.late)")
+    long countPresentToday(@Param("today") LocalDate today);
+
     // ── C5: Batch query for tuition breakdown — eliminates N+1 in TuitionService ──
 
     @Query("SELECT ar FROM AttendanceRecord ar " +

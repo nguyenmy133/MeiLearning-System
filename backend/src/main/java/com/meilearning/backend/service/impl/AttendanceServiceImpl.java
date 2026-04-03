@@ -259,6 +259,12 @@ public class AttendanceServiceImpl implements AttendanceService {
                 ? attendanceRepository.countSessionsForClassAndMonth(classId, startDate, endDate)
                 : attendanceRepository.countSessionsForMonth(startDate, endDate);
 
+        long totalStudents = classId != null
+                ? attendanceRepository.countDistinctStudentsForClassAndMonth(classId, startDate, endDate)
+                : attendanceRepository.countDistinctStudentsForMonth(startDate, endDate);
+
+        long todayPresentCount = attendanceRepository.countPresentToday(LocalDate.now());
+
         long presentCount = 0, absentCount = 0, lateCount = 0, excusedCount = 0;
         for (Object[] row : statusCounts) {
             AttendanceStatus status = (AttendanceStatus) row[0];
@@ -276,6 +282,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         return AttendanceStatsResponse.builder()
                 .totalSessions(totalSessions)
+                .todayPresentCount(todayPresentCount)
                 .presentCount(presentCount)
                 .absentCount(absentCount)
                 .lateCount(lateCount)

@@ -330,30 +330,18 @@ function AddSessionForm({ onClose, onSubmit, isPending }: AddSessionFormProps) {
               </div>
               <p className="text-xs text-muted-foreground">
                 {t === "makeup"
-                  ? "Bù cho buổi đã nghỉ. Không tính thêm phí."
-                  : "Ngoài lịch thường. Tính thêm vào hóa đơn."}
+                  ? "Bù cho buổi đã nghỉ. Tính phí theo điểm danh."
+                  : "Ngoài lịch thường. Tính phí theo điểm danh."}
               </p>
             </button>
           ))}
         </div>
 
         {/* Billing notice */}
-        <div
-          className={`flex items-start gap-2 p-3 rounded-lg border text-sm ${
-            type === "makeup"
-              ? "bg-muted border-border"
-              : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
-          }`}
-        >
-          <CreditCard
-            className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-              type === "makeup" ? "text-muted-foreground" : "text-amber-600"
-            }`}
-          />
-          <p className={type === "makeup" ? "text-muted-foreground" : "text-amber-700 dark:text-amber-400"}>
-            {type === "makeup"
-              ? "Buổi bù không được tính thêm vào hóa đơn tháng."
-              : "Buổi thêm sẽ được cộng vào hóa đơn cuối tháng của học viên."}
+        <div className="flex items-start gap-2 p-3 rounded-lg border text-sm bg-muted border-border">
+          <CreditCard className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+          <p className="text-muted-foreground">
+            Buổi {type === "makeup" ? "bù" : "thêm"} sẽ được tính phí dựa trên điểm danh, giống buổi học thường.
           </p>
         </div>
 
