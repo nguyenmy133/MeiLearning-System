@@ -35,4 +35,7 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long>, JpaSp
     @Query("SELECT c FROM ClassEntity c WHERE c.room.id = :roomId AND c.status IN ('active', 'upcoming')")
     List<ClassEntity> findActiveOrUpcomingByRoomId(@org.springframework.data.repository.query.Param("roomId") Long roomId);
 
+    /** Đếm lớp active/upcoming của giáo viên (dùng khi khóa tài khoản) */
+    long countByTeacherIdAndStatusIn(Long teacherId, java.util.Collection<ClassStatus> statuses);
+
 }

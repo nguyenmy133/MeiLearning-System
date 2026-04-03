@@ -167,8 +167,8 @@ public class RescheduleServiceImpl implements RescheduleService {
                         .startTime(startTime)
                         .endTime(endTime)
                         .status(SessionStatus.upcoming)
-                        .type(SessionType.makeup)
-                        .notes("Đổi từ buổi " + rr.getOriginalDate())
+                        .type(SessionType.regular)
+                        .notes("Đổi lịch từ buổi " + rr.getOriginalDate())
                         .build();
                 sessionRepository.save(newSession);
             }

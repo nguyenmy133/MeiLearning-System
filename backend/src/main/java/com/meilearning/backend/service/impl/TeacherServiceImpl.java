@@ -264,6 +264,17 @@ public class TeacherServiceImpl implements TeacherService {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giáo viên với id: " + id));
 
+        // Không cho khóa giáo viên đang phụ trách lớp active/upcoming
+        long activeClassCount = classRepository.countByTeacherIdAndStatusIn(
+                id, List.of(com.meilearning.backend.entity.enums.ClassStatus.active,
+                            com.meilearning.backend.entity.enums.ClassStatus.upcoming));
+        if (activeClassCount > 0) {
+            throw new BusinessException(
+                    "Không thể khóa tài khoản giáo viên \"" + teacher.getUser().getName()
+                    + "\" — đang phụ trách " + activeClassCount
+                    + " lớp . Hãy chuyển lớp sang giáo viên khác trước.");
+        }
+
         teacher.setStatus(TeacherStatus.locked);
         teacher.getUser().setActive(false);
 

@@ -68,7 +68,10 @@ public class ClassServiceImpl implements ClassService {
         if (search != null && !search.isBlank()) {
             String keyword = "%" + search.toLowerCase() + "%";
             spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.get("name")), keyword));
+                    cb.or(
+                            cb.like(cb.lower(root.get("name")), keyword),
+                            cb.like(cb.lower(root.get("teacher").get("user").get("name")), keyword)
+                    ));
         }
 
         if (subject != null && !subject.isBlank()) {
@@ -120,6 +123,12 @@ public class ClassServiceImpl implements ClassService {
         Teacher teacher = teacherRepository.findById(request.getTeacherId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giáo viên: " + request.getTeacherId()));
 
+        if (teacher.getStatus() == com.meilearning.backend.entity.enums.TeacherStatus.locked) {
+            throw new BusinessException(
+                    "Không thể gán lớp cho giáo viên \"" + teacher.getUser().getName()
+                    + "\" — tài khoản đang bị khóa.");
+        }
+
         LocalDate startDate = request.getStartDate() != null
                 ? LocalDate.parse(request.getStartDate())
                 : LocalDate.now();
@@ -137,7 +146,9 @@ public class ClassServiceImpl implements ClassService {
         // ── Kiểm tra xung đột phòng ──
         Room room = null;
         if (request.getRoom() != null && !request.getRoom().isBlank()) {
-            room = roomRepository.findByName(request.getRoom()).orElse(null);
+            room = (request.getFacility() != null && !request.getFacility().isBlank())
+                    ? roomRepository.findByNameAndFacilityName(request.getRoom(), request.getFacility()).orElse(null)
+                    : roomRepository.findByName(request.getRoom()).orElse(null);
             if (room != null) {
                 // Validate sĩ số không vượt sức chứa phòng
                 if (request.getMaxStudents() > room.getCapacity()) {
@@ -185,11 +196,9 @@ public class ClassServiceImpl implements ClassService {
         ClassEntity entity = classRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp với id: " + id));
 
-        // Lớp completed → chỉ cho sửa description, không cho đổi startDate/status
+        // Lớp completed → không cho chỉnh sửa (dữ liệu lịch sử)
         if (entity.getStatus() == ClassStatus.completed) {
-            if (request.getDescription() != null) entity.setDescription(request.getDescription());
-            entity = classRepository.save(entity);
-            return classMapper.toResponse(entity);
+            throw new BusinessException("Không thể chỉnh sửa lớp đã kết thúc. Dữ liệu lịch sử cần được giữ nguyên.");
         }
 
         // ── Cập nhật các field thông thường ──
@@ -207,6 +216,12 @@ public class ClassServiceImpl implements ClassService {
         if (request.getTeacherId() != null) {
             Teacher teacher = teacherRepository.findById(request.getTeacherId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giáo viên: " + request.getTeacherId()));
+
+            if (teacher.getStatus() == com.meilearning.backend.entity.enums.TeacherStatus.locked) {
+                throw new BusinessException(
+                        "Không thể gán lớp cho giáo viên \"" + teacher.getUser().getName()
+                        + "\" — tài khoản đang bị khóa.");
+            }
             entity.setTeacher(teacher);
         }
 
@@ -216,7 +231,12 @@ public class ClassServiceImpl implements ClassService {
 
         // ── Kiểm tra xung đột phòng khi đổi phòng hoặc đổi schedule ──
         if (request.getRoom() != null && !request.getRoom().isBlank()) {
-            Room room = roomRepository.findByName(request.getRoom()).orElse(null);
+            String facilityName = (request.getFacility() != null && !request.getFacility().isBlank())
+                    ? request.getFacility()
+                    : (entity.getRoom() != null ? entity.getRoom().getFacility().getName() : null);
+            Room room = (facilityName != null)
+                    ? roomRepository.findByNameAndFacilityName(request.getRoom(), facilityName).orElse(null)
+                    : roomRepository.findByName(request.getRoom()).orElse(null);
             if (room != null) {
                 // Validate sĩ số không vượt sức chứa phòng
                 int effectiveMaxStudents = request.getMaxStudents() != null

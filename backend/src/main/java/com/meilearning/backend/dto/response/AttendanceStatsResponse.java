@@ -4,6 +4,7 @@ import lombok.*;
 @Getter @Builder @AllArgsConstructor
 public class AttendanceStatsResponse {
     private long totalSessions;
+    private long todayPresentCount;
     private long presentCount;
     private long absentCount;
     private long lateCount;

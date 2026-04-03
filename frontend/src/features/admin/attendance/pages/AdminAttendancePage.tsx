@@ -152,9 +152,9 @@ export function AdminAttendancePage() {
 
   const statCards = [
     {
-      label: "Tổng học viên",
-      value: stats?.totalStudents,
-      icon: Users,
+      label: "Có mặt hôm nay",
+      value: stats?.todayPresent,
+      icon: UserCheck,
       color: "text-primary",
       bg: "bg-primary/10",
     },

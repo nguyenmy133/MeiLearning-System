@@ -38,11 +38,13 @@ export async function deleteClass(id: number): Promise<void> {
   await apiClient.delete(API.CLASSES.DELETE(id));
 }
 
-export async function getTeacherRefs(): Promise<Array<{ id: number; name: string; subjects: string[] }>> {
+export async function getTeacherRefs(): Promise<Array<{ id: number; name: string; subjects: string[]; status: string }>> {
   const { data } = await apiClient.get("/teachers", { params: { limit: 100 } });
   // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
   const list = Array.isArray(data) ? data : data?.data ?? [];
-  return list.map((t: any) => ({ id: t.id, name: t.name, subjects: t.subjects ?? [] }));
+  return list
+    .filter((t: any) => t.status !== "locked")
+    .map((t: any) => ({ id: t.id, name: t.name, subjects: t.subjects ?? [], status: t.status ?? "active" }));
 }
 
 export async function endClass(id: number): Promise<Class> {
