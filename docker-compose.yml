@@ -75,6 +75,7 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
       # ── SMS (SpeedSMS) ──
+      SMS_ENABLED: ${SMS_ENABLED:-false}
       SPEEDSMS_API_KEY: ${SPEEDSMS_API_KEY:-}
       SPEEDSMS_SENDER: ${SPEEDSMS_SENDER:-Notify}
       SPEEDSMS_TYPE: ${SPEEDSMS_TYPE:-2}
