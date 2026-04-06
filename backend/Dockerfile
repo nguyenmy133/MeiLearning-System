@@ -23,6 +23,9 @@ WORKDIR /app
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 # Copy built artifact — backend-0.0.1-SNAPSHOT.jar is the main one
 COPY --from=builder /build/target/backend-0.0.1-SNAPSHOT.jar app.jar
 
@@ -34,6 +37,6 @@ USER appuser
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/actuator/health || exit 1
+  CMD curl -sf -H "Accept: application/json" http://127.0.0.1:8080/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
