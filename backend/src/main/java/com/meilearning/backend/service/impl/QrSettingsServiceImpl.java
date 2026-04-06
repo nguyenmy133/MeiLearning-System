@@ -8,6 +8,7 @@ import com.meilearning.backend.dto.response.QrSettingsResponse;
 import com.meilearning.backend.entity.QrSettings;
 import com.meilearning.backend.repository.QrSettingsRepository;
 import com.meilearning.backend.service.QrSettingsService;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -15,11 +16,13 @@ public class QrSettingsServiceImpl implements QrSettingsService {
 
     private final QrSettingsRepository qrSettingsRepository;
 
+    /** In-memory cache — singleton, evicted on update */
+    private volatile QrSettings cached;
+
     @Override
     @Transactional
     public QrSettingsResponse getSettings() {
-        QrSettings settings = getOrCreateSettings();
-        return toResponse(settings);
+        return toResponse(getOrCreateSettings());
     }
 
     @Override
@@ -30,18 +33,26 @@ public class QrSettingsServiceImpl implements QrSettingsService {
         if (request.getExpiryMinutes() != null) settings.setExpiryMinutes(request.getExpiryMinutes());
         if (request.getLateThresholdMinutes() != null) settings.setLateThresholdMinutes(request.getLateThresholdMinutes());
         if (request.getAllowRegenerate() != null) settings.setAllowRegenerate(request.getAllowRegenerate());
-        qrSettingsRepository.save(settings);
-        return toResponse(settings);
+        QrSettings saved = qrSettingsRepository.save(settings);
+        this.cached = saved; // evict + refresh cache
+        return toResponse(saved);
     }
 
     /**
-     * Singleton pattern: nếu chưa có record → tạo mới với defaults.
+     * Public accessor for other services (e.g. AttendanceServiceImpl).
+     * Returns cached entity, avoids repeated DB calls per QR scan.
      */
+    public QrSettings getCachedSettings() {
+        return getOrCreateSettings();
+    }
+
     private QrSettings getOrCreateSettings() {
-        return qrSettingsRepository.findAll().stream().findFirst()
+        if (cached != null) return cached;
+        cached = qrSettingsRepository.findAll().stream().findFirst()
                 .orElseGet(() -> qrSettingsRepository.save(
                         QrSettings.builder().enabled(true).expiryMinutes(5)
                                 .lateThresholdMinutes(10).allowRegenerate(true).build()));
+        return cached;
     }
 
     private QrSettingsResponse toResponse(QrSettings s) {

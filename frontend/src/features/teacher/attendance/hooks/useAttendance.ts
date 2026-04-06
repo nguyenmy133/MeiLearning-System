@@ -31,11 +31,13 @@ export function useTeacherSessions(date?: string, params?: AttendanceQueryParams
     });
 }
 
-export function useSessionAttendance(sessionId: number) {
+export function useSessionAttendance(sessionId: number, qrActive = false) {
     return useQuery({
         queryKey: attendanceKeys.session(sessionId),
         queryFn: () => getSessionAttendance(sessionId),
         enabled: sessionId > 0,
+        // Poll every 5s while QR is active so teacher sees live check-in updates
+        refetchInterval: qrActive ? 5_000 : false,
     });
 }
 

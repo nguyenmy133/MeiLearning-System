@@ -24,7 +24,6 @@ import com.meilearning.backend.mapper.SessionMapper;
 import com.meilearning.backend.repository.AttendanceQrTokenRepository;
 import com.meilearning.backend.repository.AttendanceRecordRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
-import com.meilearning.backend.repository.QrSettingsRepository;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TeacherRepository;
 import com.meilearning.backend.service.AttendanceService;
@@ -45,7 +44,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final AttendanceQrTokenRepository qrTokenRepository;
     private final ClassSessionRepository sessionRepository;
     private final StudentRepository studentRepository;
-    private final QrSettingsRepository qrSettingsRepository;
+    private final QrSettingsServiceImpl qrSettingsService;
     private final SessionMapper sessionMapper;
     private final NotificationDispatcher notificationDispatcher;
     private final TeacherRepository teacherRepository;
@@ -63,6 +62,11 @@ public class AttendanceServiceImpl implements AttendanceService {
         ClassSession session = sessionRepository.findById(request.getSessionId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy buổi học: " + request.getSessionId()));
+
+        // Guard: Không cho sửa/chốt lại session đã completed
+        if (session.getStatus() == SessionStatus.completed) {
+            throw new BusinessException("Buổi học đã được chốt điểm danh. Không thể chỉnh sửa.");
+        }
 
         List<AttendanceRecord> saved = new ArrayList<>();
 
@@ -110,6 +114,8 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (shouldConfirm && session.getStatus() == SessionStatus.upcoming) {
             session.setStatus(SessionStatus.completed);
             sessionRepository.save(session);
+            // Huỷ tất cả QR token còn active — ngăn student scan sau khi chốt
+            qrTokenRepository.deactivateBySessionId(session.getId());
         }
 
         return saved.stream().map(sessionMapper::toAttendanceResponse).toList();
@@ -142,12 +148,25 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     // ── QR Token Generation ───────────────────────────────────────────────
+    // Rate limiting: tối đa 1 lần tạo QR / 10 giây / session
+    private final java.util.concurrent.ConcurrentHashMap<Long, Instant> qrRateLimit = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long QR_RATE_LIMIT_SECONDS = 10;
 
     @Override
     public QrTokenResponse generateQrToken(Long sessionId) {
+        // Rate limit check
+        Instant lastGenerated = qrRateLimit.get(sessionId);
+        if (lastGenerated != null && Instant.now().isBefore(lastGenerated.plusSeconds(QR_RATE_LIMIT_SECONDS))) {
+            throw new BusinessException("Vui lòng đợi " + QR_RATE_LIMIT_SECONDS + " giây trước khi tạo lại mã QR.");
+        }
         ClassSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy buổi học: " + sessionId));
+
+        // Guard: Không cho tạo QR cho session đã chốt
+        if (session.getStatus() == SessionStatus.completed) {
+            throw new BusinessException("Buổi học đã được chốt điểm danh. Không thể tạo mã QR.");
+        }
 
         // Fix timezone: dùng explicit ZoneId để tránh phụ thuộc container timezone
         java.time.ZoneId vnZone = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
@@ -164,12 +183,19 @@ public class AttendanceServiceImpl implements AttendanceService {
                     "Chưa đến giờ học. Có thể bật QR từ " + earliestAllowed);
         }
 
-        // Đọc cấu hình QR từ DB (singleton)
-        QrSettings settings = qrSettingsRepository.findAll().stream().findFirst()
-                .orElse(QrSettings.builder().enabled(true).expiryMinutes(5).build());
+        // Đọc cấu hình QR (cached — không query DB mỗi lần)
+        QrSettings settings = qrSettingsService.getCachedSettings();
 
         if (!Boolean.TRUE.equals(settings.getEnabled())) {
             throw new BusinessException("Chức năng QR điểm danh đang tắt.");
+        }
+
+        // Enforce allowRegenerate: nếu admin tắt, chỉ cho tạo QR 1 lần/session
+        boolean hasActiveToken = qrTokenRepository
+                .findBySessionIdAndActiveTrueAndExpiresAtAfter(sessionId, Instant.now())
+                .isPresent();
+        if (!Boolean.TRUE.equals(settings.getAllowRegenerate()) && hasActiveToken) {
+            throw new BusinessException("Không được tạo lại mã QR. Vui lòng liên hệ quản trị viên.");
         }
 
         // Deactivate token cũ của session này
@@ -186,6 +212,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .active(true)
                 .build();
         qrTokenRepository.save(token);
+        qrRateLimit.put(sessionId, Instant.now()); // Record cho rate limiting
 
         return QrTokenResponse.builder()
                 .token(tokenStr)
@@ -210,6 +237,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         // 3. Get session & student
         ClassSession session = qrToken.getSession();
+
+        // Guard: Không cho check-in session đã chốt
+        if (session.getStatus() == SessionStatus.completed) {
+            throw new BusinessException("Buổi học đã được chốt điểm danh. Không thể điểm danh.");
+        }
+
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy học viên: " + studentId));
@@ -224,8 +257,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         AttendanceStatus status = AttendanceStatus.present;
         if (session.getStartTime() != null) {
             long minutesLate = java.time.Duration.between(session.getStartTime(), now).toMinutes();
-            QrSettings qrSettings = qrSettingsRepository.findAll().stream().findFirst()
-                    .orElse(QrSettings.builder().lateThresholdMinutes(10).build());
+            QrSettings qrSettings = qrSettingsService.getCachedSettings();
             if (minutesLate > qrSettings.getLateThresholdMinutes()) {
                 status = AttendanceStatus.late;
             }
