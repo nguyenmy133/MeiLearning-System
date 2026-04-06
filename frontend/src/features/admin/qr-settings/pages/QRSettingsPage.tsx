@@ -1,30 +1,42 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Clock, RefreshCw, Save, Loader2, Power, ShieldAlert } from "lucide-react";
+import { Settings, Clock, RefreshCw, Save, Loader2, Power } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQRSettings, useUpdateQRSettings } from "../hooks";
+
+const LIMITS = {
+  expiryMinutes: { min: 1, max: 30 },
+  lateThresholdMinutes: { min: 1, max: 60 },
+} as const;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 
 export function QRSettingsPage() {
   const { toast } = useToast();
   const { data, isLoading } = useQRSettings();
   const update = useUpdateQRSettings();
 
-  // Remote settings as source of truth
-  const remote = data ?? { enabled: true, expiryMinutes: 5, lateThresholdMinutes: 10, allowRegenerate: true };
+  // ALL fields are local state — chỉ lưu khi bấm "Lưu cấu hình"
+  const [enabled, setEnabled] = useState(true);
+  const [expiryMinutes, setExpiryMinutes] = useState(5);
+  const [lateThresholdMinutes, setLateThresholdMinutes] = useState(10);
+  const [allowRegenerate, setAllowRegenerate] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Local state for input fields (avoids re-save on every keystroke)
-  const [expiryMinutes, setExpiryMinutes] = useState(remote.expiryMinutes);
-  const [lateThresholdMinutes, setLateThresholdMinutes] = useState(remote.lateThresholdMinutes);
-
-  // Sync local state when remote changes
+  // Sync local state when remote data loads
   useEffect(() => {
     if (data) {
+      setEnabled(data.enabled);
       setExpiryMinutes(data.expiryMinutes);
       setLateThresholdMinutes(data.lateThresholdMinutes);
+      setAllowRegenerate(data.allowRegenerate);
     }
   }, [data]);
 
@@ -38,67 +50,91 @@ export function QRSettingsPage() {
     }
   }, [update.isSuccess, toast]);
 
-  // Save all current values
-  const saveConfig = useCallback(
-    (overrides?: Partial<typeof remote>) => {
-      update.reset();
-      update.mutate({
-        enabled: remote.enabled,
-        expiryMinutes,
-        lateThresholdMinutes,
-        allowRegenerate: remote.allowRegenerate,
-        ...overrides,
-      });
-    },
-    [expiryMinutes, lateThresholdMinutes, remote.allowRegenerate, remote.enabled, update]
-  );
+  // Check if local state differs from remote
+  const hasChanges =
+    data != null &&
+    (enabled !== data.enabled ||
+      expiryMinutes !== data.expiryMinutes ||
+      lateThresholdMinutes !== data.lateThresholdMinutes ||
+      allowRegenerate !== data.allowRegenerate);
 
-  // Toggle switch → auto-save immediately
-  const handleToggle = (field: "allowRegenerate" | "enabled", checked: boolean) => {
+  // Validate inputs — returns true if valid
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    const { expiryMinutes: expLimits, lateThresholdMinutes: lateLimits } = LIMITS;
+
+    if (expiryMinutes < expLimits.min || expiryMinutes > expLimits.max) {
+      newErrors.expiryMinutes = `Giá trị phải từ ${expLimits.min} đến ${expLimits.max} phút`;
+    }
+    if (lateThresholdMinutes < lateLimits.min || lateThresholdMinutes > lateLimits.max) {
+      newErrors.lateThresholdMinutes = `Giá trị phải từ ${lateLimits.min} đến ${lateLimits.max} phút`;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Save ALL fields via button click only
+  const handleSave = () => {
+    if (!validate()) return;
     update.reset();
     update.mutate({
-      enabled: remote.enabled,
-      expiryMinutes,
-      lateThresholdMinutes,
-      allowRegenerate: remote.allowRegenerate,
-      [field]: checked,
+      enabled,
+      expiryMinutes: clamp(expiryMinutes, LIMITS.expiryMinutes.min, LIMITS.expiryMinutes.max),
+      lateThresholdMinutes: clamp(lateThresholdMinutes, LIMITS.lateThresholdMinutes.min, LIMITS.lateThresholdMinutes.max),
+      allowRegenerate,
     });
   };
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <Skeleton className="h-24 max-w-2xl" />
+        <Skeleton className="h-80 max-w-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold mb-2">
-          Cấu hình QR điểm danh
+          Cấu hình QR
         </h1>
         <p className="text-muted-foreground">
           Thiết lập các tham số cho hệ thống điểm danh QR
         </p>
       </div>
 
-      {/* Master toggle */}
-      <Card className={`max-w-2xl border-2 transition-colors ${remote.enabled ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
+      {/* Master toggle — bật/tắt toàn bộ hệ thống */}
+      <Card className={`max-w-2xl border-2 transition-colors ${enabled ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
         <CardContent className="flex items-center justify-between py-5">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${remote.enabled ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${enabled ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
               <Power className="w-5 h-5" />
             </div>
             <div>
               <p className="font-semibold text-foreground">Hệ thống QR điểm danh</p>
               <p className="text-sm text-muted-foreground">
-                {remote.enabled ? "Đang hoạt động — giáo viên có thể tạo mã QR" : "Đã tắt — giáo viên không thể tạo mã QR"}
+                {enabled
+                  ? "Bật — cho phép sử dụng QR để điểm danh"
+                  : "Tắt — tất cả chức năng QR bị vô hiệu hóa"}
               </p>
             </div>
           </div>
           <Switch
-            checked={remote.enabled}
-            onCheckedChange={(checked) => handleToggle("enabled", checked)}
-            disabled={update.isPending}
+            checked={enabled}
+            onCheckedChange={setEnabled}
           />
         </CardContent>
       </Card>
 
-      <Card className={`max-w-2xl transition-opacity ${!remote.enabled ? "opacity-50 pointer-events-none" : ""}`}>
+      <Card className={`max-w-2xl transition-opacity ${!enabled ? "opacity-50 pointer-events-none" : ""}`}>
         <CardHeader>
           <CardTitle className="text-lg font-display flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" />
@@ -106,6 +142,7 @@ export function QRSettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Thời gian hiệu lực */}
           <div className="space-y-2">
             <Label htmlFor="expiry" className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
@@ -114,17 +151,26 @@ export function QRSettingsPage() {
             <Input
               id="expiry"
               type="number"
-              min={1}
-              max={30}
+              min={LIMITS.expiryMinutes.min}
+              max={LIMITS.expiryMinutes.max}
               value={expiryMinutes}
-              onChange={(e) => setExpiryMinutes(parseInt(e.target.value) || 5)}
-              className="max-w-[200px]"
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                setExpiryMinutes(isNaN(v) ? LIMITS.expiryMinutes.min : v);
+                setErrors((prev) => ({ ...prev, expiryMinutes: "" }));
+              }}
+              className={`max-w-[200px] ${errors.expiryMinutes ? "border-destructive focus-visible:ring-destructive" : ""}`}
             />
-            <p className="text-sm text-muted-foreground">
-              Mã QR sẽ tự động hết hạn sau khoảng thời gian này (1–30 phút)
-            </p>
+            {errors.expiryMinutes ? (
+              <p className="text-sm text-destructive font-medium">{errors.expiryMinutes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Mã QR sẽ tự động hết hạn sau khoảng thời gian này ({LIMITS.expiryMinutes.min}–{LIMITS.expiryMinutes.max} phút)
+              </p>
+            )}
           </div>
 
+          {/* Ngưỡng đi muộn */}
           <div className="space-y-2">
             <Label htmlFor="late" className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
@@ -133,53 +179,65 @@ export function QRSettingsPage() {
             <Input
               id="late"
               type="number"
-              min={1}
-              max={60}
+              min={LIMITS.lateThresholdMinutes.min}
+              max={LIMITS.lateThresholdMinutes.max}
               value={lateThresholdMinutes}
-              onChange={(e) => setLateThresholdMinutes(parseInt(e.target.value) || 10)}
-              className="max-w-[200px]"
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                setLateThresholdMinutes(isNaN(v) ? LIMITS.lateThresholdMinutes.min : v);
+                setErrors((prev) => ({ ...prev, lateThresholdMinutes: "" }));
+              }}
+              className={`max-w-[200px] ${errors.lateThresholdMinutes ? "border-destructive focus-visible:ring-destructive" : ""}`}
             />
-            <p className="text-sm text-muted-foreground">
-              Điểm danh sau thời gian này kể từ giờ học sẽ được tính là đi muộn (1–60 phút)
-            </p>
+            {errors.lateThresholdMinutes ? (
+              <p className="text-sm text-destructive font-medium">{errors.lateThresholdMinutes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Điểm danh sau thời gian này kể từ giờ học sẽ được tính là đi muộn ({LIMITS.lateThresholdMinutes.min}–{LIMITS.lateThresholdMinutes.max} phút)
+              </p>
+            )}
           </div>
 
+          {/* Cho phép tạo lại QR */}
           <div className="flex items-center justify-between p-4 rounded-lg bg-accent/50">
             <div className="space-y-0.5">
               <Label className="flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 text-muted-foreground" />
-                Cho phép tạo lại QR
+                Cho phép tạo lại mã QR
               </Label>
               <p className="text-sm text-muted-foreground">
-                Giáo viên có thể tạo mã QR mới trong cùng một buổi học
+                Khi bật, giáo viên có thể tạo mã QR mới nếu mã cũ đã hết hạn (trong cùng 1 buổi học)
               </p>
             </div>
             <Switch
-              checked={remote.allowRegenerate}
-              onCheckedChange={(checked) => handleToggle("allowRegenerate", checked)}
-              disabled={update.isPending}
+              checked={allowRegenerate}
+              onCheckedChange={setAllowRegenerate}
             />
           </div>
 
-          <Button
-            onClick={() => saveConfig()}
-            disabled={update.isPending || isLoading}
-            className="btn-primary"
-          >
-            {update.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Đang lưu...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Lưu cấu hình
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
+
+      {/* Save button (Must be outside the disabled card above to allow saving when turning off master toggle) */}
+      <div className="flex justify-start">
+        <Button
+          onClick={handleSave}
+          disabled={update.isPending || !hasChanges}
+          className="btn-primary"
+        >
+          {update.isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Đang lưu...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Lưu cấu hình
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
