@@ -93,7 +93,7 @@ export function QRSettingsPage() {
               max={30}
               value={expiryMinutes}
               onChange={(e) => setExpiryMinutes(parseInt(e.target.value) || 5)}
-              onBlur={() => saveConfig({ expiryMinutes })}
+              onBlur={(e) => { const v = parseInt(e.target.value) || 5; e.target.value = String(v); setExpiryMinutes(v); saveConfig({ expiryMinutes: v }); }}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">
@@ -113,7 +113,7 @@ export function QRSettingsPage() {
               max={60}
               value={lateThresholdMinutes}
               onChange={(e) => setLateThresholdMinutes(parseInt(e.target.value) || 10)}
-              onBlur={() => saveConfig({ lateThresholdMinutes })}
+              onBlur={(e) => { const v = parseInt(e.target.value) || 10; e.target.value = String(v); setLateThresholdMinutes(v); saveConfig({ lateThresholdMinutes: v }); }}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">

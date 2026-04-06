@@ -173,7 +173,8 @@ public class TuitionServiceImpl implements TuitionService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<TuitionInvoiceResponse> getAll(String status, String month, Long studentId,
+    public PageResponse<TuitionInvoiceResponse> getAll(String search, String status, String month,
+                                                        String className, Long studentId,
                                                         int page, int limit) {
         if (page < 1) page = 1;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
@@ -187,6 +188,27 @@ public class TuitionServiceImpl implements TuitionService {
         if (status != null && !status.isBlank()) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("status"), InvoiceStatus.valueOf(status)));
         }
+        // Filter theo tên lớp
+        if (className != null && !className.isBlank()) {
+            spec = spec.and((root, q, cb) ->
+                    cb.equal(root.get("classEntity").get("name"), className));
+        }
+        // Tìm kiếm theo tên học sinh hoặc mã bill (ID)
+        if (search != null && !search.isBlank()) {
+            String kw = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, q, cb) -> {
+                // Try parse as Long for ID search
+                try {
+                    Long invoiceId = Long.parseLong(search.trim());
+                    return cb.or(
+                            cb.like(cb.lower(root.get("student").get("user").get("name")), kw),
+                            cb.equal(root.get("id"), invoiceId)
+                    );
+                } catch (NumberFormatException e) {
+                    return cb.like(cb.lower(root.get("student").get("user").get("name")), kw);
+                }
+            });
+        }
         Page<TuitionInvoice> result = invoiceRepository.findAll(spec, pageable);
         return PageResponse.<TuitionInvoiceResponse>builder()
                 .data(result.getContent().stream().map(tuitionMapper::toResponse).toList())
@@ -195,6 +217,13 @@ public class TuitionServiceImpl implements TuitionService {
                 .limit(limit)
                 .totalPages(result.getTotalPages())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<TuitionInvoiceResponse> getAll(String status, String month, Long studentId,
+                                                        int page, int limit) {
+        return getAll(null, status, month, null, studentId, page, limit);
     }
 
     @Override
@@ -437,7 +466,7 @@ public class TuitionServiceImpl implements TuitionService {
         String title = "Nhắc nợ học phí tháng " + invoice.getMonth();
         String content = String.format(
                 "Học viên %s có hóa đơn học phí lớp %s tháng %s chưa thanh toán. "
-                        + "Số tiền: %,.0fđ. Hạn thanh toán: %s. Vui lòng thanh toán sớm.",
+                        + "Số tiền: %,dđ. Hạn thanh toán: %s. Vui lòng thanh toán sớm.",
                 student.getUser().getName(),
                 className,
                 invoice.getMonth(),

@@ -612,8 +612,10 @@ export function CreateExamPage() {
                 <Input
                   id="duration"
                   type="number"
+                  min={1}
                   value={examInfo.duration}
                   onChange={(e) => setExamInfo({ ...examInfo, duration: parseInt(e.target.value) || 0 })}
+                  onBlur={(e) => { e.target.value = String(parseInt(e.target.value) || 0); }}
                 />
               </div>
 
@@ -622,8 +624,10 @@ export function CreateExamPage() {
                 <Input
                   id="maxAttempts"
                   type="number"
+                  min={1}
                   value={examInfo.maxAttempts}
                   onChange={(e) => setExamInfo({ ...examInfo, maxAttempts: parseInt(e.target.value) || 1 })}
+                  onBlur={(e) => { e.target.value = String(parseInt(e.target.value) || 1); }}
                 />
               </div>
 
@@ -632,8 +636,11 @@ export function CreateExamPage() {
                 <Input
                   id="passingScore"
                   type="number"
+                  min={0}
+                  max={100}
                   value={examInfo.passingScore}
                   onChange={(e) => setExamInfo({ ...examInfo, passingScore: parseInt(e.target.value) || 0 })}
+                  onBlur={(e) => { e.target.value = String(parseInt(e.target.value) || 0); }}
                 />
               </div>
             </div>
@@ -752,8 +759,10 @@ export function CreateExamPage() {
                   <Input
                     id="points"
                     type="number"
+                    min={0}
                     value={questionForm.points}
                     onChange={(e) => setQuestionForm({ ...questionForm, points: parseInt(e.target.value) || 0 })}
+                    onBlur={(e) => { e.target.value = String(parseInt(e.target.value) || 0); }}
                   />
                 </div>
               </div>

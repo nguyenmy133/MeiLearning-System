@@ -23,6 +23,10 @@ const LoginPage = lazyNamed(
   () => import("@/features/auth/LoginPage"),
   "LoginPage",
 );
+const ForgotPasswordPage = lazyNamed(
+  () => import("@/features/auth/ForgotPasswordPage"),
+  "ForgotPasswordPage",
+);
 const NotFound = lazyDefault(() => import("@/features/shared/errors/NotFound"));
 const ForbiddenPage = lazyDefault(() => import("@/features/shared/errors/Forbidden"));
 
@@ -42,6 +46,14 @@ export function publicRoutes() {
         element={
           <PublicOnlyRoute>
             <LoginPage />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicOnlyRoute>
+            <ForgotPasswordPage />
           </PublicOnlyRoute>
         }
       />

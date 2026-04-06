@@ -248,7 +248,7 @@ function SubjectForm({ mode, initial, onClose, onSubmit, isPending }: SubjectFor
           step={10000}
           value={basePricePerSession}
           onChange={(e) => setBasePricePerSession(Number(e.target.value))}
-          onBlur={() => markTouched("basePricePerSession")}
+          onBlur={(e) => { e.target.value = String(Number(e.target.value) || 0); markTouched("basePricePerSession"); }}
           placeholder="VD: 150000"
           className={touched.basePricePerSession && errors.basePricePerSession ? "border-destructive" : ""}
         />

@@ -23,6 +23,7 @@ export const ROUTES = {
     TEACHERS_PUBLIC: "/teachers",
     CONTACT: "/contact",
     LOGIN: "/login",
+    FORGOT_PASSWORD: "/forgot-password",
 
     // ── Error pages ─────────────────────────────────────────────
     FORBIDDEN: "/403",

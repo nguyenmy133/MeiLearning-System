@@ -13,7 +13,10 @@ public interface TuitionService {
 
     List<TuitionInvoiceResponse> generateMonthlyInvoices(String month);
 
-    /** Paginated */
+    /** Paginated with search + className filter */
+    PageResponse<TuitionInvoiceResponse> getAll(String search, String status, String month, String className, Long studentId, int page, int limit);
+
+    /** Paginated (legacy — no search/className) */
     PageResponse<TuitionInvoiceResponse> getAll(String status, String month, Long studentId, int page, int limit);
 
     /** Legacy — trả full list */

@@ -27,6 +27,31 @@ export function useClassOptions() {
 }
 
 /**
+ * Chỉ lấy lớp đang hoạt động (active + upcoming) — dùng cho filter module học phí.
+ * Lớp đã kết thúc không nên xuất hiện trong dropdown filter.
+ */
+export function useActiveClassOptions() {
+  return useQuery<ClassOption[]>({
+    queryKey: ["classes", "activeOptions"],
+    queryFn: async () => {
+      try {
+        const [activeRes, upcomingRes] = await Promise.all([
+          apiClient.get("/classes", { params: { limit: 200, status: "active" } }),
+          apiClient.get("/classes", { params: { limit: 200, status: "upcoming" } }),
+        ]);
+        const activeList = Array.isArray(activeRes.data) ? activeRes.data : activeRes.data?.data ?? [];
+        const upcomingList = Array.isArray(upcomingRes.data) ? upcomingRes.data : upcomingRes.data?.data ?? [];
+        const merged = [...activeList, ...upcomingList];
+        return merged.map((c: any) => ({ id: c.id, name: c.name || c.className }));
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
  * Chỉ lấy lớp chưa kết thúc (active + upcoming) — dùng cho ClassPicker khi tạo/sửa học viên.
  * Tránh cho phép đăng ký học viên vào lớp đã hoàn thành.
  */
@@ -148,7 +173,8 @@ export function useSubjectOptionsWithPrice() {
 export function useMonthOptions(): string[] {
   const months: string[] = [];
   const now = new Date();
-  for (let i = 0; i < 12; i++) {
+  // 1 tháng tương lai + tháng hiện tại + 11 tháng quá khứ = 13 options
+  for (let i = -1; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();

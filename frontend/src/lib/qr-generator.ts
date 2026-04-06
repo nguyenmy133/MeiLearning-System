@@ -87,6 +87,6 @@ export const VIETNAMESE_BANKS = [
  */
 export const CENTER_BANK_ACCOUNT: BankInfo = {
     bankId: "970422", // MB Bank
-    accountNo: "0123456789",
+    accountNo: "130320041303",
     accountName: "TRUNG TAM MEILEARNING",
 };

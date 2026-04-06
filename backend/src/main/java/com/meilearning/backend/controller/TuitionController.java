@@ -31,12 +31,14 @@ public class TuitionController {
     @Operation(summary = "Lấy danh sách hóa đơn (Admin)")
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<PageResponse<TuitionInvoiceResponse>> getAll(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String month,
+            @RequestParam(required = false) String className,
             @RequestParam(required = false) Long studentId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return ResponseEntity.ok(tuitionService.getAll(status, month, studentId, page, limit));
+        return ResponseEntity.ok(tuitionService.getAll(search, status, month, className, studentId, page, limit));
     }
 
     @GetMapping("/{id}")

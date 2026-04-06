@@ -496,6 +496,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
             min={1}
             value={maxStudents}
             onChange={(e) => setMaxStudents(Number(e.target.value))}
+            onBlur={(e) => { e.target.value = String(Number(e.target.value) || 1); setMaxStudents(Number(e.target.value)); }}
           />
           {roomCapacity > 0 && maxStudents > roomCapacity ? (
             <p className="text-xs text-destructive flex items-center gap-1">
@@ -513,6 +514,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
             step={10000}
             value={pricePerSession}
             onChange={(e) => setPricePerSession(Number(e.target.value))}
+            onBlur={(e) => { e.target.value = String(Number(e.target.value) || 0); setPricePerSession(Number(e.target.value)); }}
           />
           <p className="text-xs text-muted-foreground">
             {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(pricePerSession)}

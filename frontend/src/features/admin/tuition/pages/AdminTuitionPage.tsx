@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +74,7 @@ import {
 } from "../hooks";
 import type { TuitionInvoice, TuitionQueryParams } from "../types";
 import { INVOICE_STATUS_LABELS } from "../types";
-import { useClassOptions, useMonthOptions } from "@/hooks/useClassOptions";
+import { useActiveClassOptions, useMonthOptions } from "@/hooks/useClassOptions";
 import { exportInvoiceListPdf, exportReceiptPdf } from "@/lib/pdf-generator";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ export function AdminTuitionPage() {
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterClass, setFilterClass] = useState("all");
-  const { data: classOptions } = useClassOptions();
+  const { data: classOptions } = useActiveClassOptions();
   const monthOptions = useMonthOptions();
   const [selectedPaymentForQR, setSelectedPaymentForQR] =
     useState<TuitionInvoice | null>(null);
@@ -172,9 +172,16 @@ export function AdminTuitionPage() {
   const [remindAllConfirmOpen, setRemindAllConfirmOpen] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<TuitionInvoice | null>(null);
 
+  // Debounce search 300ms
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
   // ── Data ──────────────────────────────────────────────────────────────────
   const queryParams: TuitionQueryParams = {
-    search: searchTerm || undefined,
+    search: debouncedSearch || undefined,
     month: filterMonth !== "all" ? filterMonth : undefined,
     status:
       filterStatus !== "all"

@@ -551,6 +551,7 @@ export function TeacherStudentExamResult() {
                                 placeholder="Nhập điểm"
                                 value={essayGrades[detail.id]?.score ?? ""}
                                 onChange={(e) => updateEssayGrade(detail.id, "score", e.target.value)}
+                                onBlur={(e) => { if (e.target.value) { const v = String(Number(e.target.value) || 0); updateEssayGrade(detail.id, "score", v); } }}
                                 className="h-9"
                               />
                             </div>
