@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 
-export async function getTuitionInvoices(params?: { status?: string; month?: string; studentId?: number }) {
+export async function getTuitionInvoices(params?: { search?: string; status?: string; month?: string; className?: string; studentId?: number }) {
   const { data } = await apiClient.get(API.TUITION.LIST, { params });
   // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
   return Array.isArray(data) ? data : data?.data ?? [];

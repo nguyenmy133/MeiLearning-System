@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -182,6 +182,24 @@ interface ClassPickerProps {
 
 function ClassPicker({ selected, onChange }: ClassPickerProps) {
   const { data: classOptions } = useEnrollableClassOptions();
+  const enrollableIds = new Set((classOptions ?? []).map((c) => c.id));
+
+  // Lưu snapshot lớp đã kết thúc lần đầu (dùng để hiển thị, không gửi backend)
+  const endedClassesRef = useRef<ClassEnrollment[]>([]);
+  const hasSynced = useRef(false);
+
+  // Auto-strip lớp đã kết thúc khỏi parent state ngay khi classOptions load xong
+  useEffect(() => {
+    if (!classOptions || classOptions.length === 0 || hasSynced.current) return;
+
+    const ended = selected.filter((c) => !enrollableIds.has(c.classId));
+    if (ended.length > 0) {
+      endedClassesRef.current = ended;
+      onChange(selected.filter((c) => enrollableIds.has(c.classId)));
+    }
+    hasSynced.current = true;
+  }, [classOptions]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const toggle = (opt: { id: number; name: string }) => {
     const exists = selected.some((c) => c.classId === opt.id);
     onChange(
@@ -213,6 +231,23 @@ function ClassPicker({ selected, onChange }: ClassPickerProps) {
         <p className="text-xs text-muted-foreground">
           Đã chọn: {selected.map((c) => c.className).join(", ")}
         </p>
+      )}
+      {endedClassesRef.current.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-[11px] text-muted-foreground/70 italic">
+            Lớp đã kết thúc:
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {endedClassesRef.current.map((c) => (
+              <span
+                key={c.classId}
+                className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground line-through"
+              >
+                {c.className}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

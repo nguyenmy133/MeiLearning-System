@@ -389,7 +389,7 @@ export function UserDashboard() {
         <TabsContent value="schedule" className="mt-0">
           <div className="bg-card border rounded-xl overflow-hidden p-0 relative">
             <div className="px-4 py-2 pt-0">
-              <SchedulePage />
+              <SchedulePage onCheckIn={handleCheckIn} />
             </div>
           </div>
         </TabsContent>

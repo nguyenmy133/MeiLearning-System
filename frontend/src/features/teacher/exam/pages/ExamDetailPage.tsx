@@ -233,8 +233,10 @@ export function ExamDetailPage() {
               {isEditing ? (
                 <Input
                   type="number"
+                  min={1}
                   value={editDuration}
                   onChange={(e) => setEditDuration(e.target.value)}
+                  onBlur={(e) => { const v = String(parseInt(e.target.value) || 1); setEditDuration(v); }}
                   className="h-8 w-24 text-lg font-bold"
                 />
               ) : (

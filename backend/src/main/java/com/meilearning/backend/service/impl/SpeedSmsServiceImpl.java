@@ -4,7 +4,6 @@ import com.meilearning.backend.service.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +25,9 @@ public class SpeedSmsServiceImpl implements SmsService {
 
     private static final String API_URL = "https://api.speedsms.vn/index.php/sms/send";
 
+    @Value("${app.sms.enabled:false}")
+    private boolean enabled;
+
     @Value("${app.sms.api-key:}")
     private String apiKey;
 
@@ -43,8 +45,11 @@ public class SpeedSmsServiceImpl implements SmsService {
     private final Map<String, DailyCounter> dailyCounters = new ConcurrentHashMap<>();
 
     @Override
-    @Async("notificationExecutor")
     public boolean sendSms(String phoneNumber, String message) {
+        if (!enabled) {
+            log.debug("📱 SMS disabled — skipping send to {}", phoneNumber);
+            return false;
+        }
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("⚠️ SpeedSMS API key not configured — SMS skipped to {}", phoneNumber);
             return false;
@@ -67,31 +72,37 @@ public class SpeedSmsServiceImpl implements SmsService {
                     (apiKey + ":x").getBytes(StandardCharsets.UTF_8));
             headers.set("Authorization", "Basic " + auth);
 
-            Map<String, Object> body = Map.of(
-                    "to", normalizedPhone,
-                    "content", truncate(message, 160),
-                    "sms_type", smsType,
-                    "sender", sender
-            );
+            String smsContent = truncate(message, 160);
+            Map<String, Object> body = new java.util.HashMap<>();
+            body.put("to", new String[]{normalizedPhone});
+            body.put("content", smsContent);
+            body.put("sms_type", smsType);
+            // sender only required for type 3 (custom brandname) and type 4 (default brandname)
+            if (smsType >= 3 && sender != null && !sender.isBlank()) {
+                body.put("sender", sender);
+            }
+
+            log.info("📱 Sending SMS to {} [type={}, sender={}]: {}", normalizedPhone, smsType, sender,
+                    truncate(smsContent, 50));
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             @SuppressWarnings("unchecked")
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     API_URL, HttpMethod.POST, request, (Class<Map<String, Object>>) (Class<?>) Map.class);
 
-            if (response.getStatusCode().is2xxSuccessful()) {
-                Map<?, ?> responseBody = response.getBody();
-                if (responseBody != null && "success".equals(responseBody.get("status"))) {
-                    log.info("📱 SMS sent to {}: {}", normalizedPhone,
-                            truncate(message, 50));
-                    incrementCounter(normalizedPhone);
-                    return true;
-                } else {
-                    log.error("❌ SpeedSMS error: {}", responseBody);
-                }
+            Map<?, ?> responseBody = response.getBody();
+            log.info("📱 SpeedSMS response [{}]: {}", response.getStatusCode(), responseBody);
+
+            if (response.getStatusCode().is2xxSuccessful()
+                    && responseBody != null && "success".equals(responseBody.get("status"))) {
+                log.info("✅ SMS delivered to {}", normalizedPhone);
+                incrementCounter(normalizedPhone);
+                return true;
+            } else {
+                log.error("❌ SpeedSMS error [{}]: {}", response.getStatusCode(), responseBody);
             }
         } catch (Exception e) {
-            log.error("❌ Failed to send SMS to {}: {}", normalizedPhone, e.getMessage());
+            log.error("❌ Failed to send SMS to {}: {}", normalizedPhone, e.getMessage(), e);
         }
 
         return false;

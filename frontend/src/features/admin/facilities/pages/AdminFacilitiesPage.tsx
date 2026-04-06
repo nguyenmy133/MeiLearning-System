@@ -341,7 +341,7 @@ function RoomForm({ initialData, onSubmit, isPending, mode }: RoomFormProps) {
         <Input
           type="number" min={1} max={200} value={capacity}
           onChange={(e) => setCapacity(Number(e.target.value))}
-          onBlur={() => markTouched("capacity")}
+          onBlur={(e) => { e.target.value = String(Number(e.target.value) || 1); setCapacity(Number(e.target.value)); markTouched("capacity"); }}
           className={touched.capacity && errors.capacity ? "border-destructive" : ""}
         />
         {touched.capacity && errors.capacity ? (
