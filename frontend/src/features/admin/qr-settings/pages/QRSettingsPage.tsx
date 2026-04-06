@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Clock, RefreshCw, Save, Loader2 } from "lucide-react";
+import { Settings, Clock, RefreshCw, Save, Loader2, Power, ShieldAlert } from "lucide-react";
 import { useQRSettings, useUpdateQRSettings } from "../hooks";
 
 export function QRSettingsPage() {
@@ -14,7 +14,7 @@ export function QRSettingsPage() {
   const update = useUpdateQRSettings();
 
   // Remote settings as source of truth
-  const remote = data ?? { expiryMinutes: 5, lateThresholdMinutes: 10, allowRegenerate: true };
+  const remote = data ?? { enabled: true, expiryMinutes: 5, lateThresholdMinutes: 10, allowRegenerate: true };
 
   // Local state for input fields (avoids re-save on every keystroke)
   const [expiryMinutes, setExpiryMinutes] = useState(remote.expiryMinutes);
@@ -43,22 +43,25 @@ export function QRSettingsPage() {
     (overrides?: Partial<typeof remote>) => {
       update.reset();
       update.mutate({
+        enabled: remote.enabled,
         expiryMinutes,
         lateThresholdMinutes,
         allowRegenerate: remote.allowRegenerate,
         ...overrides,
       });
     },
-    [expiryMinutes, lateThresholdMinutes, remote.allowRegenerate, update]
+    [expiryMinutes, lateThresholdMinutes, remote.allowRegenerate, remote.enabled, update]
   );
 
   // Toggle switch → auto-save immediately
-  const handleToggle = (checked: boolean) => {
+  const handleToggle = (field: "allowRegenerate" | "enabled", checked: boolean) => {
     update.reset();
     update.mutate({
+      enabled: remote.enabled,
       expiryMinutes,
       lateThresholdMinutes,
-      allowRegenerate: checked,
+      allowRegenerate: remote.allowRegenerate,
+      [field]: checked,
     });
   };
 
@@ -73,7 +76,29 @@ export function QRSettingsPage() {
         </p>
       </div>
 
-      <Card className="max-w-2xl">
+      {/* Master toggle */}
+      <Card className={`max-w-2xl border-2 transition-colors ${remote.enabled ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
+        <CardContent className="flex items-center justify-between py-5">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${remote.enabled ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+              <Power className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Hệ thống QR điểm danh</p>
+              <p className="text-sm text-muted-foreground">
+                {remote.enabled ? "Đang hoạt động — giáo viên có thể tạo mã QR" : "Đã tắt — giáo viên không thể tạo mã QR"}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={remote.enabled}
+            onCheckedChange={(checked) => handleToggle("enabled", checked)}
+            disabled={update.isPending}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className={`max-w-2xl transition-opacity ${!remote.enabled ? "opacity-50 pointer-events-none" : ""}`}>
         <CardHeader>
           <CardTitle className="text-lg font-display flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" />
@@ -93,11 +118,10 @@ export function QRSettingsPage() {
               max={30}
               value={expiryMinutes}
               onChange={(e) => setExpiryMinutes(parseInt(e.target.value) || 5)}
-              onBlur={(e) => { const v = parseInt(e.target.value) || 5; e.target.value = String(v); setExpiryMinutes(v); saveConfig({ expiryMinutes: v }); }}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">
-              Mã QR sẽ tự động hết hạn sau khoảng thời gian này
+              Mã QR sẽ tự động hết hạn sau khoảng thời gian này (1–30 phút)
             </p>
           </div>
 
@@ -109,15 +133,14 @@ export function QRSettingsPage() {
             <Input
               id="late"
               type="number"
-              min={5}
+              min={1}
               max={60}
               value={lateThresholdMinutes}
               onChange={(e) => setLateThresholdMinutes(parseInt(e.target.value) || 10)}
-              onBlur={(e) => { const v = parseInt(e.target.value) || 10; e.target.value = String(v); setLateThresholdMinutes(v); saveConfig({ lateThresholdMinutes: v }); }}
               className="max-w-[200px]"
             />
             <p className="text-sm text-muted-foreground">
-              Điểm danh sau thời gian này kể từ giờ học sẽ được tính là đi muộn
+              Điểm danh sau thời gian này kể từ giờ học sẽ được tính là đi muộn (1–60 phút)
             </p>
           </div>
 
@@ -133,7 +156,7 @@ export function QRSettingsPage() {
             </div>
             <Switch
               checked={remote.allowRegenerate}
-              onCheckedChange={handleToggle}
+              onCheckedChange={(checked) => handleToggle("allowRegenerate", checked)}
               disabled={update.isPending}
             />
           </div>

@@ -211,7 +211,7 @@ export function AttendancePage({ compact = false }: { compact?: boolean }) {
             </div>
           ) : (
             <div className="space-y-3">
-              {records.map((record) => (
+              {[...records].sort((a, b) => b.date.localeCompare(a.date)).map((record) => (
                 <div
                   key={record.id}
                   className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
