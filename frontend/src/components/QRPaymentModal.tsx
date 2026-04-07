@@ -25,6 +25,7 @@ import {
   CENTER_BANK_ACCOUNT,
   type PaymentInfo 
 } from "@/lib/qr-generator";
+import { formatDate } from "@/lib/dateUtils";
 
 interface QRPaymentModalProps {
   open: boolean;
@@ -237,7 +238,7 @@ export function QRPaymentModal({ open, onOpenChange, paymentInfo, onPaid }: QRPa
             <p>Học viên: <span className="font-medium">{paymentInfo.studentName}</span></p>
             <p>Mã hóa đơn: <span className="font-medium">#{paymentInfo.invoiceId}</span></p>
             {paymentInfo.dueDate && (
-              <p>Hạn thanh toán: <span className="font-medium">{paymentInfo.dueDate}</span></p>
+              <p>Hạn thanh toán: <span className="font-medium">{formatDate(paymentInfo.dueDate)}</span></p>
             )}
           </div>
 

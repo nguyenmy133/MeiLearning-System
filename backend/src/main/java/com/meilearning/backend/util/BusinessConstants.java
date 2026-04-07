@@ -20,5 +20,5 @@ public final class BusinessConstants {
     public static final BigDecimal PASSING_SCORE = BigDecimal.valueOf(50);
 
     /** Ngày tính due date học phí = ngày X tháng sau */
-    public static final int TUITION_DUE_DAY = 15;
+    public static final int TUITION_DUE_DAY = 10;
 }

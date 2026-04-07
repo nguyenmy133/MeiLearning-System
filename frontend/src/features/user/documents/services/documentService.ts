@@ -1,6 +1,8 @@
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 import type { DocumentItem } from "../types";
+import { formatDate } from "@/lib/dateUtils";
+
 
 // ── YouTube helpers ─────────────────────────────────────────────────────────
 
@@ -49,7 +51,7 @@ function formatRelativeDate(isoString: string): string {
   if (diffDays === 1) return "Hôm qua";
   if (diffDays < 7) return `${diffDays} ngày trước`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
-  return date.toLocaleDateString("vi-VN");
+  return formatDate(isoString);
 }
 
 function mapDocumentResponse(raw: any): DocumentItem {

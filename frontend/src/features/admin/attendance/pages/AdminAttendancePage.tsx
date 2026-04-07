@@ -516,7 +516,7 @@ export function AdminAttendancePage() {
                     // Format timestamp
                     let timeString = "";
                     try {
-                      timeString = format(new Date(log.timestamp), "HH:mm");
+                      timeString = format(new Date(log.timestamp), "dd/MM/yyyy HH:mm");
                     } catch {
                       timeString = "N/A";
                     }

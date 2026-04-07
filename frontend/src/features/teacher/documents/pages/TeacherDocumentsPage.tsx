@@ -65,7 +65,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDocuments, useUploadDocument, useUploadYoutube, useDeleteDocument } from "../hooks/useDocuments";
 import { useClasses } from "@/features/admin/classes/hooks";
 import { formatFileSize, extractYoutubeId, getYoutubeThumbnail } from "../services/documentService";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 import type { TeacherDocument, UploadDocumentDTO, UploadYoutubeDTO } from "../types";
 
 // ── File icon helpers ──────────────────────────────────────────────────────────
@@ -755,7 +755,7 @@ export function TeacherDocumentsPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">Ngày tải lên</p>
-                <p className="font-medium">{formatDate(previewDoc?.createdAt ?? "")}</p>
+                <p className="font-medium">{formatDateTime(previewDoc?.createdAt ?? "")}</p>
               </div>
             </div>
           </div>
@@ -959,7 +959,7 @@ function DocumentCard({
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 {!isYoutube && <span>{formatFileSize(doc.fileSize)}</span>}
-                <span>{formatDate(doc.createdAt)}</span>
+                <span>{formatDateTime(doc.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -1009,7 +1009,7 @@ function DocumentRow({
         </div>
       </div>
       <div className="hidden sm:block text-right flex-shrink-0">
-        <p className="text-xs text-muted-foreground">{formatDate(doc.createdAt)}</p>
+        <p className="text-xs text-muted-foreground">{formatDateTime(doc.createdAt)}</p>
         <p className="text-xs text-muted-foreground">{doc.uploadedByName}</p>
       </div>
       <div className="flex items-center gap-1">

@@ -419,7 +419,7 @@ public class TuitionServiceImpl implements TuitionService {
     }
 
     /**
-     * Due date = ngày 15 tháng sau
+     * Due date = ngày 10 tháng sau
      */
     private LocalDate calculateDueDate(String monthStr) {
         String[] parts = monthStr.split("/");

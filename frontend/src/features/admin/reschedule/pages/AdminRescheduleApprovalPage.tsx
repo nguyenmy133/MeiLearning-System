@@ -55,6 +55,7 @@ import {
   useRejectRequest,
 } from "../hooks";
 import type { RescheduleRequest, RequestStatus } from "../types";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -421,7 +422,7 @@ export function AdminRescheduleApprovalPage() {
                                     <div className="text-sm text-muted-foreground">
                                       <div className="flex items-center gap-1">
                                         <Calendar className="w-3.5 h-3.5" />
-                                        {req.originalDate}
+                                        {formatDate(req.originalDate)}
                                       </div>
                                       <div className="flex items-center gap-1 text-xs">
                                         <Clock className="w-3 h-3" />
@@ -434,7 +435,7 @@ export function AdminRescheduleApprovalPage() {
                                       <div className="text-sm text-primary">
                                         <div className="flex items-center gap-1">
                                           <Calendar className="w-3.5 h-3.5" />
-                                          {req.requestedDate}
+                                          {formatDate(req.requestedDate)}
                                         </div>
                                         <div className="flex items-center gap-1 text-xs">
                                           <Clock className="w-3 h-3" />
@@ -579,7 +580,7 @@ export function AdminRescheduleApprovalPage() {
                     <p className="text-xs text-muted-foreground mb-1">
                       Lịch gốc
                     </p>
-                    <p className="font-medium">{selectedRequest.originalDate}</p>
+                    <p className="font-medium">{formatDate(selectedRequest.originalDate)}</p>
                     <p className="text-xs text-muted-foreground">
                       {selectedRequest.originalTime}
                     </p>
@@ -594,7 +595,7 @@ export function AdminRescheduleApprovalPage() {
                     {selectedRequest.type === "reschedule" ? (
                       <>
                         <p className="font-medium text-primary">
-                          {selectedRequest.requestedDate}
+                          {formatDate(selectedRequest.requestedDate)}
                         </p>
                         <p className="text-xs text-primary">
                           {selectedRequest.requestedTime}
@@ -627,7 +628,7 @@ export function AdminRescheduleApprovalPage() {
 
               {selectedRequest.reviewedAt && (
                 <p className="text-xs text-muted-foreground text-right">
-                  Đã xử lý ngày {selectedRequest.reviewedAt}
+                  Đã xử lý ngày {formatDateTime(selectedRequest.reviewedAt)}
                 </p>
               )}
 

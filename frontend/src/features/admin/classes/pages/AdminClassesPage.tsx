@@ -34,6 +34,7 @@ import {
   Users, Calendar, Clock, Filter, MapPin, CheckCircle2, XCircle,
   Loader2, Info, Phone,
 } from "lucide-react";
+import { formatDate } from "@/lib/dateUtils";
 
 // ===== Module imports =====
 import {
@@ -1127,11 +1128,11 @@ export function AdminClassesPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-muted-foreground text-xs">Ngày bắt đầu</p>
-                  <p className="font-medium">{viewingClass.startDate}</p>
+                  <p className="font-medium">{formatDate(viewingClass.startDate)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Ngày kết thúc</p>
-                  <p className="font-medium">{viewingClass.endDate || "Chưa kết thúc"}</p>
+                  <p className="font-medium">{viewingClass.endDate ? formatDate(viewingClass.endDate) : "Chưa kết thúc"}</p>
                 </div>
               </div>
 
