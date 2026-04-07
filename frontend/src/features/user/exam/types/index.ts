@@ -36,6 +36,9 @@ export interface ExamDetail {
     myTimeSpent?: number;
     /** Trạng thái chấm tự luận: "graded" | "pending" | "no_essay" */
     myGradingStatus?: "graded" | "pending" | "no_essay";
+
+    maxAttempts?: number;
+    myScoreHistory?: string;
 }
 
 export interface ExamSession {

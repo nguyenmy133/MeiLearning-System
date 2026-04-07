@@ -8,6 +8,7 @@
 
 package com.meilearning.backend.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -64,6 +65,9 @@ public class ExamResult extends BaseEntity {
     @Column(name = "submitted_at")
     private Instant submittedAt;
 
-    @OneToMany(mappedBy = "examResult", fetch = FetchType.LAZY)
+    @Column(name = "score_history", columnDefinition = "TEXT")
+    private String scoreHistory;
+
+    @OneToMany(mappedBy = "examResult", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExamAnswerDetail> answerDetails;
 }

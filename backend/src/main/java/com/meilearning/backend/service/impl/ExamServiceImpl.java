@@ -65,6 +65,7 @@ public class ExamServiceImpl implements ExamService {
                 .subject(req.getSubject())
                 .duration(req.getDuration())
                 .totalQuestions(req.getTotalQuestions() != null ? req.getTotalQuestions() : 0)
+                .maxAttempts(req.getMaxAttempts() != null ? req.getMaxAttempts() : 1)
                 .startTime(parseFlexibleInstant(req.getStartTime()))
                 .endTime(parseFlexibleInstant(req.getEndTime()))
                 .build();
@@ -113,6 +114,7 @@ public class ExamServiceImpl implements ExamService {
         if (req.getDuration() != null) exam.setDuration(req.getDuration());
         if (req.getStartTime() != null) exam.setStartTime(parseFlexibleInstant(req.getStartTime()));
         if (req.getEndTime() != null) exam.setEndTime(parseFlexibleInstant(req.getEndTime()));
+        if (req.getMaxAttempts() != null) exam.setMaxAttempts(req.getMaxAttempts());
 
         // Questions & classes chỉ được update khi còn là draft
         if (isDraft) {
@@ -195,6 +197,7 @@ public class ExamServiceImpl implements ExamService {
                     String gradingStatus = com.meilearning.backend.mapper.AcademicMapper
                             .computeGradingStatus(er.getAnswerDetails());
                     resp.setMyGradingStatus(gradingStatus);
+                    resp.setMyScoreHistory(er.getScoreHistory());
                 }
                 resp.setMyDurationMinutes(resp.getDuration());
             }
@@ -316,8 +319,22 @@ public class ExamServiceImpl implements ExamService {
         Student student = studentRepository.findById(req.getStudentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found: " + req.getStudentId()));
 
-        if (resultRepository.existsByExamIdAndStudentId(examId, req.getStudentId())) {
-            throw new BusinessException("Học viên đã nộp bài cho exam này.");
+        ExamResult existingResult = resultRepository.findByExamIdAndStudentId(examId, req.getStudentId()).orElse(null);
+        String newHistory = null;
+        if (existingResult != null) {
+            int attempts = existingResult.getScoreHistory() == null ? 1 : existingResult.getScoreHistory().split(",").length + 1;
+            int maxAttemptsAllowed = exam.getMaxAttempts() != null ? exam.getMaxAttempts() : 1;
+            if (attempts >= maxAttemptsAllowed) {
+                throw new BusinessException("Học viên đã nộp bài và vượt quá số lần cho phép (" + maxAttemptsAllowed + " lần).");
+            }
+            String oldScoreStr = "Lần " + attempts + ": " + existingResult.getScore() + "đ";
+            newHistory = existingResult.getScoreHistory() == null ? oldScoreStr : existingResult.getScoreHistory() + ", " + oldScoreStr;
+            
+            // Xóa chi tiết lời giải cũ để ghi đè
+            if (existingResult.getAnswerDetails() != null && !existingResult.getAnswerDetails().isEmpty()) {
+                answerDetailRepository.deleteAll(existingResult.getAnswerDetails());
+                existingResult.getAnswerDetails().clear();
+            }
         }
 
         BigDecimal score;
@@ -389,15 +406,17 @@ public class ExamServiceImpl implements ExamService {
 
         boolean passed = score.compareTo(com.meilearning.backend.util.BusinessConstants.PASSING_SCORE) >= 0;
 
-        ExamResult result = ExamResult.builder()
-                .exam(exam)
-                .student(student)
-                .score(score)
-                .correctAnswers(correctCount)
-                .timeSpent(req.getTimeSpent())
-                .passed(passed)
-                .submittedAt(Instant.now())
-                .build();
+        ExamResult result = existingResult != null ? existingResult : new ExamResult();
+        result.setExam(exam);
+        result.setStudent(student);
+        result.setScore(score);
+        result.setCorrectAnswers(correctCount);
+        result.setTimeSpent(req.getTimeSpent());
+        result.setPassed(passed);
+        result.setSubmittedAt(Instant.now());
+        if (newHistory != null) {
+            result.setScoreHistory(newHistory);
+        }
 
         result = resultRepository.save(result);
 

@@ -38,6 +38,9 @@ public class ExamResponse {
     private Integer myTimeSpent;
     /** Trạng thái chấm tự luận: "graded" | "pending" | "no_essay" */
     private String myGradingStatus;
+    
+    private Integer maxAttempts;
+    private String myScoreHistory;
 }
 
 

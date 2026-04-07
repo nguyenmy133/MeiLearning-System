@@ -53,6 +53,7 @@ public class AcademicMapper {
                 .avgScore(avgScore)
                 .createdAt(exam.getCreatedAt())
                 .totalStudents(totalStudents)
+                .maxAttempts(exam.getMaxAttempts())
                 .build();
     }
 
@@ -131,6 +132,7 @@ public class AcademicMapper {
                 .passed(result.getPassed())
                 .submittedAt(result.getSubmittedAt())
                 .gradingStatus(gradingStatus)
+                .scoreHistory(result.getScoreHistory())
                 .build();
     }
 
