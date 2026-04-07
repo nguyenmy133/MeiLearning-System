@@ -36,6 +36,7 @@ import {
   Eye,
   Radio,
   Loader2,
+  Activity,
 } from "lucide-react";
 import {
   useAttendanceSessions,
@@ -485,67 +486,59 @@ export function AdminAttendancePage() {
           </Card>
         </div>
 
-        {/* Right sidebar: absence alerts */}
+        {/* Right sidebar: Live Activity Feed */}
         <div className="space-y-6">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-destructive" />
-                Cảnh báo vắng liên tiếp
+            <CardHeader className="pb-2 border-b border-border/50 mb-3">
+              <CardTitle className="text-base font-display flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" />
+                  Log điểm danh bất thường
+                </div>
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4 px-4 pb-4">
               {loadingAlerts
-                ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-lg" />)
-                : absentAlerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="p-3 rounded-lg bg-destructive/5 border border-destructive/10 space-y-2 relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-destructive" />
-                      <div className="flex items-center justify-between pl-2">
-                        <p className="font-medium text-foreground text-sm">
-                          {alert.studentName}
-                        </p>
-                        <Badge className="bg-destructive text-destructive-foreground border-0">
-                          {alert.absences} buổi
-                        </Badge>
+                ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-lg" />)
+                : absentAlerts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Không có log điểm danh bất thường nào hôm nay</p>
+                ) : absentAlerts.map((log: any, index: number) => {
+                    const isAbsent = log.status === "absent" || log.status === "absent_excused";
+                    const colorClass = isAbsent ? "text-destructive" : "text-amber-500";
+                    const bgClass = isAbsent ? "bg-destructive/10" : "bg-amber-500/10";
+                    const dotClass = isAbsent ? "bg-destructive" : "bg-amber-500";
+                    const label = log.status === "late" ? "Đến muộn" : (log.status === "absent_excused" ? "Nghỉ có phép" : "Vắng mặt");
+                    
+                    // Format timestamp
+                    let timeString = "";
+                    try {
+                      timeString = format(new Date(log.timestamp), "HH:mm");
+                    } catch {
+                      timeString = "N/A";
+                    }
+
+                    return (
+                      <div key={log.id} className="relative pl-4">
+                        <div className={`absolute left-0 top-1.5 w-2 h-2 rounded-full ${dotClass}`} />
+                        {index !== absentAlerts.length - 1 && (
+                          <div className="absolute left-[3px] top-3.5 w-px h-[calc(100%+8px)] bg-border -z-10" />
+                        )}
+                        
+                        <div className="flex flex-col gap-1 pb-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground">{timeString}</span>
+                            <Badge variant="outline" className={`${colorClass} ${bgClass} border-0 text-[10px] px-1.5 py-0`}>{label}</Badge>
+                          </div>
+                          <p className="text-sm font-medium text-foreground">{log.studentName}</p>
+                          <p className="text-xs text-muted-foreground">Lớp: {log.className}</p>
+                        </div>
                       </div>
-                      <div className="pl-2 space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                          Lớp{" "}
-                          <span className="font-medium text-foreground">
-                            {alert.className}
-                          </span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Học lần cuối: {alert.lastAttended}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 pl-2 pt-2 border-t border-destructive/10">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 text-xs h-7 text-destructive hover:bg-destructive hover:text-white border-destructive/20"
-                          onClick={() =>
-                            toast.info(`Liên hệ phụ huynh học viên ${alert.studentName}`)
-                          }
-                        >
-                          Liên hệ PH
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex-1 text-xs h-7"
-                          onClick={() =>
-                            toast.info(`Xem chi tiết học viên ${alert.studentName}`)
-                          }
-                        >
-                          Chi tiết
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
             </CardContent>
           </Card>
         </div>

@@ -451,4 +451,25 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .orElse(null);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.meilearning.backend.dto.response.AttendanceActivityLogResponse> getUnusualActivityFeed() {
+        List<AttendanceStatus> statuses = List.of(
+                AttendanceStatus.late,
+                AttendanceStatus.absent,
+                AttendanceStatus.absent_excused
+        );
+        org.springframework.data.domain.Pageable top15 = org.springframework.data.domain.PageRequest.of(0, 15);
+        List<AttendanceRecord> records = attendanceRepository.findUnusualActivityToday(statuses, LocalDate.now(), top15);
+
+        return records.stream().map(r -> com.meilearning.backend.dto.response.AttendanceActivityLogResponse.builder()
+                .id(r.getId())
+                .timestamp(r.getCreatedAt())
+                .studentName(r.getStudent().getUser() != null ? r.getStudent().getUser().getName() : "")
+                .className(r.getSession().getClassEntity().getName())
+                .status(r.getStatus().name())
+                .updatedBy(r.getUpdatedBy() != null ? r.getUpdatedBy() : "System")
+                .build()).toList();
+    }
+
 }

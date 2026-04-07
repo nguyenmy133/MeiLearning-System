@@ -18,6 +18,15 @@ interface SessionRow {
   absentCount: number;
 }
 
+export interface AttendanceActivityLogResponse {
+  id: number;
+  timestamp: string;
+  studentName: string;
+  className: string;
+  status: string; // late, absent, absent_excused
+  updatedBy: string;
+}
+
 // ── Existing records by session ───────────────────────────────────────────────
 
 export async function getAttendanceBySession(sessionId: number) {
@@ -155,9 +164,9 @@ export async function getLiveSessions() {
   }
 }
 
-// ── Absent alerts (stub — no deep analysis endpoint yet) ──────────────────────
+// ── Live Attendance Activity Feed ─────────────────────────────────────────────
 
-export async function getAbsentAlerts() {
+export async function getAbsentAlerts(): Promise<AttendanceActivityLogResponse[]> {
   try {
     const { data } = await apiClient.get("/attendance/alerts");
     return Array.isArray(data) ? data : data?.data ?? [];

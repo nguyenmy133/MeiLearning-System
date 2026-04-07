@@ -45,4 +45,6 @@ public interface AttendanceService {
     /** [Teacher/Admin] Lấy QR token đang active cho session (để restore khi quay lại trang) */
     QrTokenResponse getActiveQrToken(Long sessionId);
 
+    /** Lấy log điểm danh bất thường (vắng, muộn) để stream realtime trên Admin Feed */
+    List<com.meilearning.backend.dto.response.AttendanceActivityLogResponse> getUnusualActivityFeed();
 }

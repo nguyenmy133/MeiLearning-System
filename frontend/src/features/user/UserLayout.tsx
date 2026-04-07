@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { useSseNotifications } from "@/features/user/notifications/hooks/useSseNotifications";
 import { notificationService } from "@/features/user/notifications/services/notificationService";
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
@@ -108,6 +109,8 @@ export function UserLayout() {
   // Fetch notification count
   const { data: notifications = [] } = useNotifications();
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  useSseNotifications();
 
   const displayName = profile?.name ?? "Học viên";
   const avatarUrl = profile?.avatar ?? undefined;
