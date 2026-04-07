@@ -35,6 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
+import { useSseNotifications } from "@/features/user/notifications/hooks/useSseNotifications";
 import { notificationService } from "@/features/user/notifications/services/notificationService";
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
@@ -75,6 +76,8 @@ export function AdminLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { data: notifications = [] } = useNotifications();
   const unreadNotifications = notifications.filter((n) => !n.read).length;
+
+  useSseNotifications();
 
   // Fetch profile data for sidebar + header
   const { data: profile } = useQuery<ProfileData>({

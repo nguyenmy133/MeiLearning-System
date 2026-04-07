@@ -90,9 +90,10 @@ public class AttendanceController {
     }
 
     @GetMapping("/alerts")
-    @Operation(summary = "Lấy cảnh báo vắng mặt (stub)")
-    public ResponseEntity<List<Object>> getAlerts() {
-        return ResponseEntity.ok(java.util.Collections.emptyList());
+    @Operation(summary = "Lấy log điểm danh bất thường (vắng, muộn) feed realtime")
+    @PreAuthorize("hasAnyRole('admin', 'teacher')")
+    public ResponseEntity<List<com.meilearning.backend.dto.response.AttendanceActivityLogResponse>> getAlerts() {
+        return ResponseEntity.ok(attendanceService.getUnusualActivityFeed());
     }
 
     // ── QR Token Endpoints ───────────────────────────────────────────────

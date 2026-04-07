@@ -52,6 +52,7 @@ export function useAbsentAlerts() {
   return useQuery({
     queryKey: attendanceKeys.alerts(),
     queryFn: () => getAbsentAlerts(),
+    refetchInterval: 10_000, // Cập nhật log mỗi 10 giây
   });
 }
 

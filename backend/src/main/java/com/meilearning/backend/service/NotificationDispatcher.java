@@ -30,6 +30,7 @@ public class NotificationDispatcher {
     private final EmailService emailService;
     private final SmsService smsService;
     private final ZaloService zaloService;
+    private final SseService sseService;
 
     /**
      * Dispatch thông báo qua các kênh phù hợp.
@@ -96,6 +97,18 @@ public class NotificationDispatcher {
         }
 
         notificationRepository.save(notification);
+        
+        // 4. FIRE REAL-TIME SSE TO FRONTEND
+        // We push the saved notification entity mapped simply to be sent over stream
+        sseService.sendNotification(user.getUsername(), Map.of(
+            "id", notification.getId(),
+            "type", notification.getType(),
+            "title", notification.getTitle(),
+            "content", notification.getContent(),
+            "severity", notification.getSeverity(),
+            "createdAt", notification.getCreatedAt()
+        ));
+
         log.info("✅ Notification saved [id={}, channels: inApp=true, email={}, sms={}]",
                 notification.getId(), notification.getEmailSent(), notification.getSmsSent());
     }

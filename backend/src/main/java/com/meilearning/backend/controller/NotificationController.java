@@ -22,6 +22,7 @@ import java.util.Map;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final com.meilearning.backend.service.SseService sseService;
 
     @GetMapping
     @Operation(summary = "Lấy danh sách thông báo của user hiện tại")
@@ -54,5 +55,11 @@ public class NotificationController {
             @Valid @RequestBody SendNotificationRequest request) {
         notificationService.sendNotification(request, principal.getName());
         return ResponseEntity.ok(Map.of("message", "Thông báo đã được gửi thành công"));
+    }
+
+    @GetMapping(value = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Mở luồng SSE nhận thông báo Real-time (Web-only)")
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamNotifications(Principal principal) {
+        return sseService.createEmitter(principal.getName());
     }
 }

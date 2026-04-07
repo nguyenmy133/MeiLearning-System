@@ -101,5 +101,18 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     List<AttendanceRecord> findByStudentIdAndSessionClassEntityId(Long studentId, Long classId);
 
+    // ── Log Điểm Danh Bất Thường (Activity Feed) ──
+
+    @Query("SELECT ar FROM AttendanceRecord ar " +
+           "JOIN FETCH ar.student " +
+           "JOIN FETCH ar.session s " +
+           "JOIN FETCH s.classEntity " +
+           "WHERE ar.status IN (:statuses) " +
+           "AND s.date = :today " +
+           "ORDER BY ar.createdAt DESC")
+    List<AttendanceRecord> findUnusualActivityToday(
+            @Param("statuses") List<AttendanceStatus> statuses,
+            @Param("today") LocalDate today,
+            org.springframework.data.domain.Pageable pageable);
 }
 
