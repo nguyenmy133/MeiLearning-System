@@ -16,7 +16,7 @@ public interface LeaveService {
     void cancel(Long id, Long requesterId);
 
     /** Thống kê số đơn theo trạng thái */
-    LeaveStatsResponse getStats(String requesterType);
+    LeaveStatsResponse getStats(String requesterType, String currentUsername);
 
     /** Lấy đơn của các lớp mà teacher quản lý (resolve từ JWT username) */
     List<LeaveRequestResponse> getByTeacherUsername(String username, String status);

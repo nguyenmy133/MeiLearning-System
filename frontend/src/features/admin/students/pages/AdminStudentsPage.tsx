@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -571,7 +572,7 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
 
 interface DropDialogProps {
   student: Student;
-  onConfirm: (dto: DropStudentDTO) => void;
+  onConfirm: (dto: DropStudentDTO & { autoSettle?: boolean }) => void;
   onCancel: () => void;
   isPending: boolean;
 }
@@ -582,6 +583,7 @@ function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDial
   );
   const [dropReason, setDropReason] = useState("");
   const [dropNotes, setDropNotes] = useState("");
+  const [autoSettle, setAutoSettle] = useState(true);
 
   const hasDebt =
     student.tuitionStatus === "overdue" ||
@@ -590,7 +592,7 @@ function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDial
   const handleConfirm = () => {
     if (!dropDate) { toast.error("Vui lòng chọn ngày nghỉ học"); return; }
     if (!dropReason) { toast.error("Vui lòng chọn lý do nghỉ học"); return; }
-    onConfirm({ reason: dropReason, notes: dropNotes || undefined, dropDate: format(dropDate, "yyyy-MM-dd") });
+    onConfirm({ reason: dropReason, notes: dropNotes || undefined, dropDate: format(dropDate, "yyyy-MM-dd"), autoSettle });
   };
 
   return (
@@ -672,6 +674,24 @@ function DropDialogContent({ student, onConfirm, onCancel, isPending }: DropDial
             />
           </div>
         )}
+
+        {/* Lựa chọn chốt sổ */}
+        <div className="flex items-start gap-2 p-3 rounded-lg border border-border mt-2">
+          <Checkbox 
+            id="auto-settle" 
+            checked={autoSettle} 
+            onCheckedChange={(checked) => setAutoSettle(!!checked)} 
+            className="mt-0.5"
+          />
+          <div>
+             <Label htmlFor="auto-settle" className="font-semibold text-sm cursor-pointer text-primary">
+               Chốt sổ học phí đến hiện tại (Khuyên dùng)
+             </Label>
+             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+               Hệ thống sẽ tự động tổng hợp số buổi đã học trong tháng và tạo hóa đơn thanh toán cho học viên này trước khi hoàn tất thủ tục nghỉ.
+             </p>
+          </div>
+        </div>
       </div>
 
       <DialogFooter className="gap-2">
@@ -773,8 +793,23 @@ export function AdminStudentsPage() {
     });
   };
 
-  const handleDrop = (dto: DropStudentDTO) => {
+  const handleDrop = async (dto: DropStudentDTO & { autoSettle?: boolean }) => {
     if (!droppingStudent) return;
+
+    if (dto.autoSettle) {
+       try {
+          const currentMonthStr = `${String(new Date().getMonth() + 1).padStart(2, "0")}/${new Date().getFullYear()}`;
+          const { createTuition } = await import("../../tuition/services/tuitionService");
+          for (const c of droppingStudent.classes) {
+             await createTuition({ studentId: droppingStudent.id, classId: c.classId, month: currentMonthStr });
+          }
+          toast.success("Đã ghi nhận hóa đơn chốt sổ học phí.");
+       } catch (e: any) {
+          console.error("Lỗi khi chốt sổ học phí: ", e);
+          toast.error("Một số lỗi nhỏ khi chốt sổ học phí: " + e.message);
+       }
+    }
+
     dropMutation.mutate(
       { id: droppingStudent.id, dto },
       {
@@ -1265,8 +1300,12 @@ export function AdminStudentsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleCloseReset} className="w-full">
-                  Đã sao chép, đóng
+                <Button onClick={() => {
+                  navigator.clipboard.writeText(newPassword);
+                  toast.success("Đã sao chép mật khẩu");
+                  handleCloseReset();
+                }} className="w-full">
+                  Sao chép và đóng
                 </Button>
               </DialogFooter>
             </>

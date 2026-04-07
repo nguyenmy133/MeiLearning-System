@@ -336,11 +336,24 @@ public class ScheduleServiceImpl implements ScheduleService {
         ClassEntity classEntity = classRepository.findById(request.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found: " + request.getClassId()));
 
+        LocalDate sessionDate = LocalDate.parse(request.getDate());
+        LocalTime startTime = LocalTime.parse(request.getStartTime());
+        LocalTime endTime = LocalTime.parse(request.getEndTime());
+
+        checkTeacherSessionConflict(
+                classEntity.getTeacher().getId(), 
+                classEntity.getTeacher().getUser().getName(), 
+                sessionDate, 
+                startTime, 
+                endTime, 
+                null
+        );
+
         ClassSession session = new ClassSession();
         session.setClassEntity(classEntity);
-        session.setDate(LocalDate.parse(request.getDate()));
-        session.setStartTime(LocalTime.parse(request.getStartTime()));
-        session.setEndTime(LocalTime.parse(request.getEndTime()));
+        session.setDate(sessionDate);
+        session.setStartTime(startTime);
+        session.setEndTime(endTime);
         session.setStatus(SessionStatus.upcoming);
         session.setType("extra".equals(request.getType()) ? SessionType.extra : SessionType.makeup);
         session.setNotes(request.getNotes());
@@ -355,14 +368,30 @@ public class ScheduleServiceImpl implements ScheduleService {
         ClassSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
 
+        LocalDate newDate = request.getDate() != null ? LocalDate.parse(request.getDate()) : session.getDate();
+        LocalTime newStart = request.getStartTime() != null ? LocalTime.parse(request.getStartTime()) : session.getStartTime();
+        LocalTime newEnd = request.getEndTime() != null ? LocalTime.parse(request.getEndTime()) : session.getEndTime();
+
+        // Check if date or time changed
+        if (request.getDate() != null || request.getStartTime() != null || request.getEndTime() != null) {
+            checkTeacherSessionConflict(
+                    session.getClassEntity().getTeacher().getId(),
+                    session.getClassEntity().getTeacher().getUser().getName(),
+                    newDate,
+                    newStart,
+                    newEnd,
+                    id
+            );
+        }
+
         if (request.getDate() != null) {
-            session.setDate(LocalDate.parse(request.getDate()));
+            session.setDate(newDate);
         }
         if (request.getStartTime() != null) {
-            session.setStartTime(LocalTime.parse(request.getStartTime()));
+            session.setStartTime(newStart);
         }
         if (request.getEndTime() != null) {
-            session.setEndTime(LocalTime.parse(request.getEndTime()));
+            session.setEndTime(newEnd);
         }
         if (request.getType() != null) {
             session.setType("extra".equals(request.getType()) ? SessionType.extra : SessionType.makeup);
@@ -414,6 +443,27 @@ public class ScheduleServiceImpl implements ScheduleService {
         ClassSession session = sessionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
         sessionRepository.delete(session);
+    }
+
+    /**
+     * Kiểm tra xung đột cho 1 buổi học cụ thể (add, update session)
+     */
+    private void checkTeacherSessionConflict(Long teacherId, String teacherName, LocalDate date, LocalTime newStart, LocalTime newEnd, Long excludeSessionId) {
+        List<ClassSession> teacherSessions = sessionRepository.findByClassEntityTeacherIdAndDate(teacherId, date);
+        for (ClassSession existing : teacherSessions) {
+            if (existing.getStatus() == SessionStatus.cancelled) continue;
+            if (excludeSessionId != null && existing.getId().equals(excludeSessionId)) continue;
+            
+            LocalTime existStart = existing.getStartTime();
+            LocalTime existEnd = existing.getEndTime();
+            
+            if (newStart.isBefore(existEnd) && newEnd.isAfter(existStart)) {
+                throw new com.meilearning.backend.exception.BusinessException(
+                        String.format("Giáo viên \"%s\" đã có lịch dạy lớp \"%s\" từ %s đến %s ngày %s. Không thể xếp lịch trùng.",
+                                teacherName, existing.getClassEntity().getName(),
+                                existStart.toString(), existEnd.toString(), date.toString()));
+            }
+        }
     }
 
 }

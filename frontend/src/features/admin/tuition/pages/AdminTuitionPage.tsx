@@ -318,7 +318,16 @@ export function AdminTuitionPage() {
             <Button
               size="sm"
               disabled={generateMutation.isPending}
-              onClick={() => setGenerateConfirmOpen(true)}
+              onClick={() => {
+                const [m, y] = generateTargetMonth.split("/").map(Number);
+                const currM = new Date().getMonth() + 1;
+                const currY = new Date().getFullYear();
+                if (y > currY || (y === currY && m >= currM)) {
+                  toast.error(`Không thể chốt công cho tháng ${generateTargetMonth} vì tháng chưa kết thúc. Hệ thống sẽ tự động chạy vào mùng 1 tháng sau.`);
+                  return;
+                }
+                setGenerateConfirmOpen(true);
+              }}
             >
               {generateMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />

@@ -121,6 +121,17 @@ public class TuitionServiceImpl implements TuitionService {
     @Override
     public List<TuitionInvoiceResponse> generateMonthlyInvoices(String month) {
 
+        // Validate month: only allow generating for past months
+        String[] parts = month.split("/");
+        int monthValue = Integer.parseInt(parts[0]);
+        int year = Integer.parseInt(parts[1]);
+        YearMonth requestedMonth = YearMonth.of(year, monthValue);
+        YearMonth currentMonth = YearMonth.now();
+
+        if (!requestedMonth.isBefore(currentMonth)) {
+            throw new BusinessException("Chỉ có thể tạo hóa đơn hàng loạt cho các tháng đã kết thúc.");
+        }
+
         List<TuitionInvoiceResponse> results = new ArrayList<>();
 
         // Lấy tất cả enrollments active

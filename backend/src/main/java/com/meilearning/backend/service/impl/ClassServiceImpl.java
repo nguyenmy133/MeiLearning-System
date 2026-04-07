@@ -162,6 +162,11 @@ public class ClassServiceImpl implements ClassService {
             }
         }
 
+        // ── Kiểm tra xung đột lịch dạy của giáo viên ──
+        if (request.getSchedule() != null && !request.getSchedule().isEmpty()) {
+            checkTeacherScheduleConflict(teacher.getId(), teacher.getUser().getName(), request.getSchedule(), null);
+        }
+
         ClassEntity entity = ClassEntity.builder()
                 .name(request.getName())
                 .subject(subject)
@@ -259,6 +264,15 @@ public class ClassServiceImpl implements ClassService {
                 }
             }
             entity.setRoom(room);
+        }
+
+        // ── Kiểm tra xung đột lịch dạy của giáo viên ──
+        List<CreateClassRequest.SessionSlotDTO> scheduleToCheckForTeacher = (request.getSchedule() != null) 
+                ? request.getSchedule() 
+                : parseScheduleToSlots(entity.getSchedule());
+
+        if (scheduleToCheckForTeacher != null && !scheduleToCheckForTeacher.isEmpty()) {
+            checkTeacherScheduleConflict(entity.getTeacher().getId(), entity.getTeacher().getUser().getName(), scheduleToCheckForTeacher, id);
         }
 
         // ── Xử lý startDate + status liên kết ──
@@ -425,6 +439,45 @@ public class ClassServiceImpl implements ClassService {
             case 6 -> "Thứ 7";
             default -> "?";
         };
+    }
+
+    /**
+     * Kiểm tra xung đột lịch dạy của giáo viên.
+     * @param teacherId ID giáo viên cần kiểm tra
+     * @param teacherName Tên giáo viên
+     * @param newSlots  lịch học mới
+     * @param excludeId ID lớp cần loại trừ (khi update chính nó), null nếu create
+     */
+    private void checkTeacherScheduleConflict(Long teacherId, String teacherName, List<CreateClassRequest.SessionSlotDTO> newSlots, Long excludeId) {
+        List<ClassEntity> existingClasses = classRepository.findActiveOrUpcomingByTeacherId(teacherId);
+
+        for (ClassEntity existing : existingClasses) {
+            if (excludeId != null && existing.getId().equals(excludeId)) continue;
+
+            List<Map<String, Object>> existingSlots = parseScheduleJson(existing.getSchedule());
+            if (existingSlots.isEmpty()) continue;
+
+            for (CreateClassRequest.SessionSlotDTO newSlot : newSlots) {
+                for (Map<String, Object> existingSlot : existingSlots) {
+                    int existingWeekday = ((Number) existingSlot.get("weekday")).intValue();
+
+                    if (existingWeekday == newSlot.getWeekday()) {
+                        LocalTime existStart = LocalTime.parse((String) existingSlot.get("startTime"));
+                        LocalTime existEnd = LocalTime.parse((String) existingSlot.get("endTime"));
+                        LocalTime newStart = LocalTime.parse(newSlot.getStartTime());
+                        LocalTime newEnd = LocalTime.parse(newSlot.getEndTime());
+
+                        if (newStart.isBefore(existEnd) && newEnd.isAfter(existStart)) {
+                            String dayLabel = getDayLabel(newSlot.getWeekday());
+                            throw new BusinessException(
+                                    String.format("Giáo viên \"%s\" đã có lịch dạy lớp \"%s\" vào %s (%s–%s). Một giáo viên không thể dạy nhiều buổi cùng một khung giờ.",
+                                            teacherName, existing.getName(), dayLabel,
+                                            existStart.toString(), existEnd.toString()));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override

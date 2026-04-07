@@ -45,8 +45,10 @@ public class LeaveController {
     @GetMapping("/stats")
     @Operation(summary = "Thống kê đơn theo trạng thái")
     public ResponseEntity<LeaveStatsResponse> getStats(
+            Principal principal,
             @RequestParam(required = false) String requesterType) {
-        return ResponseEntity.ok(leaveService.getStats(requesterType));
+        String username = principal != null ? principal.getName() : null;
+        return ResponseEntity.ok(leaveService.getStats(requesterType, username));
     }
 
     /**

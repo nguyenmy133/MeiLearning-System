@@ -67,6 +67,25 @@ public class RescheduleServiceImpl implements RescheduleService {
 
         }
 
+        // Validate conflict BEFORE saving the request
+        if (rr.getType() == RescheduleType.reschedule && rr.getRequestedDate() != null && rr.getRequestedTime() != null) {
+            java.time.LocalTime startTime = java.time.LocalTime.parse(rr.getRequestedTime());
+            java.time.LocalTime endTime = rr.getRequestedEndTime() != null
+                    ? java.time.LocalTime.parse(rr.getRequestedEndTime())
+                    : startTime.plusHours(2); // fallback 2h
+
+            String teacherName = teacher.getUser() != null ? teacher.getUser().getName() : "Giáo viên";
+
+            checkTeacherSessionConflict(
+                    teacher.getId(),
+                    teacherName,
+                    rr.getRequestedDate(),
+                    startTime,
+                    endTime,
+                    req.getSessionId()
+            );
+        }
+
         final RescheduleRequest saved = rescheduleRepository.save(rr);
 
         // Notify tất cả admin về yêu cầu đổi lịch mới
@@ -160,6 +179,16 @@ public class RescheduleServiceImpl implements RescheduleService {
                 java.time.LocalTime endTime = rr.getRequestedEndTime() != null
                         ? java.time.LocalTime.parse(rr.getRequestedEndTime())
                         : startTime.plusHours(2); // fallback 2h
+
+                // Kiểm tra xung đột lịch với giáo viên
+                checkTeacherSessionConflict(
+                        rr.getTeacher().getId(),
+                        rr.getTeacher().getUser().getName(),
+                        rr.getRequestedDate(),
+                        startTime,
+                        endTime,
+                        (rr.getSession() != null) ? rr.getSession().getId() : null
+                );
 
                 ClassSession newSession = ClassSession.builder()
                         .classEntity(rr.getClassEntity())
@@ -264,6 +293,24 @@ public class RescheduleServiceImpl implements RescheduleService {
         // Override teacherId từ JWT — bảo mật, FE không thể giả mạo
         req.setTeacherId(teacher.getId());
         return create(req);
+    }
+
+    private void checkTeacherSessionConflict(Long teacherId, String teacherName, LocalDate date, java.time.LocalTime newStart, java.time.LocalTime newEnd, Long excludeSessionId) {
+        List<ClassSession> teacherSessions = sessionRepository.findByClassEntityTeacherIdAndDate(teacherId, date);
+        for (ClassSession existing : teacherSessions) {
+            if (existing.getStatus() == SessionStatus.cancelled) continue;
+            if (excludeSessionId != null && existing.getId().equals(excludeSessionId)) continue;
+            
+            java.time.LocalTime existStart = existing.getStartTime();
+            java.time.LocalTime existEnd = existing.getEndTime();
+            
+            if (newStart.isBefore(existEnd) && newEnd.isAfter(existStart)) {
+                throw new BusinessException(
+                        String.format("Không thể duyệt: Giáo viên \"%s\" đã có lịch dạy lớp \"%s\" từ %s đến %s ngày %s. Việc đổi lịch gây trùng lặp.",
+                                teacherName, existing.getClassEntity().getName(),
+                                existStart.toString(), existEnd.toString(), date.toString()));
+            }
+        }
     }
 
 }

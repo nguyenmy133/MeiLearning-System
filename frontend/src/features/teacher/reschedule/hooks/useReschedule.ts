@@ -23,6 +23,9 @@ export function useCreateReschedule() {
             qc.invalidateQueries({ queryKey: rescheduleKeys.all });
             toast.success("Đã gửi yêu cầu đổi lịch thành công");
         },
-        onError: (err: Error) => toast.error(err.message),
+        onError: (err: Error) => {
+            // apiClient đã chặn và hiển thị toast.error (Global) nên ở đây không cần gọi lại
+            console.error("Reschedule Request Error:", err.message);
+        },
     });
 }

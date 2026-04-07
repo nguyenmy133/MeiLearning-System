@@ -151,17 +151,19 @@ public class LeaveServiceImpl implements LeaveService {
         lr = leaveRepository.save(lr);
         final LeaveRequest savedLr = lr;
 
-        // ── Side-effect: tạo/update AttendanceRecord = absent_excused ──
-        // Để tuition service tự động miễn phí buổi này
+        // ── Side-effect: tạo/update AttendanceRecord = absent_excused hoặc late ──
+        // Để tuition service tự động miễn phí buổi này nếu nghỉ có phép
         if (savedLr.getSession() != null && savedLr.getRequester() != null) {
             studentRepository.findByUserId(savedLr.getRequester().getId())
                     .ifPresent(student -> {
+                        AttendanceStatus newStatus = savedLr.getType() == LeaveType.late ? AttendanceStatus.late : AttendanceStatus.absent_excused;
+                        String notePrefix = savedLr.getType() == LeaveType.late ? "Xin đi muộn" : "Nghỉ có phép";
                         var existing = attendanceRecordRepository
                                 .findBySessionIdAndStudentId(savedLr.getSession().getId(), student.getId());
                         if (existing.isPresent()) {
                             // Đã có record → update status
-                            existing.get().setStatus(AttendanceStatus.absent_excused);
-                            existing.get().setNote("Nghỉ có phép — đơn #" + savedLr.getId());
+                            existing.get().setStatus(newStatus);
+                            existing.get().setNote(notePrefix + " — đơn #" + savedLr.getId());
                             attendanceRecordRepository.save(existing.get());
                         } else {
                             // Chưa có → tạo mới
@@ -169,8 +171,8 @@ public class LeaveServiceImpl implements LeaveService {
                                     AttendanceRecord.builder()
                                             .session(savedLr.getSession())
                                             .student(student)
-                                            .status(AttendanceStatus.absent_excused)
-                                            .note("Nghỉ có phép — đơn #" + savedLr.getId())
+                                            .status(newStatus)
+                                            .note(notePrefix + " — đơn #" + savedLr.getId())
                                             .build()
                             );
                         }
@@ -244,8 +246,43 @@ public class LeaveServiceImpl implements LeaveService {
 
     @Override
     @Transactional(readOnly = true)
-    public LeaveStatsResponse getStats(String requesterType) {
+    public LeaveStatsResponse getStats(String requesterType, String currentUsername) {
         RequesterType rType = requesterType != null ? RequesterType.valueOf(requesterType) : null;
+
+        if (currentUsername != null) {
+            User currentUser = userRepository.findByUsername(currentUsername).orElse(null);
+            if (currentUser != null && currentUser.getRole() == User.Role.teacher) {
+                Teacher teacher = teacherRepository.findByUserId(currentUser.getId()).orElse(null);
+                if (teacher != null) {
+                    List<Long> sessionIds = sessionRepository
+                            .findByClassEntityTeacherId(teacher.getId())
+                            .stream().map(ClassSession::getId).toList();
+
+                    if (sessionIds.isEmpty()) {
+                        return LeaveStatsResponse.builder().total(0L).pending(0L).approved(0L).rejected(0L).build();
+                    }
+
+                    List<LeaveRequest> list;
+                    if (rType != null) {
+                        list = leaveRepository.findBySessionIdIn(sessionIds).stream()
+                                .filter(lr -> lr.getRequesterType() == rType).toList();
+                    } else {
+                        list = leaveRepository.findBySessionIdIn(sessionIds);
+                    }
+
+                    long pending = list.stream().filter(lr -> lr.getStatus() == RequestStatus.pending).count();
+                    long approved = list.stream().filter(lr -> lr.getStatus() == RequestStatus.approved).count();
+                    long rejected = list.stream().filter(lr -> lr.getStatus() == RequestStatus.rejected).count();
+
+                    return LeaveStatsResponse.builder()
+                            .total(pending + approved + rejected)
+                            .pending(pending)
+                            .approved(approved)
+                            .rejected(rejected)
+                            .build();
+                }
+            }
+        }
 
         long pending, approved, rejected, total;
         if (rType != null) {
