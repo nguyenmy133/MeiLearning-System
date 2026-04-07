@@ -6,4 +6,5 @@ export interface NotificationItem {
     time: string;
     date: string;
     read: boolean;
+    createdAt?: string; // ISO string — used for relative time display
 }

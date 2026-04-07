@@ -8,11 +8,15 @@ import type {
   StudentQueryParams,
   StudentStats,
 } from "../types";
+import type { PaginatedResponse } from "@/types";
 
-export async function getStudents(params?: StudentQueryParams): Promise<Student[]> {
+export async function getStudents(params?: StudentQueryParams): Promise<PaginatedResponse<Student>> {
   const { data } = await apiClient.get(API.STUDENTS.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  // Handle fallback if backend hasn't implemented full pagination
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getStudentById(id: number): Promise<Student> {

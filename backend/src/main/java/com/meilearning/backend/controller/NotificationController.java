@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.meilearning.backend.dto.request.DeleteNotificationRequest;
 import com.meilearning.backend.dto.request.SendNotificationRequest;
 import com.meilearning.backend.dto.response.NotificationResponse;
 import com.meilearning.backend.dto.response.PageResponse;
@@ -55,6 +56,28 @@ public class NotificationController {
             @Valid @RequestBody SendNotificationRequest request) {
         notificationService.sendNotification(request, principal.getName());
         return ResponseEntity.ok(Map.of("message", "Thông báo đã được gửi thành công"));
+    }
+
+    @DeleteMapping("/read")
+    @Operation(summary = "Xóa tất cả thông báo đã đọc của user hiện tại")
+    public ResponseEntity<Map<String, Object>> deleteRead(Principal principal) {
+        int deleted = notificationService.deleteReadByUser(principal.getName());
+        return ResponseEntity.ok(Map.of(
+                "message", "Xóa thành công",
+                "deleted", deleted
+        ));
+    }
+
+    @DeleteMapping("/batch")
+    @Operation(summary = "Xóa danh sách thông báo theo ID")
+    public ResponseEntity<Map<String, Object>> deleteBatch(
+            Principal principal,
+            @Valid @RequestBody DeleteNotificationRequest request) {
+        int deleted = notificationService.deleteByIds(principal.getName(), request.getIds());
+        return ResponseEntity.ok(Map.of(
+                "message", "Xóa thành công",
+                "deleted", deleted
+        ));
     }
 
     @GetMapping(value = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)

@@ -48,6 +48,8 @@ export interface TuitionQueryParams {
   month?: string;
   status?: InvoiceStatus | "all";
   className?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {

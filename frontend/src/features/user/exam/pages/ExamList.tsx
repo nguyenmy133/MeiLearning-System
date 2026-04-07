@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "@/lib/dateUtils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +32,7 @@ import {
 import { useMyExams } from "@/features/user/exam/hooks";
 import type { ExamDetail } from "@/features/user/exam/types";
 import { toast } from "sonner";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 /** Check if user has already started this exam (timer exists in localStorage) */
 function hasExamStarted(examId: string): boolean {
@@ -58,6 +59,17 @@ export function ExamList() {
 
   // Determine default tab
   const defaultTab = todoExams.length > 0 ? "todo" : completedExams.length > 0 ? "completed" : "missed";
+  const [activeTab, setActiveTab] = useState<string>("");
+  const currentTab = activeTab || defaultTab;
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+
+  useEffect(() => {
+    setPage(1);
+  }, [currentTab]);
+
+  const getPaginated = (arr: ExamDetail[]) => arr.slice((page - 1) * limit, page * limit);
 
   const getStatusBadge = (exam: ExamDetail) => {
     switch (exam.status) {
@@ -182,7 +194,11 @@ export function ExamList() {
 
       {/* ── Tab Navigation ───────────────────────────────────── */}
       {exams.length > 0 ? (
-        <Tabs defaultValue={defaultTab} className="space-y-4">
+        <Tabs 
+          value={currentTab} 
+          onValueChange={(val) => setActiveTab(val)}
+          className="space-y-4"
+        >
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="todo" className="gap-1.5 flex-1 sm:flex-initial">
               <Play className="w-3.5 h-3.5" />
@@ -217,7 +233,7 @@ export function ExamList() {
               </div>
             ) : (
               <div className="grid gap-4">
-                {todoExams.map((exam) => {
+                {getPaginated(todoExams).map((exam) => {
                   const isOngoing = exam.status === "ongoing";
                   return (
                     <Card
@@ -303,7 +319,7 @@ export function ExamList() {
               </div>
             ) : (
               <div className="grid gap-4">
-                {completedExams.map((exam) => {
+                {getPaginated(completedExams).map((exam) => {
                   const isPending = exam.myGradingStatus === "pending";
                   const score = exam.myScore ?? exam.score;
                   const passed = exam.myPassed ?? exam.passed;
@@ -415,7 +431,7 @@ export function ExamList() {
               </div>
             ) : (
               <div className="grid gap-4">
-                {missedExams.map((exam) => (
+                {getPaginated(missedExams).map((exam) => (
                   <Card key={exam.id} className="opacity-60">
                     <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center gap-4">
@@ -442,6 +458,35 @@ export function ExamList() {
         <div className="text-center py-16 text-muted-foreground">
           <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p>Chưa có bài thi nào.</p>
+        </div>
+      )}
+
+      {/* ── Pagination ───────────────────────────────────────── */}
+      {exams.length > 0 && (
+        <div className="pb-4">
+          <DataTablePagination
+            page={page}
+            limit={limit}
+            total={
+              currentTab === "todo"
+                ? todoExams.length
+                : currentTab === "completed"
+                ? completedExams.length
+                : missedExams.length
+            }
+            totalPages={Math.ceil(
+              (currentTab === "todo"
+                ? todoExams.length
+                : currentTab === "completed"
+                ? completedExams.length
+                : missedExams.length) / limit
+            )}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
         </div>
       )}
 

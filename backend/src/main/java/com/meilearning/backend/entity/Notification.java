@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.Instant;
 @Entity
 @Table(name = "notifications", indexes = {
         @Index(name = "idx_notifications_user", columnList = "user_id, is_read")
@@ -58,4 +59,8 @@ public class Notification extends BaseEntity {
     @Column(name = "sms_sent", nullable = false)
     @Builder.Default
     private Boolean smsSent = false;
+
+    /** TTL: null = never expires. Background job purges rows where expiresAt < now AND is_read = true */
+    @Column(name = "expires_at")
+    private Instant expiresAt;
 }

@@ -11,4 +11,8 @@ public interface NotificationService {
     void markAsRead(Long id);
     void markAllAsRead(String username);
     void sendNotification(SendNotificationRequest request, String senderUsername);
+    /** Xóa tất cả thông báo đã đọc của user — user-triggered */
+    int deleteReadByUser(String username);
+    /** Xóa danh sách thông báo theo ID (chỉ xóa của chính user đó) */
+    int deleteByIds(String username, java.util.List<Long> ids);
 }

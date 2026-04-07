@@ -1,10 +1,14 @@
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 
-export async function getTuitionInvoices(params?: { search?: string; status?: string; month?: string; className?: string; studentId?: number }) {
+import type { PaginatedResponse } from "@/types";
+
+export async function getTuitionInvoices(params?: { search?: string; status?: string; month?: string; className?: string; studentId?: number; page?: number; limit?: number }) {
   const { data } = await apiClient.get(API.TUITION.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getTuitionById(id: number) {

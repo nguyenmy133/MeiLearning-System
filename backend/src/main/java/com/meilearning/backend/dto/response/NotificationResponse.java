@@ -18,4 +18,6 @@ public class NotificationResponse {
     private String time;
     private String date;
     private boolean read;
+    /** ISO-8601 string — FE dùng để hiển thị relative time ("2 phút trước") */
+    private String createdAt;
 }

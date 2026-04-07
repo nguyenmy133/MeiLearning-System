@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +67,7 @@ import {
 import type { Subject, CreateSubjectDTO, UpdateSubjectDTO } from "../types";
 import { SUBJECT_CATEGORIES, SUBJECT_STATUS_LABELS } from "../types";
 import { useFacilityOptions } from "@/hooks/useClassOptions";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Subject["status"] }) {
@@ -318,12 +319,27 @@ export function AdminSubjectsPage() {
   const [editSubject, setEditSubject] = useState<Subject | null>(null);
   const [deleteSubject, setDeleteSubject] = useState<Subject | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterCategory, filterStatus]);
+
   // ── Data ──────────────────────────────────────────────────────────────────
-  const { data: subjects = [], isLoading: loadingList } = useSubjects({
+  const queryParams = {
     search: searchTerm || undefined,
     category: filterCategory !== "all" ? filterCategory : undefined,
     status: filterStatus !== "all" ? (filterStatus as Subject["status"]) : undefined,
-  });
+    page,
+    limit,
+  };
+
+  const { data: response, isLoading: loadingList } = useSubjects(queryParams);
+  const responseData = (response as any) ?? { data: [], total: 0, totalPages: 1 };
+  const subjects = Array.isArray(response) ? response : (responseData.data ?? []);
+  const total = responseData.total ?? 0;
+  const totalPages = responseData.totalPages ?? 1;
 
   const { data: stats, isLoading: loadingStats } = useSubjectStats();
 
@@ -586,6 +602,20 @@ export function AdminSubjectsPage() {
               )}
             </TableBody>
           </Table>
+          {/* Pagination Component */}
+          <div className="mt-4 border-t pt-2">
+            <DataTablePagination
+              page={page}
+              limit={limit}
+              total={total}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 
