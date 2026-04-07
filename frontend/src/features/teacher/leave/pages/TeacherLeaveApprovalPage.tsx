@@ -116,7 +116,8 @@ export function TeacherLeaveApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
 
   // ── Service layer hooks ──────────────────────────────────────────────────
-  const { data: classes = [] } = useClasses({ limit: 50 });
+  const { data: classPage } = useClasses({ limit: 50 });
+  const classes = classPage?.data ?? [];
   const myClasses = classes;
 
   const { data: leaveRequests = [], isLoading } = useLeaveRequests({

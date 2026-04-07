@@ -120,13 +120,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Xử lý lỗi client disconnect (đặc biệt khi dùng SSE)
+     */
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    public ResponseEntity<Void> handleAsyncRequestNotUsableException(Exception ex) {
+        log.debug("Client disconnected during async request (SSE): {}", ex.getMessage());
+        return ResponseEntity.ok().build();
+    }
 
+    /**
      * Catch-all cho mọi exception chưa handle
-
      */
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
+        
+        // Bỏ qua lỗi broken pipe / client abort nếu nó rơi vào catch-all
+        if (ex.getClass().getName().contains("ClientAbortException") || 
+            (ex.getMessage() != null && ex.getMessage().contains("Broken pipe"))) {
+            log.debug("Client aborted connection: {}", ex.getMessage());
+            return ResponseEntity.ok().build();
+        }
 
         log.error("Unhandled exception", ex);
 

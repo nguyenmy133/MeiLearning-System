@@ -42,6 +42,7 @@ import com.meilearning.backend.security.RateLimitFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import jakarta.servlet.DispatcherType;
 import java.util.Arrays;
 import java.util.List;
 @Configuration
@@ -64,44 +65,34 @@ public class SecurityConfig {
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
                 http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Cho phép ASYNC dispatch — SSE re-dispatch internal, không cần re-authenticate
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                        // Public endpoints
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/logout")
+                        .permitAll()
+                        // Swagger / OpenAPI / Actuator
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/api-docs/**",
+                                "/actuator/**",
+                                "/uploads/**")
+                        .permitAll()
+                        // Tất cả route khác cần authenticated
+                        .anyRequest().authenticated())
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                                .csrf(csrf -> csrf.disable())
-                                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authorizeHttpRequests(auth -> auth
-
-                                                // Public endpoints
-
-                                                .requestMatchers(
-
-                                                                "/api/v1/auth/login",
-                                                                "/api/v1/auth/refresh",
-                                                                "/api/v1/auth/logout")
-
-                                                .permitAll()
-
-                                                // Swagger / OpenAPI / Actuator
-
-                                                .requestMatchers(
-
-                                                                "/swagger-ui/**",
-                                                                "/swagger-ui.html",
-                                                                "/v3/api-docs/**",
-                                                                "/api-docs/**",
-                                                                "/actuator/**",
-                                                                "/uploads/**")
-
-                                                .permitAll()
-
-                                                // Tất cả route khác cần authenticated
-
-                                                .anyRequest().authenticated())
-                                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-                return http.build();
-
-        }
+        return http.build();
+    }
 
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {

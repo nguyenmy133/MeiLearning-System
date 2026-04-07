@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,39 +60,47 @@ public class SseService {
     }
 
     /**
-     * Gửi tin payload mang tính chất thời gian thực xuống trình duyệt của User
+     * Gửi tin payload thời gian thực xuống trình duyệt của User.
+     * Không dùng completeWithError() — tạo ra exception propagation qua Security filter chain.
+     * IOException khi client đóng tab là expected — chỉ cần cleanup emitter và log DEBUG.
      */
     public void sendNotification(String username, Object payload) {
         SseEmitter emitter = emitters.get(username);
-        if (emitter != null) {
-            try {
-                // Parse payload qua JSON string để tương thích 100% với EventSource Text
-                String jsonData = objectMapper.writeValueAsString(payload);
-                emitter.send(SseEmitter.event()
-                        .name("NEW_NOTIFICATION")
-                        .data(jsonData));
-            } catch (IOException e) {
-                emitter.completeWithError(e);
-                emitters.remove(username, emitter);
-                log.error("Failed to send SSE notification to user: {}", username);
-            }
+        if (emitter == null) return;
+        try {
+            String jsonData = objectMapper.writeValueAsString(payload);
+            emitter.send(SseEmitter.event()
+                    .name("NEW_NOTIFICATION")
+                    .data(jsonData));
+        } catch (IOException e) {
+            // Broken pipe / client disconnect — expected, NOT an error
+            removeEmitter(username, emitter);
+            log.debug("SSE client disconnected for user '{}': {}", username, e.getMessage());
         }
     }
 
     /**
-     * Gửi Heartbeat mỗi 30s để chống lại thói quen ngắt kết nối rảnh rỗi của Caddy/Nginx.
-     * Cực kỳ quan trọng trên VPS.
+     * Helper: đảm bảo emitter được complete() đúng cách trước khi xóa khỏi registry.
+     * Gọi complete() thay vì completeWithError() — tử mầu do đóng đầu, không phải do lỗi.
+     */
+    private void removeEmitter(String username, SseEmitter emitter) {
+        emitters.remove(username, emitter);
+        try { emitter.complete(); } catch (Exception ignored) {}
+    }
+
+    /**
+     * Gửi Heartbeat mỗi 30s để chống ngắt kết nối rảnh rỗi của Caddy/Nginx.
      */
     @Scheduled(fixedRate = 30000)
     public void sendHeartbeat() {
         if (emitters.isEmpty()) return;
-        
         emitters.forEach((username, emitter) -> {
             try {
                 emitter.send(SseEmitter.event().name("PING").data("Heartbeat"));
             } catch (IOException e) {
-                emitter.complete();
-                emitters.remove(username, emitter);
+                // Client disconnected silently — cleanup without error log
+                removeEmitter(username, emitter);
+                log.debug("SSE heartbeat: removed stale emitter for user '{}'", username);
             }
         });
     }
