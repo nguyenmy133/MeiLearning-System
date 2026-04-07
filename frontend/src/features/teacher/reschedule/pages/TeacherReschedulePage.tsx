@@ -72,7 +72,8 @@ export function TeacherReschedulePage() {
   const [reason, setReason] = useState("");
 
   // Backend tự filter lớp theo teacher từ JWT
-  const { data: myClasses = [] } = useClasses({ limit: 50 });
+  const { data: classPage } = useClasses({ limit: 50 });
+  const myClasses = classPage?.data ?? [];
 
   // Lấy danh sách buổi học khi chọn lớp
   const classIdNum = selectedClassId ? Number(selectedClassId) : null;

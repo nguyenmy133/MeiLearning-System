@@ -20,7 +20,7 @@ const FILTERS: NotificationFilter[] = [
   { key: "schedule", label: "Lịch học" },
   { key: "payment", label: "Học phí" },
   { key: "exam", label: "Bài thi" },
-  { key: "announcement", label: "Thông báo" },
+  { key: "announcement", label: "Hệ thống" },
 ];
 
 const TYPE_MAP: Record<string, string[]> = {

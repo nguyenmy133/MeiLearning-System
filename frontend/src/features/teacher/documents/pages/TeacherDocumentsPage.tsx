@@ -168,7 +168,8 @@ export function TeacherDocumentsPage() {
 
   const classFilter = selectedClassId !== "all" ? Number(selectedClassId) : undefined;
   const { data: documents = [], isLoading } = useDocuments({ classId: classFilter });
-  const { data: classes = [] } = useClasses({ limit: 100 });
+  const { data: classPage } = useClasses({ limit: 100 });
+  const classes = classPage?.data ?? [];
   const uploadMutation = useUploadDocument();
   const youtubeMutation = useUploadYoutube();
   const deleteMutation = useDeleteDocument();

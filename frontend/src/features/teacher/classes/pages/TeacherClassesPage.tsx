@@ -47,7 +47,7 @@ export function TeacherClassesPage() {
 
   const { data: students = [], isLoading: isLoadingStudents } = useClassStudents(selectedClassId);
 
-  const classes = classPage ?? [];
+  const classes = classPage?.data ?? [];
   const totalStudents = classes.reduce((s, c) => s + c.students, 0);
 
   return (

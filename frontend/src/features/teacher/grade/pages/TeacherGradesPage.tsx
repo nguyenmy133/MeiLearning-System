@@ -134,7 +134,8 @@ export function TeacherGradesPage() {
 
   // ── Service layer hooks ──────────────────────────────────────────────────
   // Backend tự filter lớp theo teacher từ JWT
-  const { data: myClasses = [] } = useClasses({ limit: 50 });
+  const { data: classPage } = useClasses({ limit: 50 });
+  const myClasses = classPage?.data ?? [];
 
   // Auto-select first class khi danh sách load xong
   const effectiveClassId = selectedClassId || (myClasses.length > 0 ? myClasses[0].id : 0);
