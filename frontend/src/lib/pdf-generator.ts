@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { TuitionInvoice } from "@/features/admin/tuition/types";
 import { ROBOTO_REGULAR, ROBOTO_BOLD, LOGO_BASE64 } from "./fonts/pdf-assets";
+import { formatDate } from "@/lib/dateUtils";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const COLORS = {
@@ -144,7 +145,7 @@ export function exportInvoiceListPdf(invoices: TuitionInvoice[], title?: string)
   doc.setFontSize(8);
   doc.setTextColor(...COLORS.textLight);
   doc.text(
-    `Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}  |  Tổng: ${invoices.length} hóa đơn`,
+    `Ngày xuất: ${formatDate(new Date().toISOString())}  |  Tổng: ${invoices.length} hóa đơn`,
     pageWidth / 2, y + 11, { align: "center" }
   );
 
@@ -276,7 +277,7 @@ export function exportReceiptPdf(invoice: TuitionInvoice) {
   doc.setFontSize(8);
   doc.setTextColor(...COLORS.textLight);
   doc.text(
-    `Số: #${String(invoice.id).padStart(3, "0")}  |  Ngày: ${invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString("vi-VN") : new Date().toLocaleDateString("vi-VN")}`,
+    `Số: #${String(invoice.id).padStart(3, "0")}  |  Ngày: ${invoice.createdAt ? formatDate(invoice.createdAt) : formatDate(new Date().toISOString())}`,
     pageWidth / 2, y + 11, { align: "center" }
   );
 

@@ -36,6 +36,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useClasses } from "@/features/admin/classes/hooks";
 import { useRescheduleRequests, useCreateReschedule } from "../hooks";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 
 // ── Fetch sessions cho 1 class ────────────────────────────────────────────────
 interface SessionOption {
@@ -192,10 +193,7 @@ export function TeacherReschedulePage() {
   };
 
   const formatSessionLabel = (s: SessionOption) => {
-    // "YYYY-MM-DD" → "DD/MM/YYYY"
-    const parts = s.date.split("-");
-    const dateStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : s.date;
-    return `${dateStr} — ${s.startTime} ~ ${s.endTime}`;
+    return `${formatDate(s.date)} — ${s.startTime} ~ ${s.endTime}`;
   };
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
@@ -278,7 +276,7 @@ export function TeacherReschedulePage() {
                 </Select>
                 {selectedSession && (
                   <p className="text-xs text-muted-foreground">
-                    Ngày: {selectedSession.date} • Giờ: {selectedSession.startTime} - {selectedSession.endTime}
+                    Ngày: {formatDate(selectedSession.date)} • Giờ: {selectedSession.startTime} - {selectedSession.endTime}
                   </p>
                 )}
               </div>
@@ -388,7 +386,7 @@ export function TeacherReschedulePage() {
                       <div className="flex items-center gap-4 text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {request.originalDate}
+                          {formatDate(request.originalDate)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -401,7 +399,7 @@ export function TeacherReschedulePage() {
                           <span>→</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {request.requestedDate}
+                            {formatDate(request.requestedDate)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -418,7 +416,7 @@ export function TeacherReschedulePage() {
 
                     {request.status === "approved" && (
                       <p className="mt-2 text-sm text-success">
-                        ✓ Được duyệt bởi {request.approvedBy} vào {request.approvedAt}
+                        ✓ Được duyệt bởi {request.approvedBy} lúc {formatDateTime(request.approvedAt)}
                       </p>
                     )}
 
@@ -462,7 +460,7 @@ export function TeacherReschedulePage() {
                       <div className="flex items-center gap-4 text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {request.originalDate}
+                          {formatDate(request.originalDate)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -475,7 +473,7 @@ export function TeacherReschedulePage() {
                           <span>→</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {request.requestedDate}
+                            {formatDate(request.requestedDate)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -524,7 +522,7 @@ export function TeacherReschedulePage() {
                       <div className="flex items-center gap-4 text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {request.originalDate}
+                          {formatDate(request.originalDate)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -537,7 +535,7 @@ export function TeacherReschedulePage() {
                           <span>→</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {request.requestedDate}
+                            {formatDate(request.requestedDate)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -554,7 +552,7 @@ export function TeacherReschedulePage() {
 
                     {request.approvedBy && (
                       <p className="mt-2 text-sm text-emerald-600">
-                        ✓ Được duyệt bởi {request.approvedBy} {request.approvedAt && `vào ${request.approvedAt}`}
+                        ✓ Được duyệt bởi {request.approvedBy} {request.approvedAt && `lúc ${formatDateTime(request.approvedAt)}`}
                       </p>
                     )}
                   </div>
@@ -592,7 +590,7 @@ export function TeacherReschedulePage() {
                       <div className="flex items-center gap-4 text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {request.originalDate}
+                          {formatDate(request.originalDate)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -605,7 +603,7 @@ export function TeacherReschedulePage() {
                           <span>→</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {request.requestedDate}
+                            {formatDate(request.requestedDate)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />

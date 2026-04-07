@@ -35,6 +35,7 @@ import {
   RefreshCw, Copy, Check, AlertTriangle, UserMinus, Loader2,
   FileSpreadsheet,
 } from "lucide-react";
+import { formatDate } from "@/lib/dateUtils";
 
 // ===== Module imports =====
 import {
@@ -994,7 +995,7 @@ export function AdminStudentsPage() {
                           <span className="font-medium block">{student.name}</span>
                           {student.dropDate && (
                             <span className="text-xs text-muted-foreground">
-                              Nghỉ từ {student.dropDate}
+                              Nghỉ từ {formatDate(student.dropDate)}
                             </span>
                           )}
                         </div>
@@ -1361,7 +1362,7 @@ export function AdminStudentsPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Ngày đăng ký</p>
-                  <p className="font-medium">{viewingStudent.enrollDate || "—"}</p>
+                  <p className="font-medium">{viewingStudent.enrollDate ? formatDate(viewingStudent.enrollDate) : "—"}</p>
                 </div>
               </div>
 
@@ -1391,7 +1392,7 @@ export function AdminStudentsPage() {
                   <Separator />
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thông tin nghỉ học</p>
                   <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm space-y-1">
-                    <p><span className="text-muted-foreground">Ngày nghỉ:</span> <span className="font-medium">{viewingStudent.dropDate}</span></p>
+                    <p><span className="text-muted-foreground">Ngày nghỉ:</span> <span className="font-medium">{formatDate(viewingStudent.dropDate)}</span></p>
                     {viewingStudent.dropReason && <p><span className="text-muted-foreground">Lý do:</span> <span className="font-medium">{viewingStudent.dropReason}</span></p>}
                     {viewingStudent.dropNotes && <p><span className="text-muted-foreground">Ghi chú:</span> <span className="font-medium">{viewingStudent.dropNotes}</span></p>}
                   </div>

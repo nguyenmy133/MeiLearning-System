@@ -61,6 +61,7 @@ import {
   FileText,
   Bell,
 } from "lucide-react";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 import { toast } from "sonner";
 import {
@@ -456,7 +457,7 @@ export function AdminTuitionPage() {
                       {formatCurrency(payment.totalAmount)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {payment.dueDate}
+                      {formatDate(payment.dueDate)}
                     </TableCell>
                     <TableCell>
                       <InvoiceStatusBadge status={payment.status} />
@@ -766,10 +767,10 @@ export function AdminTuitionPage() {
 
               <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                 <div>
-                  <span>Hạn TT: {detailInvoice.dueDate ?? "N/A"}</span>
+                  <span>Hạn TT: {detailInvoice.dueDate ? formatDate(detailInvoice.dueDate) : "N/A"}</span>
                 </div>
                 <div>
-                  <span>Ngày tạo: {detailInvoice.createdAt ? new Date(detailInvoice.createdAt).toLocaleDateString("vi-VN") : "N/A"}</span>
+                  <span>Ngày tạo: {detailInvoice.createdAt ? formatDateTime(detailInvoice.createdAt) : "N/A"}</span>
                 </div>
               </div>
 

@@ -673,6 +673,7 @@ export function AdminSchedulePage() {
 
   const weekDays = useMemo(() => buildWeekDays(weekStart), [weekStart]);
   const weekLabel = useMemo(() => buildWeekLabel(weekStart), [weekStart]);
+  const todayStr = format(new Date(), "yyyy-MM-dd");
 
   const prevWeek = () => setWeekStart((w) => addDays(w, -7));
   const nextWeek = () => setWeekStart((w) => addDays(w, 7));
@@ -764,11 +765,16 @@ export function AdminSchedulePage() {
               ? Array.from({ length: 7 }).map((_, i) => <DaySkeleton key={i} />)
               : weekDays.map((day) => {
                   const daySessions = sessionsForDay(day.date);
+                  const isToday = day.date === todayStr;
+
                   return (
-                    <div key={day.date} className="space-y-2">
-                      <div className="text-center pb-2 border-b border-border">
-                        <p className="font-medium text-foreground">{day.dayLabel}</p>
-                        <p className="text-sm text-muted-foreground">{day.dateLabel}</p>
+                    <div 
+                      key={day.date} 
+                      className={`space-y-2 flex flex-col ${isToday ? "border-2 border-primary rounded-xl bg-primary/5 p-2 shadow-sm" : ""}`}
+                    >
+                      <div className={`text-center pb-2 border-b ${isToday ? "border-primary/20" : "border-border"}`}>
+                        <p className={`font-medium ${isToday ? "text-primary" : "text-foreground"}`}>{day.dayLabel}</p>
+                        <p className={`text-sm ${isToday ? "text-primary font-semibold" : "text-muted-foreground"}`}>{day.dateLabel}</p>
                       </div>
                       <div className="space-y-2 min-h-[200px]">
                         {daySessions.length === 0 ? (

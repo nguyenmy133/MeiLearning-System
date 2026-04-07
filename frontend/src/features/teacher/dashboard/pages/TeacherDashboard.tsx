@@ -25,6 +25,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { formatDateTime } from "@/lib/dateUtils";
 import { useTeacherSchedule } from "@/features/teacher/schedule/hooks/useTeacherSchedule";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import {
@@ -557,12 +558,7 @@ export function TeacherDashboard() {
                           )}
                           {!isOngoing && exam.startTime && (
                             <span>
-                              {new Date(exam.startTime).toLocaleDateString("vi-VN", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {formatDateTime(exam.startTime)}
                             </span>
                           )}
                         </div>
