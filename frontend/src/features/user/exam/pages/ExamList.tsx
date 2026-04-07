@@ -308,6 +308,12 @@ export function ExamList() {
                   const score = exam.myScore ?? exam.score;
                   const passed = exam.myPassed ?? exam.passed;
 
+                  // Lấy thông tin về số lần làm bài
+                  const maxAttempts = exam.maxAttempts ?? 1;
+                  const attemptCount = exam.myScoreHistory ? exam.myScoreHistory.split(",").length + 1 : (exam.mySubmittedAt ? 1 : 0);
+                  const isNotEnded = !exam.endAt || new Date(exam.endAt).getTime() > Date.now();
+                  const canRetake = attemptCount < maxAttempts && isNotEnded;
+
                   return (
                     <Card key={exam.id}>
                       <CardContent className="p-4 sm:p-6">
@@ -341,6 +347,11 @@ export function ExamList() {
                                 {isPending && (
                                   <p className="text-[10px] text-amber-600 dark:text-amber-400">* Tạm tính</p>
                                 )}
+                                {exam.myScoreHistory && (
+                                  <p className="text-[10px] text-muted-foreground mt-1 w-24 truncate" title={exam.myScoreHistory}>
+                                    Lịch sử: {exam.myScoreHistory}
+                                  </p>
+                                )}
                               </div>
                               <div>
                                 <p className="text-sm text-muted-foreground">Kết quả</p>
@@ -373,10 +384,18 @@ export function ExamList() {
                             </div>
                           </div>
 
-                          <Button variant="outline" onClick={() => navigate(`/user/exam-review?id=${exam.id}`)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Xem lại
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {canRetake && (
+                              <Button className="bg-amber-600 hover:bg-amber-700" onClick={() => handleStartExam(exam)}>
+                                <RotateCcw className="w-4 h-4 mr-2" />
+                                Làm lại lần {attemptCount + 1}
+                              </Button>
+                            )}
+                            <Button variant="outline" onClick={() => navigate(`/user/exam-review?id=${exam.id}`)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Xem lại
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

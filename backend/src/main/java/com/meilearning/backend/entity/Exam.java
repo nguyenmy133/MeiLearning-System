@@ -67,6 +67,9 @@ public class Exam extends BaseEntity {
     @Builder.Default
     private ExamStatus status = ExamStatus.draft;
 
+    @Column(name = "max_attempts")
+    @Builder.Default
+    private Integer maxAttempts = 1;
 
     @ManyToMany
     @JoinTable(name = "exam_classes", joinColumns = @JoinColumn(name = "exam_id"), inverseJoinColumns = @JoinColumn(name = "class_id"))

@@ -18,4 +18,5 @@ public class ExamResultResponse {
     private Instant submittedAt;
     /** Trạng thái chấm: "graded" | "pending" | "no_essay" */
     private String gradingStatus;
+    private String scoreHistory;
 }

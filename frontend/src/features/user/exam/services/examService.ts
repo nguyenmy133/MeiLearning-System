@@ -40,6 +40,8 @@ function mapExamResponse(raw: any): ExamDetail {
     myPassed: raw.myPassed ?? undefined,
     myTimeSpent: raw.myTimeSpent ?? undefined,
     myGradingStatus: raw.myGradingStatus ?? undefined,
+    maxAttempts: raw.maxAttempts ?? undefined,
+    myScoreHistory: raw.myScoreHistory ?? undefined,
   };
 }
 
