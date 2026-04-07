@@ -7,11 +7,15 @@ import type {
   TeacherQueryParams,
   TeacherStats,
 } from "../types";
+import type { PaginatedResponse } from "@/types";
 
-export async function getTeachers(params?: TeacherQueryParams): Promise<Teacher[]> {
+export async function getTeachers(params?: TeacherQueryParams): Promise<PaginatedResponse<Teacher>> {
   const { data } = await apiClient.get(API.TEACHERS.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  // Handle fallback if backend hasn't implemented full pagination
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getTeacherById(id: number): Promise<Teacher> {

@@ -8,10 +8,14 @@ import type {
   FacilityQueryParams,
 } from "../types";
 
-export async function getFacilities(params?: FacilityQueryParams): Promise<Facility[]> {
+import type { PaginatedResponse } from "@/types";
+
+export async function getFacilities(params?: FacilityQueryParams & { page?: number; limit?: number }): Promise<PaginatedResponse<Facility>> {
   const { data } = await apiClient.get(API.FACILITIES.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getFacilityById(id: number): Promise<Facility> {

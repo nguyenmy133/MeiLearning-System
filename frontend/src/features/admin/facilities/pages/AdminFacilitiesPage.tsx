@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import {
   Building2, DoorOpen, Plus, Search, MoreHorizontal, Edit, Trash2,
   MapPin, Phone, Users, Loader2,
 } from "lucide-react";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ===== Module imports =====
 import {
@@ -408,6 +409,17 @@ export function AdminFacilitiesPage() {
   // ===== Search =====
   const [searchTerm, setSearchTerm] = useState("");
 
+  // ===== Pagination =====
+  const [pageF, setPageF] = useState(1);
+  const [limitF, setLimitF] = useState(10);
+  const [pageR, setPageR] = useState(1);
+  const [limitR, setLimitR] = useState(10);
+
+  useEffect(() => {
+    setPageF(1);
+    setPageR(1);
+  }, [searchTerm]);
+
   // ===== Dialogs =====
   const [addFacilityOpen, setAddFacilityOpen] = useState(false);
   const [editFacility, setEditFacility] = useState<Facility | null>(null);
@@ -418,11 +430,18 @@ export function AdminFacilitiesPage() {
   const [deleteRoomTarget, setDeleteRoomTarget] = useState<Room | null>(null);
 
   // ===== Queries =====
-  const { data: facilitiesData, isLoading: loadingFacilities } = useFacilities({ search: searchTerm });
-  const { data: roomsData, isLoading: loadingRooms } = useRooms({ search: searchTerm });
+  const { data: facilitiesDataResponse, isLoading: loadingFacilities } = useFacilities({ search: searchTerm, page: pageF, limit: limitF });
+  const { data: roomsDataResponse, isLoading: loadingRooms } = useRooms({ search: searchTerm, page: pageR, limit: limitR });
 
-  const facilities = facilitiesData ?? [];
-  const rooms = roomsData ?? [];
+  const facilitiesObj = (facilitiesDataResponse as any) ?? { data: [], total: 0, totalPages: 1 };
+  const facilities = Array.isArray(facilitiesDataResponse) ? facilitiesDataResponse : (facilitiesObj.data ?? []);
+  const totalF = facilitiesObj.total ?? 0;
+  const totalPagesF = facilitiesObj.totalPages ?? 1;
+
+  const roomsObj = (roomsDataResponse as any) ?? { data: [], total: 0, totalPages: 1 };
+  const rooms = Array.isArray(roomsDataResponse) ? roomsDataResponse : (roomsObj.data ?? []);
+  const totalR = roomsObj.total ?? 0;
+  const totalPagesR = roomsObj.totalPages ?? 1;
 
   // ===== Mutations =====
   const createFacilityMut = useCreateFacility();
@@ -543,6 +562,7 @@ export function AdminFacilitiesPage() {
               </Dialog>
             </CardHeader>
             <CardContent>
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -608,6 +628,21 @@ export function AdminFacilitiesPage() {
                   )}
                 </TableBody>
               </Table>
+              {/* Pagination Component */}
+              <div className="mt-4 border-t pt-2">
+                <DataTablePagination
+                  page={pageF}
+                  limit={limitF}
+                  total={totalF}
+                  totalPages={totalPagesF}
+                  onPageChange={setPageF}
+                  onLimitChange={(newLimit) => {
+                    setLimitF(newLimit);
+                    setPageF(1);
+                  }}
+                />
+              </div>
+              </>
             </CardContent>
           </Card>
         </TabsContent>
@@ -632,6 +667,7 @@ export function AdminFacilitiesPage() {
               </Dialog>
             </CardHeader>
             <CardContent>
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -683,6 +719,21 @@ export function AdminFacilitiesPage() {
                   )}
                 </TableBody>
               </Table>
+              {/* Pagination Component */}
+              <div className="mt-4 border-t pt-2">
+                <DataTablePagination
+                  page={pageR}
+                  limit={limitR}
+                  total={totalR}
+                  totalPages={totalPagesR}
+                  onPageChange={setPageR}
+                  onLimitChange={(newLimit) => {
+                    setLimitR(newLimit);
+                    setPageR(1);
+                  }}
+                />
+              </div>
+              </>
             </CardContent>
           </Card>
         </TabsContent>

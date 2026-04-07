@@ -74,9 +74,12 @@ export async function getAttendanceStats(params?: { classId?: number; month?: st
 export async function getAttendanceSessions(params?: any) {
   try {
     const { data } = await apiClient.get("/attendance/sessions/all", { params });
-    if (!Array.isArray(data)) return [];
-    // Map BE ClassSessionResponse → FE AttendanceSession shape
-    return data.map((s: SessionRow) => ({
+    
+    // Check if it's already a PaginatedResponse
+    const isPaginated = data && typeof data === "object" && "data" in data && Array.isArray(data.data);
+    const rawSessions = isPaginated ? data.data : (Array.isArray(data) ? data : []);
+    
+    const mappedSessions = rawSessions.map((s: SessionRow) => ({
       id: s.id,
       classId: s.classId,
       className: s.className ?? "",
@@ -98,8 +101,23 @@ export async function getAttendanceSessions(params?: any) {
       createdAt: "",
       updatedAt: "",
     }));
+
+    if (isPaginated) {
+      return {
+        ...data,
+        data: mappedSessions
+      };
+    }
+
+    return {
+      data: mappedSessions,
+      total: mappedSessions.length,
+      page: 1,
+      limit: mappedSessions.length || 10,
+      totalPages: 1
+    };
   } catch {
-    return [];
+    return { data: [], total: 0, page: 1, limit: 10, totalPages: 1 };
   }
 }
 

@@ -147,6 +147,8 @@ export const API = {
         LIST: "/notifications",
         MARK_READ: (id: number | string) => `/notifications/${id}/read`,
         MARK_ALL_READ: "/notifications/read-all",
+        DELETE_READ: "/notifications/read",   // DELETE — xóa tất cả đã đọc
+        BATCH_DELETE: "/notifications/batch",  // DELETE — xóa theo ID
         SEND: "/notifications/send",
     },
 

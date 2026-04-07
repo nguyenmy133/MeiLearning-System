@@ -1,216 +1,224 @@
-import { useMemo } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck, Calendar, CreditCard, FileText, Megaphone } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { CheckCheck, ListChecks, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { NotificationItem } from "@/components/ui/notification-item";
+import { NotificationFilters } from "@/components/ui/notification-filters";
+import { NotificationEmptyState } from "@/components/ui/notification-empty-state";
+import { NotificationSkeleton } from "@/components/ui/notification-skeleton";
+import { NotificationDeleteDialog } from "@/components/ui/notification-delete-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useNotificationFeed } from "../hooks/useNotificationFeed";
+import { useNotificationActions } from "../hooks/useNotificationActions";
+import type { NotificationFilter } from "@/components/ui/notification-filters";
 
-import { useNotifications } from "../hooks/useNotifications";
-import { notificationService } from "../services/notificationService";
+const LIMIT = 10;
 
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case "announcement":
-    case "admin_broadcast":
-      return <Megaphone className="h-5 w-5 text-info" />;
-    case "payment":
-    case "tuition":
-      return <CreditCard className="h-5 w-5 text-warning" />;
-    case "schedule":
-    case "schedule_change":
-      return <Calendar className="h-5 w-5 text-primary" />;
-    case "document":
-      return <FileText className="h-5 w-5 text-accent" />;
-    default:
-      return <Bell className="h-5 w-5 text-muted-foreground" />;
-  }
-};
+const FILTERS: NotificationFilter[] = [
+  { key: "all", label: "Tất cả" },
+  { key: "unread", label: "Chưa đọc", destructiveBadge: true },
+  { key: "schedule", label: "Lịch học" },
+  { key: "payment", label: "Học phí" },
+  { key: "exam", label: "Bài thi" },
+  { key: "announcement", label: "Thông báo" },
+];
 
-const getNotificationBg = (type: string) => {
-  switch (type) {
-    case "announcement":
-    case "admin_broadcast":
-      return "bg-info/10";
-    case "payment":
-    case "tuition":
-      return "bg-warning/10";
-    case "schedule":
-    case "schedule_change":
-      return "bg-primary/10";
-    case "document":
-      return "bg-accent/10";
-    default:
-      return "bg-muted";
-  }
+const TYPE_MAP: Record<string, string[]> = {
+  schedule: ["schedule", "schedule_change", "leave_approved", "leave_rejected"],
+  payment: ["payment", "tuition"],
+  exam: ["exam", "exam_submission"],
+  announcement: ["announcement", "admin_broadcast"],
 };
 
 export function NotificationsPage() {
-  const queryClient = useQueryClient();
-  const { data: notifications = [], isLoading } = useNotifications();
   const { toast } = useToast();
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useNotificationFeed({ page, limit: LIMIT });
+
+  const notifications = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   );
 
-  // ── Mutations ──────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    if (activeFilter === "all") return notifications;
+    if (activeFilter === "unread") return notifications.filter((n) => !n.read);
+    const types = TYPE_MAP[activeFilter] ?? [activeFilter];
+    return notifications.filter((n) => types.includes(n.type ?? ""));
+  }, [notifications, activeFilter]);
 
-  const markAllMutation = useMutation({
-    mutationFn: () => notificationService.markAllRead(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
-      toast({
-        title: "Đã đánh dấu tất cả",
-        description: "Tất cả thông báo đã được đánh dấu là đã đọc",
-      });
-    },
+  const filtersWithCounts: NotificationFilter[] = useMemo(() => {
+    return FILTERS.map((f) => {
+      if (f.key === "all") return { ...f, count: total };
+      if (f.key === "unread") return { ...f, count: unreadCount };
+      const types = TYPE_MAP[f.key] ?? [f.key];
+      return {
+        ...f,
+        count: notifications.filter((n) => types.includes(n.type ?? "")).length,
+      };
+    });
+  }, [notifications, unreadCount, total]);
+
+  const allFilteredIds = useMemo(() => filtered.map((n) => n.id), [filtered]);
+
+  // ── Actions hook (selection + dialogs + mutations) ────────────────
+  const actions = useNotificationActions(allFilteredIds, {
+    onSuccess: (deleted) =>
+      toast({ title: `Đã xóa ${deleted} thông báo` }),
   });
 
-  const markReadMutation = useMutation({
-    mutationFn: (id: number) => notificationService.markRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
-    },
-  });
+  const handleFilterChange = (key: string) => {
+    setActiveFilter(key);
+    setPage(1);
+    actions.exitSelectionMode();
+  };
+
+  const readCount = total - unreadCount;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">
+          <h1 className="text-2xl font-display font-bold text-foreground lg:text-3xl">
             Thông báo
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {isLoading 
-              ? "Đang tải thông báo..." 
-              : unreadCount > 0 
-                ? `Bạn có ${unreadCount} thông báo chưa đọc` 
-                : "Không có thông báo mới"}
+          <p className="mt-1 text-muted-foreground">
+            {isLoading
+              ? "Đang tải..."
+              : actions.selectionMode
+              ? `Đã chọn ${actions.selectedIds.size} / ${filtered.length}`
+              : total > 0
+              ? `${total} thông báo`
+              : "Không có thông báo mới"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => markAllMutation.mutate()}
-            disabled={markAllMutation.isPending}
-            className="gap-2"
-          >
-            <CheckCheck className="h-4 w-4" />
-            Đánh dấu tất cả đã đọc
-          </Button>
-        )}
+
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          {actions.selectionMode ? (
+            /* ── Selection mode toolbar ── */
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={actions.isAllSelected ? actions.clearSelection : actions.selectAll}
+              >
+                {actions.isAllSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+              </Button>
+              {actions.isSomeSelected && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={actions.openDeleteSelectedDialog}
+                  className="gap-2"
+                >
+                  Xóa đã chọn ({actions.selectedIds.size})
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={actions.exitSelectionMode}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            /* ── Normal mode toolbar ── */
+            <>
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => actions.markAllMutation.mutate()}
+                  disabled={actions.markAllMutation.isPending}
+                  className="gap-2"
+                >
+                  <CheckCheck className="h-4 w-4" />
+                  Đánh dấu tất cả đã đọc
+                </Button>
+              )}
+              {readCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={actions.openDeleteAllReadDialog}
+                  className="gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                >
+                  Xóa đã đọc ({readCount})
+                </Button>
+              )}
+              {filtered.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={actions.enterSelectionMode}
+                  className="gap-2 text-muted-foreground"
+                >
+                  <ListChecks className="h-4 w-4" />
+                  Chọn
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">
-            Tất cả
-            <Badge variant="secondary" className="ml-2 text-xs">{notifications.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="unread">
-            Chưa đọc
-            {unreadCount > 0 && (
-              <Badge className="ml-2 text-xs">{unreadCount}</Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      {/* Filter chips */}
+      <NotificationFilters
+        filters={filtersWithCounts}
+        active={activeFilter}
+        onChange={handleFilterChange}
+      />
 
-        <TabsContent value="all" className="mt-4">
-          <Card>
-            <CardContent className="p-0 divide-y divide-border">
-              {isLoading ? (
-                <div className="p-12 text-center text-muted-foreground animate-pulse">
-                  Đang tải...
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="p-12 text-center text-muted-foreground">
-                  Không có thông báo nào.
-                </div>
-              ) : (
-                notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  onClick={() => {
-                    if (!notif.read) markReadMutation.mutate(notif.id);
-                  }}
-                  className={`p-4 hover:bg-secondary/50 transition-colors cursor-pointer ${
-                    !notif.read ? "bg-primary/5" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`p-2 rounded-lg ${getNotificationBg(notif.type)}`}>
-                      {getNotificationIcon(notif.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className={`font-medium ${!notif.read ? "text-foreground" : "text-muted-foreground"}`}>
-                            {notif.title}
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {notif.content}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {!notif.read && (
-                            <div className="w-2 h-2 rounded-full bg-primary" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">{notif.date} {notif.time}</p>
-                    </div>
-                  </div>
-                </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+      {/* Feed */}
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        {isLoading ? (
+          <NotificationSkeleton count={LIMIT} />
+        ) : filtered.length === 0 ? (
+          <NotificationEmptyState filter={activeFilter} />
+        ) : (
+          <div className="divide-y divide-border">
+            {filtered.map((item) => (
+              <NotificationItem
+                key={item.id}
+                item={item}
+                onMarkRead={(id) => actions.markReadMutation.mutate(id)}
+                isMarkingRead={actions.markReadMutation.isPending}
+                selectionMode={actions.selectionMode}
+                selected={actions.selectedIds.has(item.id)}
+                onToggleSelect={actions.toggleItem}
+              />
+            ))}
+          </div>
+        )}
 
-        <TabsContent value="unread" className="mt-4">
-          <Card>
-            <CardContent className="p-0 divide-y divide-border">
-              {notifications.filter(n => !n.read).length === 0 ? (
-                <div className="p-12 text-center">
-                  <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Không có thông báo chưa đọc</p>
-                </div>
-              ) : (
-                notifications.filter(n => !n.read).map((notif) => (
-                  <div
-                    key={notif.id}
-                    onClick={() => markReadMutation.mutate(notif.id)}
-                    className="p-4 bg-primary/5 hover:bg-secondary/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`p-2 rounded-lg ${getNotificationBg(notif.type)}`}>
-                        {getNotificationIcon(notif.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium text-foreground">{notif.title}</p>
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {notif.content}
-                            </p>
-                          </div>
-                          <div className="w-2 h-2 rounded-full bg-primary" />
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">{notif.date} {notif.time}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <DataTablePagination
+          page={page}
+          limit={LIMIT}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={() => {}}
+          className="px-4 border-t border-border"
+        />
+      </div>
+
+      {/* Confirmation dialog */}
+      <NotificationDeleteDialog
+        open={actions.dialogState.open}
+        onOpenChange={(open) => !open && actions.closeDialog()}
+        mode={actions.dialogState.open ? actions.dialogState.mode : "all-read"}
+        selectedCount={actions.selectedIds.size}
+        onConfirm={actions.confirmDelete}
+        isPending={actions.isDeletePending}
+      />
     </div>
   );
 }

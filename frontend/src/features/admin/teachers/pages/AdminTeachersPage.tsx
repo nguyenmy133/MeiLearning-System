@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import {
   Mail, Phone, BookOpen, Filter, KeyRound, RefreshCw, Copy, Check,
   ShieldOff, ShieldCheck, Loader2, AlertTriangle,
 } from "lucide-react";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ===== Module imports =====
 import {
@@ -409,6 +410,15 @@ export function AdminTeachersPage() {
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
+  // ── Pagination ──
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  // Reset page to 1 whenever filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterSubject, filterStatus]);
+
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
@@ -420,10 +430,12 @@ export function AdminTeachersPage() {
   const [copied, setCopied] = useState(false);
 
   // ── Queries ──
-  const { data: teachersData, isLoading } = useTeachers({
+  const { data: teachersDataResponse, isLoading } = useTeachers({
     search: searchTerm || undefined,
     subject: filterSubject !== "all" ? filterSubject : undefined,
     status: filterStatus !== "all" ? (filterStatus as TeacherStatusType) : undefined,
+    page,
+    limit,
   });
 
   // ── Mutations ──
@@ -434,7 +446,11 @@ export function AdminTeachersPage() {
   const lockMutation = useLockTeacher();
   const unlockMutation = useUnlockTeacher();
 
-  const teachers = Array.isArray(teachersData) ? teachersData : (teachersData as any)?.data ?? [];
+  // ── Handle Response Wrapper ──
+  const teachersData = (teachersDataResponse as any) ?? { data: [], total: 0, totalPages: 1 };
+  const teachers = Array.isArray(teachersDataResponse) ? teachersDataResponse : (teachersData.data ?? []);
+  const total = teachersData.total ?? 0;
+  const totalPages = teachersData.totalPages ?? 1;
 
   // ── Handlers ──
   const handleCreate = (data: CreateTeacherDTO | UpdateTeacherDTO) => {
@@ -595,8 +611,9 @@ export function AdminTeachersPage() {
               <p>Không tìm thấy giáo viên nào</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <>
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>Giáo viên</TableHead>
                   <TableHead className="hidden md:table-cell">Email</TableHead>
@@ -697,6 +714,22 @@ export function AdminTeachersPage() {
                 ))}
               </TableBody>
             </Table>
+            
+            {/* Pagination Component */}
+            <div className="mt-4 border-t pt-2">
+              <DataTablePagination
+                page={page}
+                limit={limit}
+                total={total}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setPage(1);
+                }}
+              />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -36,6 +36,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ===== Module imports =====
 import {
@@ -725,6 +726,15 @@ export function AdminStudentsPage() {
   const [filterTuition, setFilterTuition] = useState("all");
   const { data: classOptions } = useClassOptions();
 
+  // ── Pagination ──
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  // Reset page to 1 whenever filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterClassId, filterStatus, filterTuition]);
+
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -738,11 +748,13 @@ export function AdminStudentsPage() {
   const [copied, setCopied] = useState(false);
 
   // ── Queries ──
-  const { data: studentsData, isLoading } = useStudents({
+  const { data: studentsDataResponse, isLoading } = useStudents({
     search: searchTerm || undefined,
     classId: filterClassId !== "all" ? Number(filterClassId) : undefined,
     status: filterStatus !== "all" ? (filterStatus as StudentStatusType) : undefined,
     tuitionStatus: filterTuition !== "all" ? (filterTuition as TuitionStatusType) : undefined,
+    page,
+    limit,
   });
 
   // ── Mutations ──
@@ -753,7 +765,11 @@ export function AdminStudentsPage() {
   const dropMutation = useDropStudent();
   const reactivateMutation = useReactivateStudent();
 
-  const students = Array.isArray(studentsData) ? studentsData : (studentsData as any)?.data ?? [];
+  // ── Handle Response Wrapper ──
+  const studentsData = (studentsDataResponse as any) ?? { data: [], total: 0, totalPages: 1 };
+  const students = Array.isArray(studentsDataResponse) ? studentsDataResponse : (studentsData.data ?? []);
+  const total = studentsData.total ?? 0;
+  const totalPages = studentsData.totalPages ?? 1;
 
   // ── Handlers ──
   const handleCreate = (data: CreateStudentDTO | UpdateStudentDTO) => {
@@ -965,7 +981,8 @@ export function AdminStudentsPage() {
               <p>Không tìm thấy học viên nào</p>
             </div>
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Học viên</TableHead>
@@ -1098,6 +1115,22 @@ export function AdminStudentsPage() {
                 ))}
               </TableBody>
             </Table>
+            
+            {/* Pagination Component */}
+            <div className="mt-4 border-t pt-2">
+              <DataTablePagination
+                page={page}
+                limit={limit}
+                total={total}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setPage(1); // Reset page on limit change
+                }}
+              />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

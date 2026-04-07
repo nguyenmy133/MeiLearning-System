@@ -2,10 +2,14 @@ import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 import type { Room, CreateRoomDTO, UpdateRoomDTO, RoomQueryParams } from "../types";
 
-export async function getRooms(params?: RoomQueryParams): Promise<Room[]> {
+import type { PaginatedResponse } from "@/types";
+
+export async function getRooms(params?: RoomQueryParams & { page?: number; limit?: number }): Promise<PaginatedResponse<Room>> {
   const { data } = await apiClient.get(API.ROOMS.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getRoomById(id: number): Promise<Room> {

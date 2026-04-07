@@ -14,10 +14,10 @@ const rescheduleKeys = {
 
 // ─── Query hooks ──────────────────────────────────────────────────────────────
 
-export function useRequests() {
+export function useRequests(queryParams?: any) {
   return useQuery({
-    queryKey: rescheduleKeys.list(),
-    queryFn: () => getRequests(),
+    queryKey: [...rescheduleKeys.list(), queryParams],
+    queryFn: () => getRequests(queryParams),
   });
 }
 

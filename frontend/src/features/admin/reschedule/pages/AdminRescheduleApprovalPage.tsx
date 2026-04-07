@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -56,6 +56,7 @@ import {
 } from "../hooks";
 import type { RescheduleRequest, RequestStatus } from "../types";
 import { formatDate, formatDateTime } from "@/lib/dateUtils";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,11 +125,6 @@ function PageSkeleton() {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminRescheduleApprovalPage() {
-  const { data: requests, isLoading } = useRequests();
-  const { data: stats } = useRescheduleStats();
-  const approveRequest = useApproveRequest();
-  const rejectRequest = useRejectRequest();
-
   const [filterTeacher, setFilterTeacher] = useState("all");
   const [filterType, setFilterType] = useState<
     "all" | "reschedule" | "cancel"
@@ -137,6 +133,32 @@ export function AdminRescheduleApprovalPage() {
   const [activeTab, setActiveTab] = useState<
     "pending" | "approved" | "rejected" | "all"
   >("pending");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterTeacher, filterType, searchTerm, activeTab]);
+
+  const queryParams = {
+    search: searchTerm || undefined,
+    teacherId: filterTeacher !== "all" ? filterTeacher : undefined,
+    type: filterType !== "all" ? filterType : undefined,
+    status: activeTab !== "all" ? activeTab : undefined,
+    page,
+    limit,
+  };
+
+  const { data: response, isLoading } = useRequests(queryParams);
+  const responseData = (response as any) ?? { data: [], total: 0, totalPages: 1 };
+  const requests = Array.isArray(response) ? response : (responseData.data ?? []);
+  const total = responseData.total ?? 0;
+  const totalPages = responseData.totalPages ?? 1;
+
+  const { data: stats } = useRescheduleStats();
+  const approveRequest = useApproveRequest();
+  const rejectRequest = useRejectRequest();
+
   const [selectedRequest, setSelectedRequest] =
     useState<RescheduleRequest | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -145,6 +167,8 @@ export function AdminRescheduleApprovalPage() {
 
   const teachers = useMemo(() => {
     if (!requests) return [];
+    // Note: With pagination, this might only extract teachers from the current page.
+    // In a fully server-side system, this should ideally be fetched from a dedicated endpoint.
     const map = new Map<number, string>();
     requests.forEach((r) => map.set(r.teacherId, r.teacherName));
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
@@ -518,6 +542,20 @@ export function AdminRescheduleApprovalPage() {
                       </div>
                     )}
                   </CardContent>
+                  {/* Pagination Component */}
+                  <div className="border-t p-2">
+                    <DataTablePagination
+                      page={page}
+                      limit={limit}
+                      total={total}
+                      totalPages={totalPages}
+                      onPageChange={setPage}
+                      onLimitChange={(newLimit) => {
+                        setLimit(newLimit);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
                 </Card>
               </TabsContent>
             );

@@ -62,6 +62,7 @@ import {
   Bell,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/dateUtils";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { QRPaymentModal } from "@/components/QRPaymentModal";
 import { toast } from "sonner";
 import {
@@ -168,6 +169,14 @@ export function AdminTuitionPage() {
   const [confirmCashTarget, setConfirmCashTarget] =
     useState<TuitionInvoice | null>(null);
 
+  // ── Pagination ──
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterMonth, filterStatus, filterClass]);
+
   // ── New UI states ──────────────────────────────────────────────────────────
   const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false);
   const [remindAllConfirmOpen, setRemindAllConfirmOpen] = useState(false);
@@ -189,10 +198,16 @@ export function AdminTuitionPage() {
         ? (filterStatus as TuitionInvoice["status"])
         : undefined,
     className: filterClass !== "all" ? filterClass : undefined,
+    page,
+    limit,
   };
 
-  const { data: invoices = [], isLoading: loadingInvoices } =
-    useInvoices(queryParams);
+  const { data: invoicesResponse, isLoading: loadingInvoices } = useInvoices(queryParams);
+  const invoicesData = (invoicesResponse as any) ?? { data: [], total: 0, totalPages: 1 };
+  const invoices = Array.isArray(invoicesResponse) ? invoicesResponse : (invoicesData.data ?? []);
+  const total = invoicesData.total ?? 0;
+  const totalPages = invoicesData.totalPages ?? 1;
+
   const { data: stats, isLoading: loadingStats } = useTuitionStats();
 
   // ── Mutations ─────────────────────────────────────────────────────────────
@@ -399,6 +414,7 @@ export function AdminTuitionPage() {
           </div>
 
           {/* Table */}
+          <>
           <Table>
             <TableHeader>
               <TableRow>
@@ -550,6 +566,22 @@ export function AdminTuitionPage() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Component */}
+          <div className="mt-4 border-t pt-2">
+            <DataTablePagination
+              page={page}
+              limit={limit}
+              total={total}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+            />
+          </div>
+          </>
         </CardContent>
       </Card>
 

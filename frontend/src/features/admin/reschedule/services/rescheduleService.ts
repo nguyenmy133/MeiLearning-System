@@ -1,10 +1,14 @@
 import { apiClient } from "@/lib/api-client";
 import { API } from "@/config/api-endpoints";
 
-export async function getRescheduleRequests(params?: { status?: string }) {
+import type { PaginatedResponse } from "@/types";
+
+export async function getRescheduleRequests(params?: any): Promise<PaginatedResponse<any>> {
   const { data } = await apiClient.get(API.RESCHEDULE.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getRescheduleByTeacher(teacherId: number) {
@@ -46,7 +50,8 @@ export async function rejectReschedule(id: number, reviewedBy: string, reason: s
 export const getRequests = getRescheduleRequests;
 
 export async function getStats() {
-  const requests = await getRescheduleRequests();
+  const response = await getRescheduleRequests({ page: 1, limit: 10000 });
+  const requests = response.data ?? [];
   if (!Array.isArray(requests)) return { total: 0, pending: 0, approved: 0, rejected: 0 };
   return {
     total: requests.length,

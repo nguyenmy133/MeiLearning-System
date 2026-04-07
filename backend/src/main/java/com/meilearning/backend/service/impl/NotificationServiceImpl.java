@@ -78,6 +78,19 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public int deleteReadByUser(String username) {
+        User user = findUser(username);
+        return notificationRepository.deleteAllReadByUserId(user.getId());
+    }
+
+    @Override
+    public int deleteByIds(String username, java.util.List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return 0;
+        User user = findUser(username);
+        return notificationRepository.deleteByIdsAndUserId(ids, user.getId());
+    }
+
+    @Override
     public void sendNotification(SendNotificationRequest request, String senderUsername) {
         NotificationSeverity severity = NotificationSeverity.LOW;
         if (request.getSeverity() != null) {
@@ -136,6 +149,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .time(zonedTime.format(TIME_FMT))
                 .date(zonedTime.format(DATE_FMT))
                 .read(Boolean.TRUE.equals(n.getIsRead()))
+                .createdAt(n.getCreatedAt().toString()) // ISO-8601 for FE relative time
                 .build();
     }
 }

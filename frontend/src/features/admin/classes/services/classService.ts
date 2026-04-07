@@ -7,11 +7,14 @@ import type {
   ClassQueryParams,
   ClassStats,
 } from "../types";
+import type { PaginatedResponse } from "@/types";
 
-export async function getClasses(params?: ClassQueryParams): Promise<Class[]> {
+export async function getClasses(params?: ClassQueryParams): Promise<PaginatedResponse<Class>> {
   const { data } = await apiClient.get(API.CLASSES.LIST, { params });
-  // Backend returns PageResponse { data: [...], total, page, limit, totalPages }
-  return Array.isArray(data) ? data : data?.data ?? [];
+  if (Array.isArray(data)) {
+    return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  }
+  return data;
 }
 
 export async function getClassById(id: number): Promise<Class> {

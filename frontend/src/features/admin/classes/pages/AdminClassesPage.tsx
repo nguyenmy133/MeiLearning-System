@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,7 @@ import {
   Loader2, Info, Phone,
 } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ===== Module imports =====
 import {
@@ -603,6 +604,14 @@ export function AdminClassesPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterFacility, setFilterFacility] = useState("all");
 
+  // ── Pagination ──
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterSubject, filterStatus, filterFacility]);
+
   // ── Dialogs ──
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [viewingClass, setViewingClass] = useState<Class | null>(null);
@@ -625,6 +634,8 @@ export function AdminClassesPage() {
     subject: filterSubject !== "all" ? filterSubject : undefined,
     facility: filterFacility !== "all" ? filterFacility : undefined,
     status: filterStatus !== "all" ? (filterStatus as ClassStatusType) : undefined,
+    page,
+    limit,
   });
 
   // ── Mutations ──
@@ -633,7 +644,10 @@ export function AdminClassesPage() {
   const deleteMutation = useDeleteClass();
   const endMutation = useEndClass();
 
-  const classes = Array.isArray(classesData) ? classesData : (classesData as any)?.data ?? [];
+  const classesObj = (classesData as any) ?? { data: [], total: 0, totalPages: 1 };
+  const classes = Array.isArray(classesData) ? classesData : (classesObj.data ?? []);
+  const total = classesObj.total ?? 0;
+  const totalPages = classesObj.totalPages ?? 1;
 
   // ── Handlers ──
   const handleCreate = (data: CreateClassDTO | UpdateClassDTO) => {
@@ -775,7 +789,8 @@ export function AdminClassesPage() {
               <p>Không tìm thấy lớp học nào</p>
             </div>
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Lớp học</TableHead>
@@ -918,6 +933,22 @@ export function AdminClassesPage() {
                 ))}
               </TableBody>
             </Table>
+            
+            {/* Pagination Component */}
+            <div className="mt-4 border-t pt-2">
+              <DataTablePagination
+                page={page}
+                limit={limit}
+                total={total}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setPage(1);
+                }}
+              />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

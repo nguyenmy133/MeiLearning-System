@@ -51,6 +51,7 @@ import { useClassOptions } from "@/hooks/useClassOptions";
 import { formatDate } from "@/lib/dateUtils";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import {
   Dialog,
   DialogContent,
@@ -104,13 +105,26 @@ export function AdminAttendancePage() {
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const { data: classOptions } = useClassOptions();
 
-  const queryParams: AttendanceQueryParams = {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterClassId, filterDate]);
+
+  const queryParams: AttendanceQueryParams & { page?: number; limit?: number } = {
     search: searchTerm || undefined,
     classId: filterClassId !== "all" ? filterClassId : undefined,
     date: filterDate ? format(filterDate, "yyyy-MM-dd") : undefined,
+    page,
+    limit,
   };
 
-  const { data: sessions = [], isLoading: loadingSessions } = useAttendanceSessions(queryParams);
+  const { data: sessionsResponse, isLoading: loadingSessions } = useAttendanceSessions(queryParams);
+  const sessionsData = (sessionsResponse as any) ?? { data: [], total: 0, totalPages: 1 };
+  const sessions = Array.isArray(sessionsResponse) ? sessionsResponse : (sessionsData.data ?? []);
+  const total = sessionsData.total ?? 0;
+  const totalPages = sessionsData.totalPages ?? 1;
   const { data: stats, isLoading: loadingStats } = useAttendanceStats();
   const { data: liveSessions = [], isLoading: loadingLive } = useLiveSessions();
   const { data: absentAlerts = [], isLoading: loadingAlerts } = useAbsentAlerts();
@@ -394,6 +408,7 @@ export function AdminAttendancePage() {
 
               {/* Table */}
               {/* Issue #4: Compact table — gộp Sĩ số + Vắng/Muộn, thêm Xem chi tiết */}
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -482,6 +497,21 @@ export function AdminAttendancePage() {
                   )}
                 </TableBody>
               </Table>
+              {/* Pagination Component */}
+              <div className="mt-4 border-t pt-2">
+                <DataTablePagination
+                  page={page}
+                  limit={limit}
+                  total={total}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  onLimitChange={(newLimit) => {
+                    setLimit(newLimit);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              </>
             </CardContent>
           </Card>
         </div>

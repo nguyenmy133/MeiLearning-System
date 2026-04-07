@@ -1,215 +1,215 @@
-import { useMemo } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { CheckCheck, ListChecks, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Bell, 
-  CalendarClock,
-  Users,
-  Wrench,
-  ShieldAlert,
-  Check,
-  Trash2
-} from "lucide-react";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { NotificationItem } from "@/components/ui/notification-item";
+import { NotificationFilters } from "@/components/ui/notification-filters";
+import { NotificationEmptyState } from "@/components/ui/notification-empty-state";
+import { NotificationSkeleton } from "@/components/ui/notification-skeleton";
+import { NotificationDeleteDialog } from "@/components/ui/notification-delete-dialog";
 import { toast } from "sonner";
-import { useNotifications } from "@/features/user/notifications/hooks/useNotifications";
-import { notificationService } from "@/features/user/notifications/services/notificationService";
+import { useNotificationFeed } from "@/features/user/notifications/hooks/useNotificationFeed";
+import { useNotificationActions } from "@/features/user/notifications/hooks/useNotificationActions";
+import type { NotificationFilter } from "@/components/ui/notification-filters";
 
-type NotificationType = "system" | "schedule_change" | "leave_approved" | "leave_rejected" | "admin_broadcast" | string;
+const LIMIT = 10;
 
-const filters: Array<{ key: string; label: string }> = [
+const FILTERS: NotificationFilter[] = [
   { key: "all", label: "Tất cả" },
-  { key: "unread", label: "Chưa đọc" },
+  { key: "unread", label: "Chưa đọc", destructiveBadge: true },
   { key: "schedule", label: "Lịch dạy" },
+  { key: "student", label: "Học sinh" },
+  { key: "exam", label: "Bài thi" },
   { key: "system", label: "Hệ thống" },
 ];
 
+const TYPE_MAP: Record<string, string[]> = {
+  schedule: ["schedule_change"],
+  student: ["leave_approved", "leave_rejected", "student_absent", "student_late"],
+  exam: ["exam", "exam_submission"],
+  system: ["admin_broadcast", "system"],
+};
+
 export function TeacherNotificationsPage() {
-  const queryClient = useQueryClient();
-  const { data: notifications = [], isLoading } = useNotifications();
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useNotificationFeed({ page, limit: LIMIT });
+
+  const notifications = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   );
 
-  // ── Mutations ──────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    if (activeFilter === "all") return notifications;
+    if (activeFilter === "unread") return notifications.filter((n) => !n.read);
+    const types = TYPE_MAP[activeFilter] ?? [activeFilter];
+    return notifications.filter((n) => types.includes(n.type ?? ""));
+  }, [notifications, activeFilter]);
 
-  const markAllMutation = useMutation({
-    mutationFn: () => notificationService.markAllRead(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
-      toast.success("Đã đánh dấu tất cả là đã đọc");
-    },
+  const filtersWithCounts: NotificationFilter[] = useMemo(() => {
+    return FILTERS.map((f) => {
+      if (f.key === "all") return { ...f, count: total };
+      if (f.key === "unread") return { ...f, count: unreadCount };
+      const types = TYPE_MAP[f.key] ?? [f.key];
+      return {
+        ...f,
+        count: notifications.filter((n) => types.includes(n.type ?? "")).length,
+      };
+    });
+  }, [notifications, unreadCount, total]);
+
+  const allFilteredIds = useMemo(() => filtered.map((n) => n.id), [filtered]);
+
+  const actions = useNotificationActions(allFilteredIds, {
+    onSuccess: (deleted) => toast.success(`Đã xóa ${deleted} thông báo`),
   });
 
-  const markReadMutation = useMutation({
-    mutationFn: (id: number) => notificationService.markRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
-    },
-  });
-
-  // ── Helpers ────────────────────────────────────────────────────
-
-  const filterNotifications = (filter: string) => {
-    if (filter === "all") return notifications;
-    if (filter === "unread") return notifications.filter((n) => !n.read);
-    const typeMap: Record<string, string[]> = {
-      schedule: ["schedule_change", "leave_approved", "leave_rejected"],
-      system: ["admin_broadcast", "system"],
-    };
-    const types = typeMap[filter] || [filter];
-    return notifications.filter((item) => types.includes(item.type || ""));
+  const handleFilterChange = (key: string) => {
+    setActiveFilter(key);
+    setPage(1);
+    actions.exitSelectionMode();
   };
 
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case "schedule_change":
-        return { label: "Lịch dạy", className: "bg-info/10 text-info" };
-      case "leave_approved":
-        return { label: "Duyệt nghỉ", className: "bg-success/10 text-success" };
-      case "leave_rejected":
-        return { label: "Từ chối nghỉ", className: "bg-destructive/10 text-destructive" };
-      case "admin_broadcast":
-      case "system":
-        return { label: "Hệ thống", className: "bg-primary/10 text-primary" };
-      default:
-        return { label: "Thông báo", className: "bg-muted text-muted-foreground" };
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "schedule_change":
-        return CalendarClock;
-      case "leave_approved":
-      case "leave_rejected":
-        return Users;
-      case "admin_broadcast":
-      case "system":
-        return Wrench;
-      default:
-        return Bell;
-    }
-  };
-
-  // ── Render ─────────────────────────────────────────────────────
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
+  const readCount = total - unreadCount;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Thông báo</h1>
-          <p className="text-muted-foreground">
-            Bạn có <span className="text-primary font-medium">{unreadCount}</span> thông báo chưa đọc
+          <h1 className="text-2xl font-display font-bold text-foreground">
+            Thông báo
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            {isLoading
+              ? "Đang tải..."
+              : actions.selectionMode
+              ? `Đã chọn ${actions.selectedIds.size} / ${filtered.length}`
+              : total > 0
+              ? `${total} thông báo`
+              : "Không có thông báo mới"}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => markAllMutation.mutate()}
-          disabled={unreadCount === 0 || markAllMutation.isPending}
-        >
-          <Check className="w-4 h-4 mr-2" />
-          Đánh dấu tất cả đã đọc
-        </Button>
+
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          {actions.selectionMode ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={actions.isAllSelected ? actions.clearSelection : actions.selectAll}
+              >
+                {actions.isAllSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+              </Button>
+              {actions.isSomeSelected && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={actions.openDeleteSelectedDialog}
+                  className="gap-2"
+                >
+                  Xóa đã chọn ({actions.selectedIds.size})
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={actions.exitSelectionMode}>
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => actions.markAllMutation.mutate()}
+                  disabled={actions.markAllMutation.isPending}
+                  className="gap-2"
+                >
+                  <CheckCheck className="h-4 w-4" />
+                  Đánh dấu tất cả đã đọc
+                </Button>
+              )}
+              {readCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={actions.openDeleteAllReadDialog}
+                  className="gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                >
+                  Xóa đã đọc ({readCount})
+                </Button>
+              )}
+              {filtered.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={actions.enterSelectionMode}
+                  className="gap-2 text-muted-foreground"
+                >
+                  <ListChecks className="h-4 w-4" />
+                  Chọn
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      <Tabs defaultValue="all">
-        <TabsList className="flex-wrap">
-          {filters.map((filter) => (
-            <TabsTrigger key={filter.key} value={filter.key} className="gap-2">
-              {filter.label}
-              {filter.key === "all" && (
-                <Badge variant="secondary">{notifications.length}</Badge>
-              )}
-              {filter.key === "unread" && unreadCount > 0 && (
-                <Badge className="bg-destructive">{unreadCount}</Badge>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Filter chips */}
+      <NotificationFilters
+        filters={filtersWithCounts}
+        active={activeFilter}
+        onChange={handleFilterChange}
+      />
 
-        {filters.map((filter) => (
-          <TabsContent key={filter.key} value={filter.key} className="space-y-3 mt-4">
-            {filterNotifications(filter.key).length > 0 ? (
-              filterNotifications(filter.key).map((item) => {
-                const meta = getTypeBadge(item.type || "");
-                const Icon = getTypeIcon(item.type || "");
+      {/* Feed */}
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        {isLoading ? (
+          <NotificationSkeleton count={LIMIT} />
+        ) : filtered.length === 0 ? (
+          <NotificationEmptyState filter={activeFilter} />
+        ) : (
+          <div className="divide-y divide-border">
+            {filtered.map((item) => (
+              <NotificationItem
+                key={item.id}
+                item={item}
+                onMarkRead={(id) => actions.markReadMutation.mutate(id)}
+                isMarkingRead={actions.markReadMutation.isPending}
+                selectionMode={actions.selectionMode}
+                selected={actions.selectedIds.has(item.id)}
+                onToggleSelect={actions.toggleItem}
+              />
+            ))}
+          </div>
+        )}
 
-                return (
-                  <Card
-                    key={item.id}
-                    className={`transition-colors hover:bg-accent/50 ${
-                      !item.read ? "border-primary/30 bg-primary/5" : ""
-                    }`}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${meta.className}`}
-                        >
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4
-                              className={`font-medium ${
-                                !item.read ? "text-foreground" : "text-muted-foreground"
-                              }`}
-                            >
-                              {item.title}
-                            </h4>
-                            <Badge variant="outline" className="text-xs">
-                              {meta.label}
-                            </Badge>
-                            {!item.read && (
-                              <span className="w-2 h-2 rounded-full bg-primary" />
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {item.content}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {item.date} {item.time}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {!item.read && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => markReadMutation.mutate(item.id)}
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            ) : (
-              <div className="text-center py-12">
-                <Bell className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">Không có thông báo nào</p>
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+        <DataTablePagination
+          page={page}
+          limit={LIMIT}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={() => {}}
+          className="px-4 border-t border-border"
+        />
+      </div>
+
+      {/* Confirmation dialog */}
+      <NotificationDeleteDialog
+        open={actions.dialogState.open}
+        onOpenChange={(open) => !open && actions.closeDialog()}
+        mode={actions.dialogState.open ? actions.dialogState.mode : "all-read"}
+        selectedCount={actions.selectedIds.size}
+        onConfirm={actions.confirmDelete}
+        isPending={actions.isDeletePending}
+      />
     </div>
   );
 }
