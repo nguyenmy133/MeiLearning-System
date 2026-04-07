@@ -889,8 +889,12 @@ export function AdminTeachersPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleCloseReset} className="w-full">
-                  Đã sao chép, đóng
+                <Button onClick={() => {
+                  navigator.clipboard.writeText(newPassword);
+                  toast.success("Đã sao chép mật khẩu");
+                  handleCloseReset();
+                }} className="w-full">
+                  Sao chép và đóng
                 </Button>
               </DialogFooter>
             </>
@@ -922,15 +926,24 @@ export function AdminTeachersPage() {
                 </div>
               </div>
               <Separator />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thông tin liên hệ</p>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tài khoản & Liên hệ</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="col-span-2">
+                  <p className="text-muted-foreground text-xs">Username</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="font-mono text-sm font-semibold bg-primary/10 text-primary px-2 py-1 rounded flex items-center gap-1">
+                      <KeyRound className="w-4 h-4" />
+                      {viewingTeacher.username || "—"}
+                    </span>
+                  </div>
+                </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Số điện thoại</p>
-                  <p className="font-medium flex items-center gap-1"><Phone className="w-3 h-3" />{viewingTeacher.phone}</p>
+                  <p className="font-medium flex items-center gap-1 mt-1"><Phone className="w-3 h-3" />{viewingTeacher.phone}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Email</p>
-                  <p className="font-medium flex items-center gap-1"><Mail className="w-3 h-3" />{viewingTeacher.email || "—"}</p>
+                  <p className="font-medium flex items-center gap-1 mt-1"><Mail className="w-3 h-3" />{viewingTeacher.email || "—"}</p>
                 </div>
               </div>
               <Separator />

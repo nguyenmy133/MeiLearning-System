@@ -38,4 +38,8 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long>, JpaSp
     /** Đếm lớp active/upcoming của giáo viên (dùng khi khóa tài khoản) */
     long countByTeacherIdAndStatusIn(Long teacherId, java.util.Collection<ClassStatus> statuses);
 
+    /** Lấy các lớp active/upcoming của giáo viên (để kiểm tra xung đột lịch dạy) */
+    @Query("SELECT c FROM ClassEntity c WHERE c.teacher.id = :teacherId AND c.status IN ('active', 'upcoming')")
+    List<ClassEntity> findActiveOrUpcomingByTeacherId(@org.springframework.data.repository.query.Param("teacherId") Long teacherId);
+
 }
