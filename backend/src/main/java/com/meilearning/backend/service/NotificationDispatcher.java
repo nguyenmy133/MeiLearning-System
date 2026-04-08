@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Map;
 
@@ -98,16 +100,31 @@ public class NotificationDispatcher {
 
         notificationRepository.save(notification);
         
-        // 4. FIRE REAL-TIME SSE TO FRONTEND
-        // We push the saved notification entity mapped simply to be sent over stream
-        sseService.sendNotification(user.getUsername(), Map.of(
+        // 4. FIRE REAL-TIME SSE TO FRONTEND — AFTER transaction commit
+        // SSE must fire AFTER the DB write is committed, otherwise the frontend
+        // refetches stale data (notification not yet visible) and then refetches
+        // again after commit, causing duplicate items in the list.
+        final String username = user.getUsername();
+        final Map<String, Object> ssePayload = Map.of(
             "id", notification.getId(),
             "type", notification.getType(),
             "title", notification.getTitle(),
             "content", notification.getContent(),
             "severity", notification.getSeverity(),
             "createdAt", notification.getCreatedAt()
-        ));
+        );
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sseService.sendNotification(username, ssePayload);
+                }
+            });
+        } else {
+            // Fallback: no active transaction — send immediately
+            sseService.sendNotification(username, ssePayload);
+        }
 
         log.info("✅ Notification saved [id={}, channels: inApp=true, email={}, sms={}]",
                 notification.getId(), notification.getEmailSent(), notification.getSmsSent());

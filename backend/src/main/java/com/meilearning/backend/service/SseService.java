@@ -45,7 +45,12 @@ public class SseService {
             log.debug("SSE Emitter error for user: {}", username);
         });
         
-        emitters.put(username, emitter);
+        // Dọn emitter cũ (nếu có) — ngăn 2 connection song song gây duplicate events
+        SseEmitter oldEmitter = emitters.put(username, emitter);
+        if (oldEmitter != null) {
+            try { oldEmitter.complete(); } catch (Exception ignored) {}
+            log.debug("SSE Replaced old emitter for user: {}", username);
+        }
         
         try {
             // Gửi sự kiện ban đầu để xác nhận nối thành công

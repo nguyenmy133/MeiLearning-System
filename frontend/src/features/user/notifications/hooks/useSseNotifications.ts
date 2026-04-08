@@ -5,11 +5,20 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/shared/auth/auth-context";
 import { apiClient, getInMemoryToken } from "@/lib/api-client";
 
+/**
+ * Max size of the processed notification set.
+ * Prevents memory leak from accumulating IDs indefinitely.
+ */
+const DEDUP_MAX_SIZE = 200;
+
 export function useSseNotifications() {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const isConnected = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
+  // Dedup set: track recently processed notification IDs to prevent duplicates
+  // from SSE reconnection or retry delivering the same event twice.
+  const processedIds = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     const token = getInMemoryToken();
@@ -56,17 +65,38 @@ export function useSseNotifications() {
             } else if (ev.event === "NEW_NOTIFICATION") {
               try {
                 const data = JSON.parse(ev.data);
+                const notifId = data.id;
+
+                // ── Dedup guard: skip if already processed ──
+                if (notifId && processedIds.current.has(notifId)) {
+                  console.debug("[SSE] Skipping duplicate notification:", notifId);
+                  return;
+                }
+
+                // Track this notification ID
+                if (notifId) {
+                  processedIds.current.add(notifId);
+                  // Evict oldest entries to prevent memory leak
+                  if (processedIds.current.size > DEDUP_MAX_SIZE) {
+                    const firstId = processedIds.current.values().next().value;
+                    if (firstId !== undefined) processedIds.current.delete(firstId);
+                  }
+                }
                 
-                // 1. Gây chú ý bằng Toast Notification (Pop-up)
+                // 1. Toast with unique ID to prevent duplicate popups
                 toast.info(`🔔 ${data.title}`, {
+                  id: `notif-${notifId ?? Date.now()}`,
                   description: data.content,
                   duration: 6000,
                   className: "bg-background border border-primary/20",
                 });
                 
-                // 2. Refresh lại React-Query Cache để Chuông nảy số [1]
+                // 2. Refresh React-Query Cache
                 queryClient.invalidateQueries({
                   predicate: (query) => query.queryKey[0] === "notifications",
+                });
+                queryClient.invalidateQueries({
+                  queryKey: ["user", "notifications"],
                 });
 
               } catch (e) {
@@ -75,14 +105,12 @@ export function useSseNotifications() {
             }
           },
           onclose() {
-            // Server đóng -> sẽ retry ngầm bởi fetchEventSource mặc định sau vài giây
+            // Server đóng -> fetchEventSource sẽ retry
             isConnected.current = false;
           },
           onerror(err) {
             console.error("[SSE] Connection error:", err);
             isConnected.current = false;
-            // Throw throw err nếu muốn retry. Nếu chặn throw thì nó dừng luôn.
-            // Timeout network thường fetch-event-source tự xử lý retry.
           }
         });
       } catch (err) {
