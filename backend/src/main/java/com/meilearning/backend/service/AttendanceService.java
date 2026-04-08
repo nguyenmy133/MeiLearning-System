@@ -47,4 +47,7 @@ public interface AttendanceService {
 
     /** Lấy log điểm danh bất thường (vắng, muộn) để stream realtime trên Admin Feed */
     List<com.meilearning.backend.dto.response.AttendanceActivityLogResponse> getUnusualActivityFeed();
+
+    /** Xuất báo cáo điểm danh ra file Excel (1 sheet / 1 lớp) */
+    byte[] exportAttendanceExcel(Long classId, String month);
 }

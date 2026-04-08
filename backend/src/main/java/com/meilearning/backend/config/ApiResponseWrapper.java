@@ -22,9 +22,16 @@ public class ApiResponseWrapper implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
+        Class<?> paramType = returnType.getParameterType();
         // Không wrap nếu đã là ApiResponse
-        return !returnType.getParameterType().equals(ApiResponse.class)
-                && !ApiResponse.class.isAssignableFrom(returnType.getParameterType());
+        if (paramType.equals(ApiResponse.class) || ApiResponse.class.isAssignableFrom(paramType)) {
+            return false;
+        }
+        // Không wrap nếu trả về file/binary
+        if (byte[].class.equals(paramType) || org.springframework.core.io.Resource.class.isAssignableFrom(paramType)) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -37,6 +44,11 @@ public class ApiResponseWrapper implements ResponseBodyAdvice<Object> {
 
         // Skip nếu body đã là ApiResponse
         if (body instanceof ApiResponse) {
+            return body;
+        }
+        
+        // Skip byte[] or File/Resource responses
+        if (body instanceof byte[] || body instanceof org.springframework.core.io.Resource) {
             return body;
         }
 

@@ -179,4 +179,19 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.getStudentRecords(student.getId(), classId));
     }
 
+    @GetMapping("/export/excel")
+    @Operation(summary = "[Admin] Xuất báo cáo điểm danh ra file Excel")
+    @PreAuthorize("hasRole('admin')")
+    public ResponseEntity<byte[]> exportExcel(
+            @RequestParam(required = false) Long classId,
+            @RequestParam(required = false) String month) {
+        
+        byte[] data = attendanceService.exportAttendanceExcel(classId, month);
+        
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Bao_Cao_Diem_Danh.xlsx\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(data);
+    }
+
 }

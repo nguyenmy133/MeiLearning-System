@@ -258,3 +258,13 @@ export async function qrCheckIn(sessionId: number, studentId: number) {
   });
   return data;
 }
+
+// ── Export Excel ───────────────────────────────────────────────────────────────
+
+export async function exportAttendanceExcel(classId?: number, month?: string) {
+  const blob = await apiClient.get("/attendance/export/excel", {
+    params: { classId, month },
+    responseType: "blob",
+  });
+  return blob as unknown as Blob;
+}
