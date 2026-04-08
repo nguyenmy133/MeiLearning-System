@@ -221,7 +221,7 @@ export function AdminDashboard() {
                   icon: Clock,
                   label: "Đi muộn",
                   value: todayAttendance.late,
-                  color: "text-secondary-foreground",
+                  color: "text-secondary",
                 },
                 {
                   icon: UserX,
