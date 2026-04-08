@@ -115,13 +115,15 @@ public class DashboardServiceImpl implements DashboardService {
     // ── 3. Today Schedule ─────────────────────────────────────────────
 
     private List<TodaySession> buildTodaySchedule() {
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
+        java.time.ZoneId vnZone = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDate today = LocalDate.now(vnZone);
+        LocalTime now = LocalTime.now(vnZone);
 
         List<ClassSession> sessions = sessionRepository.findByDate(today);
 
         return sessions.stream()
                 .filter(s -> s.getStatus() != SessionStatus.cancelled)
+                .filter(s -> s.getClassEntity() != null && (s.getClassEntity().getStatus() == ClassStatus.active || s.getStatus() == SessionStatus.completed))
                 .sorted(Comparator.comparing(ClassSession::getStartTime))
                 .map(s -> {
                     String time = s.getStartTime().format(TIME_FMT) + " - " + s.getEndTime().format(TIME_FMT);
@@ -170,21 +172,46 @@ public class DashboardServiceImpl implements DashboardService {
     // ── 4. Today Attendance ───────────────────────────────────────────
 
     private TodayAttendance buildTodayAttendance() {
-        LocalDate today = LocalDate.now();
+        java.time.ZoneId vnZone = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDate today = LocalDate.now(vnZone);
+        LocalTime now = LocalTime.now(vnZone);
         List<ClassSession> todaySessions = sessionRepository.findByDate(today);
 
         int present = 0, absent = 0, late = 0, total = 0;
+        
         for (ClassSession session : todaySessions) {
             if (session.getStatus() == SessionStatus.cancelled) continue;
+            if (session.getClassEntity() == null) continue;
+            if (session.getClassEntity().getStatus() != ClassStatus.active && session.getStatus() != SessionStatus.completed) continue;
+            
+            int classTotal = (int) enrollmentRepository.countByClassEntityId(session.getClassEntity().getId());
+            total += classTotal;
+
             List<AttendanceRecord> records = attendanceRepository.findBySessionId(session.getId());
+            
+            int sessionPresent = 0;
+            int sessionLate = 0;
+            int sessionAbsentExplicit = 0;
+
             for (AttendanceRecord r : records) {
-                total++;
                 switch (r.getStatus()) {
-                    case present -> present++;
-                    case absent -> absent++;
-                    case late -> late++;
-                    case absent_excused -> absent++; // count as absent for display
+                    case present -> sessionPresent++;
+                    case late -> sessionLate++;
+                    case absent, absent_excused -> sessionAbsentExplicit++;
                 }
+            }
+            
+            present += sessionPresent;
+            late += sessionLate;
+            
+            // Xử lý Vắng mặt (Absent) dựa theo ranh giới dòng thời gian
+            if (session.getStartTime() != null && session.getStartTime().isAfter(now) && session.getStatus() != SessionStatus.completed) {
+                // Lớp tương lai chưa học: Chỉ được tính Vắng với những cá nhân CHỦ ĐỘNG XIN NGHỈ TRƯỚC (có record explicit)
+                absent += sessionAbsentExplicit;
+            } else {
+                // Lớp đã & đang học: Suy diễn (Inferred) toàn bộ học viên vô danh (không có record) thành Vắng mặt
+                int inferredAbsent = classTotal - (sessionPresent + sessionLate);
+                absent += Math.max(0, inferredAbsent);
             }
         }
 

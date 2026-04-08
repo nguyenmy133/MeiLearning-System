@@ -20,12 +20,14 @@ import {
   Loader2,
   Clock,
   MapPin,
+  ClipboardList,
 } from "lucide-react";
 import { SchedulePage } from "../../schedule/pages/SchedulePage";
 import { AttendancePage } from "../../attendance/pages/AttendancePage";
 import { useTodaySessions, useMyClasses } from "@/features/user/schedule/hooks";
 import { useMyInvoices } from "@/features/user/tuition/hooks";
-import { useQrTokenCheckIn, useAttendanceSummary } from "@/features/user/attendance/hooks";
+import { useQrTokenCheckIn } from "@/features/user/attendance/hooks";
+import { useMyExams } from "@/features/user/exam/hooks";
 
 // ── QR Check-in Sheet ─────────────────────────────────────────────────────────
 
@@ -220,14 +222,15 @@ export function UserDashboard() {
   const { data: todaySessions = [] } = useTodaySessions();
   const { data: classes = [] } = useMyClasses();
   const { data: invoices = [] } = useMyInvoices();
-  const { data: attendanceSummaries = [] } = useAttendanceSummary();
+  const { data: exams = [] } = useMyExams();
 
   const activeClasses = classes.filter((c) => c.status === "active");
   const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
   const totalDebt = pendingInvoices.reduce((s, i) => s + i.totalAmount, 0);
 
-  // Compute total present count this month from summaries
-  const totalPresentThisMonth = attendanceSummaries.reduce((sum, s) => sum + s.present, 0);
+  // Compute pending exams
+  const pendingExams = exams.filter((e) => e.status === "ongoing" && !e.mySubmittedAt);
+  const pendingExamCount = pendingExams.length;
 
   const handleCheckIn = (className: string, sessionId: string) => {
     setActiveClass(className);
@@ -266,14 +269,14 @@ export function UserDashboard() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <ClipboardList className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-emerald-600">
-                  {totalPresentThisMonth}
+                <p className={`text-2xl font-bold ${pendingExamCount > 0 ? "text-amber-500" : "text-emerald-600"}`}>
+                  {pendingExamCount}
                 </p>
-                <p className="text-xs text-muted-foreground">Có mặt tháng này</p>
+                <p className="text-xs text-muted-foreground">{pendingExamCount > 0 ? "Bài chưa làm" : "Đã hoàn thành hết"}</p>
               </div>
             </div>
           </CardContent>

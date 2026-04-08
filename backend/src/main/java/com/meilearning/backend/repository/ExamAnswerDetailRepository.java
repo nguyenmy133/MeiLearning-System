@@ -11,4 +11,13 @@ public interface ExamAnswerDetailRepository extends JpaRepository<ExamAnswerDeta
     List<ExamAnswerDetail> findByExamResultId(Long examResultId);
 
     List<ExamAnswerDetail> findByExamResultExamIdAndExamResultStudentId(Long examId, Long studentId);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT COUNT(ead) FROM ExamAnswerDetail ead " +
+        "WHERE ead.question.exam.teacher.id = :teacherId " +
+        "AND ead.question.type = 'essay' " +
+        "AND ead.selectedAnswer IS NOT NULL AND ead.selectedAnswer != '' " +
+        "AND ead.essayScore IS NULL"
+    )
+    long countUngradedEssaysByTeacher(@org.springframework.data.repository.query.Param("teacherId") Long teacherId);
 }

@@ -208,7 +208,7 @@ export function AdminTuitionPage() {
   const total = invoicesData.total ?? 0;
   const totalPages = invoicesData.totalPages ?? 1;
 
-  const { data: stats, isLoading: loadingStats } = useTuitionStats();
+  const { data: stats, isLoading: loadingStats } = useTuitionStats(filterMonth !== "all" ? filterMonth : undefined);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const approveMutation = useApproveInvoice();
@@ -235,14 +235,14 @@ export function AdminTuitionPage() {
   // ── Stats cards ───────────────────────────────────────────────────────────
   const statCards = [
     {
-      label: "Tổng doanh thu",
+      label: "Tổng phải thu",
       value: stats ? formatCurrency(stats.totalRevenue ?? 0) : null,
       icon: DollarSign,
       color: "text-primary",
       bg: "bg-primary/10",
     },
     {
-      label: "Tháng này",
+      label: "Đã thực thu",
       value: stats ? formatCurrency(stats.monthRevenue ?? 0) : null,
       icon: TrendingUp,
       color: "text-primary",
@@ -250,7 +250,7 @@ export function AdminTuitionPage() {
     },
     {
       label: "Chờ thanh toán",
-      value: stats ? `${stats.pendingCount ?? 0} hóa đơn` : null,
+      value: stats ? `${(stats.pendingCount ?? 0) + (stats.reviewingCount ?? 0)} hóa đơn` : null,
       icon: Clock,
       color: "text-secondary-foreground",
       bg: "bg-secondary/20",

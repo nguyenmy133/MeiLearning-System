@@ -24,8 +24,10 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
 
     /** Số học viên theo môn (qua class → subject) */
     @org.springframework.data.jpa.repository.Query(
-        "SELECT ce.classEntity.subject.name, COUNT(ce) " +
-        "FROM ClassEnrollment ce WHERE ce.classEntity.status IN ('active', 'upcoming') " +
+        "SELECT ce.classEntity.subject.name, COUNT(DISTINCT ce.student.id) " +
+        "FROM ClassEnrollment ce " +
+        "WHERE ce.classEntity.status IN (com.meilearning.backend.entity.enums.ClassStatus.active, com.meilearning.backend.entity.enums.ClassStatus.upcoming) " +
+        "AND ce.student.status = com.meilearning.backend.entity.enums.StudentStatus.active " +
         "GROUP BY ce.classEntity.subject.name"
     )
     java.util.List<Object[]> countStudentsBySubject();

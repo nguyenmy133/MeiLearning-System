@@ -17,7 +17,7 @@ export const tuitionKeys = {
   invoices: () => [...tuitionKeys.all, "invoices"] as const,
   invoiceList: (params?: TuitionQueryParams) =>
     [...tuitionKeys.invoices(), params] as const,
-  stats: () => [...tuitionKeys.all, "stats"] as const,
+  stats: (month?: string) => [...tuitionKeys.all, "stats", month] as const,
 };
 
 // ── Queries ───────────────────────────────────────────────────────────────────
@@ -29,10 +29,10 @@ export function useInvoices(params?: TuitionQueryParams) {
   });
 }
 
-export function useTuitionStats() {
+export function useTuitionStats(month?: string) {
   return useQuery({
-    queryKey: tuitionKeys.stats(),
-    queryFn: () => getTuitionStats(),
+    queryKey: tuitionKeys.stats(month),
+    queryFn: () => getTuitionStats(month),
   });
 }
 

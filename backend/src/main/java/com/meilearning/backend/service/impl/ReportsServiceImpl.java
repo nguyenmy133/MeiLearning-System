@@ -46,6 +46,7 @@ public class ReportsServiceImpl implements ReportsService {
     private final ClassEnrollmentRepository enrollmentRepository;
     private final ClassSessionRepository sessionRepository;
     private final AttendanceRecordRepository attendanceRepository;
+    private final com.meilearning.backend.repository.StudentRepository studentRepository;
 
     // ── Bảng màu cho biểu đồ pie chart ────────────────────────────────
     private static final String[] CHART_COLORS = {
@@ -253,11 +254,10 @@ public class ReportsServiceImpl implements ReportsService {
 
         for (int i = 5; i >= 0; i--) {
             YearMonth ym = current.minusMonths(i);
-            // Đếm tổng enrollments tại thời điểm đó (đơn giản: count all enrollments)
-            // Trong thực tế có thể lọc theo createdAt <= endOfMonth,
-            // nhưng với MVP ta dùng count hiện tại cho tháng gần nhất
-            // và ước lượng cho các tháng trước
-            long count = enrollmentRepository.count();
+            LocalDate endOfMonth = ym.atEndOfMonth();
+            
+            // Đếm Tổng số học viên active tại thời điểm cuối tháng đó
+            long count = studentRepository.countActiveStudentsAtDate(endOfMonth);
 
             result.add(AcademicReportResponse.EnrollmentData.builder()
                     .month("T" + ym.getMonthValue())

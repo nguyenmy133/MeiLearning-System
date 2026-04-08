@@ -39,4 +39,7 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     @Query("SELECT COUNT(s) FROM Student s WHERE s.createdAt >= :since")
     long countCreatedSince(java.time.Instant since);
 
+    @Query("SELECT COUNT(s) FROM Student s WHERE (s.enrollDate IS NULL OR s.enrollDate <= :endOfMonth) AND (s.dropDate IS NULL OR s.dropDate > :endOfMonth)")
+    long countActiveStudentsAtDate(java.time.LocalDate endOfMonth);
+
 }

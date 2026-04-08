@@ -49,6 +49,7 @@ public class TeacherServiceImpl implements TeacherService {
     private final ClassRepository classRepository;
     private final ClassSessionRepository sessionRepository;
     private final LeaveRequestRepository leaveRepository;
+    private final com.meilearning.backend.repository.ExamAnswerDetailRepository examAnswerDetailRepository;
     private final TeacherMapper teacherMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -355,6 +356,18 @@ public class TeacherServiceImpl implements TeacherService {
                     .description("Hôm nay có " + undoneToday + " buổi học chưa được điểm danh")
                     .count((int) undoneToday)
                     .urgent(false)
+                    .build());
+        }
+
+        // 3. Bài tự luận chưa chấm
+        long ungradedEssays = examAnswerDetailRepository.countUngradedEssaysByTeacher(teacher.getId());
+        if (ungradedEssays > 0) {
+            tasks.add(PendingTaskResponse.builder()
+                    .type("exam")
+                    .title("Chấm điểm tự luận")
+                    .description("Có " + ungradedEssays + " câu trả lời tự luận đang chờ bạn chấm điểm")
+                    .count((int) ungradedEssays)
+                    .urgent(true)
                     .build());
         }
 

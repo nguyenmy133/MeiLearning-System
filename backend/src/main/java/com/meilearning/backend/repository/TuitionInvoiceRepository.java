@@ -24,6 +24,10 @@ public interface TuitionInvoiceRepository
 
     long countByStatus(InvoiceStatus status);
 
+    long countByMonth(String month);
+
+    long countByStatusAndMonth(InvoiceStatus status, String month);
+
     List<TuitionInvoice> findByStatusIn(java.util.Collection<InvoiceStatus> statuses);
 
     @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid'")
@@ -31,6 +35,15 @@ public interface TuitionInvoiceRepository
 
     @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid' AND t.month = :month")
     long sumRevenueByMonth(String month);
+
+    @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t")
+    long sumExpectedRevenue();
+
+    @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.month = :month")
+    long sumExpectedRevenueByMonth(String month);
+
+    @Query("SELECT COALESCE(SUM(t.totalAmount - t.discountAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid' AND t.month = :month")
+    long sumCollectedRevenueByMonth(String month);
 
     // ── Reports aggregation queries ──────────────────────────────────
 
