@@ -403,7 +403,18 @@ public class AttendanceServiceImpl implements AttendanceService {
             // Default: today's sessions
             sessions = sessionRepository.findByDate(LocalDate.now());
         }
-        return sessions.stream().map(sessionMapper::toResponse).toList();
+        
+        return sessions.stream()
+            // Ẩn đi các session "upcoming" của những khoá học (Class) ĐÃ BỊ ĐÓNG (completed/cancelled)
+            // Lịch sử (completed sessions) của các khoá đó thì vẫn được giữ lại để xem report.
+            .filter(s -> {
+                if (s.getClassEntity() == null) return false;
+                if (s.getClassEntity().getStatus() != com.meilearning.backend.entity.enums.ClassStatus.active) {
+                    return s.getStatus() == SessionStatus.completed;
+                }
+                return true;
+            })
+            .map(sessionMapper::toResponse).toList();
     }
 
     // ── Admin: Update single record ───────────────────────────────────────

@@ -32,11 +32,11 @@ import {
   CreditCard,
   BookOpen,
   GraduationCap,
+  AlertCircle,
 } from "lucide-react";
 import { StatCard } from "@/features/admin/components/StatCard";
 import { ChartTooltip } from "@/features/admin/components/ChartTooltip";
-import { useFinancialReport, useAcademicReport } from "../hooks";
-import { useMonthOptions } from "@/hooks/useClassOptions";
+import { useFinancialReport, useAcademicReport, useReportsOverview } from "../hooks";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,34 +67,23 @@ function PageSkeleton() {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminReportsPage() {
-  const monthOptions = useMonthOptions();
-  const currentMonth = monthOptions[0] ? `Tháng ${monthOptions[0].replace('/', '/')}` : "";
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedTab, setSelectedTab] = useState<"financial" | "academic">(
     "financial"
   );
 
+  const { data: overview, isLoading: loadingOverview } = useReportsOverview();
   const { data: financial, isLoading: loadingFinancial } = useFinancialReport();
   const { data: academic, isLoading: loadingAcademic } = useAcademicReport();
 
   const isLoading =
+    loadingOverview ||
     (selectedTab === "financial" && loadingFinancial) ||
     (selectedTab === "academic" && loadingAcademic);
 
-  if (isLoading && !financial && !academic) return <PageSkeleton />;
+  if (isLoading && !overview && !financial && !academic) return <PageSkeleton />;
 
   // Derived stats computed from data
   const attendanceByClass = academic?.attendanceByClass ?? [];
-  const tuitionSummary = financial?.tuitionSummary ?? {
-    collected: 0,
-    pending: 0,
-    overdue: 0,
-    total: 1,
-  };
-
-  const tuitionRate = Math.round(
-    (tuitionSummary.collected / tuitionSummary.total) * 100
-  );
   const avgAttendance =
     attendanceByClass.length > 0
       ? Math.round(
@@ -103,26 +92,36 @@ export function AdminReportsPage() {
         )
       : 0;
 
-  const totalRevenue = financial?.tuitionSummary?.collected ?? 0;
-  const totalStudents = academic?.attendanceByClass
-    ? academic.attendanceByClass.reduce((sum, c) => sum + c.students, 0)
-    : 0;
+  const totalRevenue = overview?.tuition?.monthRevenue ?? 0;
+  const overdueCount = overview?.tuition?.overdueCount ?? 0;
+  const pendingCount = overview?.tuition?.pendingCount ?? 0;
+  const activeStudents = overview?.students?.activeStudents ?? 0;
+  const activeClasses = overview?.classes?.activeClasses ?? 0;
 
   const overviewStats = [
     {
-      label: "Doanh thu tháng",
+      label: "Tổng Doanh Thu",
       value: totalRevenue > 0 ? `${formatCurrency(totalRevenue)} ₫` : "0 ₫",
       change: "",
       trend: "up" as const,
       icon: CreditCard,
+      sub: "Lũy kế toàn hệ thống",
     },
     {
-      label: "Học viên đang học",
-      value: String(totalStudents),
+      label: "Công Nợ Hệ Thống",
+      value: `${overdueCount + pendingCount} hóa đơn`,
+      change: "",
+      trend: overdueCount > 0 ? "down" as const : "up" as const,
+      icon: AlertCircle,
+      sub: "Chờ thu & Quá hạn",
+    },
+    {
+      label: "Quy Mô Đào Tạo",
+      value: `${activeStudents} HV`,
       change: "",
       trend: "up" as const,
       icon: Users,
-      sub: "Tổng học viên trong các lớp",
+      sub: `Trong ${activeClasses} lớp hoạt động`,
     },
     {
       label: "Tỉ lệ điểm danh TB",
@@ -130,17 +129,7 @@ export function AdminReportsPage() {
       change: "",
       trend: avgAttendance >= 80 ? "up" as const : "down" as const,
       icon: BookOpen,
-      sub: "Trung bình tất cả lớp",
-    },
-    {
-      label: "Tỉ lệ thu học phí",
-      value: `${isNaN(tuitionRate) ? 0 : tuitionRate}%`,
-      change: "",
-      trend: "up" as const,
-      icon: GraduationCap,
-      sub: tuitionSummary.pending + tuitionSummary.overdue > 0
-        ? `Còn lại: ${formatCurrency(tuitionSummary.pending + tuitionSummary.overdue)} ₫`
-        : "Đã thu đủ",
+      sub: "Toàn trung tâm (Tháng hiện tại)",
     },
   ];
 
@@ -150,27 +139,12 @@ export function AdminReportsPage() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-xl font-display font-semibold text-foreground">
-            Báo cáo & Phân tích
+            Báo cáo Vĩ mô & Phân tích
           </h2>
           <p className="text-sm text-muted-foreground">
-            Tổng hợp dữ liệu hoạt động của trung tâm
+            Dashboard Chỉ số Sức khoẻ Toàn hệ thống
           </p>
         </div>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {monthOptions.map((m) => {
-              const label = `Tháng ${m}`;
-              return (
-                <SelectItem key={m} value={label}>
-                  {label}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Overview stats */}
@@ -462,7 +436,7 @@ export function AdminReportsPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-display flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-primary" />
-                  Tỉ lệ điểm danh theo lớp — {selectedMonth}
+                  Tỉ lệ điểm danh theo lớp — Tháng hiện tại
                 </CardTitle>
               </CardHeader>
               <CardContent>

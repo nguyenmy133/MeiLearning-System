@@ -353,17 +353,26 @@ public class TuitionServiceImpl implements TuitionService {
     @Override
     @Transactional(readOnly = true)
     public TuitionStatsResponse getStats(String month) {
-        String currentMonth = month != null ? month
-                : LocalDate.now().format(DateTimeFormatter.ofPattern("MM/yyyy"));
+        if ("all".equals(month)) {
+            month = null;
+        }
+
+        long totalInvoices = month != null ? invoiceRepository.countByMonth(month) : invoiceRepository.count();
+        long pendingCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.pending, month) : invoiceRepository.countByStatus(InvoiceStatus.pending);
+        long reviewingCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.reviewing, month) : invoiceRepository.countByStatus(InvoiceStatus.reviewing);
+        long paidCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.paid, month) : invoiceRepository.countByStatus(InvoiceStatus.paid);
+        long overdueCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.overdue, month) : invoiceRepository.countByStatus(InvoiceStatus.overdue);
+        long totalRevenue = month != null ? invoiceRepository.sumExpectedRevenueByMonth(month) : invoiceRepository.sumExpectedRevenue();
+        long monthRevenue = month != null ? invoiceRepository.sumCollectedRevenueByMonth(month) : invoiceRepository.sumCollectedRevenue();
 
         return TuitionStatsResponse.builder()
-                .totalInvoices(invoiceRepository.count())
-                .pendingCount(invoiceRepository.countByStatus(InvoiceStatus.pending))
-                .reviewingCount(invoiceRepository.countByStatus(InvoiceStatus.reviewing))
-                .paidCount(invoiceRepository.countByStatus(InvoiceStatus.paid))
-                .overdueCount(invoiceRepository.countByStatus(InvoiceStatus.overdue))
-                .totalRevenue(invoiceRepository.sumTotalRevenue())
-                .monthRevenue(invoiceRepository.sumRevenueByMonth(currentMonth))
+                .totalInvoices(totalInvoices)
+                .pendingCount(pendingCount)
+                .reviewingCount(reviewingCount)
+                .paidCount(paidCount)
+                .overdueCount(overdueCount)
+                .totalRevenue(totalRevenue)
+                .monthRevenue(monthRevenue)
                 .build();
     }
 

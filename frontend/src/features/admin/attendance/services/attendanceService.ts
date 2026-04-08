@@ -131,8 +131,21 @@ export async function getLiveSessions() {
     });
     if (!Array.isArray(data)) return [];
 
-    // Filter: only sessions that are "upcoming" (i.e. not completed/cancelled yet) on today
-    const liveSessions = data.filter((s: any) => s.status === "upcoming");
+    // Filter: sessions that are "upcoming" AND chronologically haven't completely ended (allow 30m buffer)
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    const liveSessions = data.filter((s: any) => {
+      if (s.status !== "upcoming") return false;
+      if (!s.endTime) return true;
+      
+      const [endH, endM] = s.endTime.split(":").map(Number);
+      const endMin = endH * 60 + endM;
+      
+      // Cho phép hiển thị ở "Đang diễn ra" thêm tối đa 30 phút sau khi kết thúc 
+      // Phòng trường hợp Giáo viên điểm danh trễ hoặc học quá giờ
+      return nowMin <= endMin + 30;
+    });
 
     // Check QR status for each live session
     const results = await Promise.all(
