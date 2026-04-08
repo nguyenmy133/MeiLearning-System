@@ -43,9 +43,10 @@ import {
   useAttendanceStats,
   useLiveSessions,
   useAbsentAlerts,
-  useToggleQR,
   useSessionRecords,
+  useToggleQR,
 } from "../hooks";
+import { exportAttendanceExcel } from "../services/attendanceService";
 import type { AttendanceQueryParams } from "../types";
 import { useClassOptions } from "@/hooks/useClassOptions";
 import { formatDate } from "@/lib/dateUtils";
@@ -58,6 +59,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ExportAttendanceDialog } from "../components/ExportAttendanceDialog";
 
 // ── Format helpers ────────────────────────────────────────────────────────────
 // formatDate imported from @/lib/dateUtils
@@ -145,6 +147,9 @@ export function AdminAttendancePage() {
     open: false, sessionId: 0, className: "", date: "", time: "",
   });
   const { data: rosterData = [], isLoading: rosterLoading } = useSessionRecords(rosterModal.sessionId);
+
+  // ── Export Report State ──────────────────────────────────────────────────
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Countdown timer for QR modal
   useEffect(() => {
@@ -367,7 +372,7 @@ export function AdminAttendancePage() {
           <Card>
             <CardHeader className="flex flex-col sm:flex-row gap-4 justify-between pb-2">
               <CardTitle className="text-lg font-display">Lịch sử điểm danh</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
                 <Download className="w-4 h-4 mr-1" />
                 Xuất báo cáo
               </Button>
@@ -697,6 +702,11 @@ export function AdminAttendancePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ExportAttendanceDialog 
+        open={exportDialogOpen} 
+        onOpenChange={setExportDialogOpen} 
+      />
     </div>
   );
 }

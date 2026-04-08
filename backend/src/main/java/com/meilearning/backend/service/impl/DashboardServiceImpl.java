@@ -123,7 +123,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         return sessions.stream()
                 .filter(s -> s.getStatus() != SessionStatus.cancelled)
-                .filter(s -> s.getClassEntity() != null && (s.getClassEntity().getStatus() == ClassStatus.active || s.getStatus() == SessionStatus.completed))
+                .filter(s -> s.getClassEntity() != null && s.getClassEntity().getStatus() == ClassStatus.active)
                 .sorted(Comparator.comparing(ClassSession::getStartTime))
                 .map(s -> {
                     String time = s.getStartTime().format(TIME_FMT) + " - " + s.getEndTime().format(TIME_FMT);
@@ -182,7 +182,7 @@ public class DashboardServiceImpl implements DashboardService {
         for (ClassSession session : todaySessions) {
             if (session.getStatus() == SessionStatus.cancelled) continue;
             if (session.getClassEntity() == null) continue;
-            if (session.getClassEntity().getStatus() != ClassStatus.active && session.getStatus() != SessionStatus.completed) continue;
+            if (session.getClassEntity().getStatus() != ClassStatus.active) continue;
             
             int classTotal = (int) enrollmentRepository.countByClassEntityId(session.getClassEntity().getId());
             total += classTotal;

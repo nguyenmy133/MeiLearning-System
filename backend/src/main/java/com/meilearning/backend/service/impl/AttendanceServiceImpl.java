@@ -35,6 +35,12 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -481,6 +487,109 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .status(r.getStatus().name())
                 .updatedBy(r.getUpdatedBy() != null ? r.getUpdatedBy() : "System")
                 .build()).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportAttendanceExcel(Long classId, String month) {
+        YearMonth ym = (month != null && !month.trim().isEmpty()) ? YearMonth.parse(month) : YearMonth.now();
+        LocalDate startDate = ym.atDay(1);
+        LocalDate endDate = ym.atEndOfMonth();
+
+        List<AttendanceRecord> records;
+        if (classId != null) {
+            records = attendanceRepository.findByClassIdAndDateBetweenWithDetails(classId, startDate, endDate);
+        } else {
+            records = attendanceRepository.findByDateBetweenWithDetails(startDate, endDate);
+        }
+
+        // Group by Class Name
+        Map<String, List<AttendanceRecord>> recordsByClass = records.stream()
+                .collect(Collectors.groupingBy(r -> r.getSession().getClassEntity().getName()));
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            
+            // Define header style
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            if (recordsByClass.isEmpty()) {
+                workbook.createSheet("No Data");
+            } else {
+                for (Map.Entry<String, List<AttendanceRecord>> entry : recordsByClass.entrySet()) {
+                    // Cắt tên sheet <= 31 ký tự (chuẩn Excel)
+                    String sheetName = entry.getKey();
+                    if (sheetName.length() > 31) {
+                        sheetName = sheetName.substring(0, 31);
+                    }
+                    // Handle invalid characters for Excel sheet name
+                    sheetName = sheetName.replaceAll("[/?*\\\\[\\\\]:]", "_");
+                    
+                    Sheet sheet = workbook.getSheet(sheetName);
+                    if (sheet != null) {
+                        sheetName = sheetName.substring(0, Math.min(27, sheetName.length())) + "_" + UUID.randomUUID().toString().substring(0, 3);
+                    }
+                    sheet = workbook.createSheet(sheetName);
+
+                    // Create Row 0: Headers
+                    Row headerRow = sheet.createRow(0);
+                    String[] headers = {"Ngày Học", "Tên Học Viên", "Trạng Thái", "Giáo Viên", "Ghi Chú"};
+                    for (int i = 0; i < headers.length; i++) {
+                        Cell cell = headerRow.createCell(i);
+                        cell.setCellValue(headers[i]);
+                        cell.setCellStyle(headerStyle);
+                    }
+
+                    // Populate rows
+                    int rowIdx = 1;
+                    for (AttendanceRecord r : entry.getValue()) {
+                        Row row = sheet.createRow(rowIdx++);
+                        
+                        // Ngày Học
+                        row.createCell(0).setCellValue(r.getSession().getDate().toString());
+                        
+                        // Tên Học Viên
+                        String studentName = r.getStudent().getUser() != null ? r.getStudent().getUser().getName() : "Không xác định";
+                        row.createCell(1).setCellValue(studentName);
+                        
+                        // Trạng Thái
+                        String statusStr = "";
+                        switch(r.getStatus()) {
+                            case present: statusStr = "Có mặt"; break;
+                            case absent: statusStr = "Vắng mặt"; break;
+                            case late: statusStr = "Đi muộn"; break;
+                            case absent_excused: statusStr = "Vắng phép"; break;
+                        }
+                        row.createCell(2).setCellValue(statusStr);
+                        
+                        // Giáo Viên
+                        String teacherName = "";
+                        if (r.getSession().getClassEntity().getTeacher() != null && r.getSession().getClassEntity().getTeacher().getUser() != null) {
+                            teacherName = r.getSession().getClassEntity().getTeacher().getUser().getName();
+                        }
+                        row.createCell(3).setCellValue(teacherName);
+                        
+                        // Ghi Chú
+                        row.createCell(4).setCellValue(r.getNote() != null ? r.getNote() : "");
+                    }
+                    
+                    // Autofit columns
+                    for (int i = 0; i < headers.length; i++) {
+                        sheet.autoSizeColumn(i);
+                    }
+                }
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new BusinessException("Lỗi khi xuất file Excel: " + e.getMessage());
+        }
     }
 
 }

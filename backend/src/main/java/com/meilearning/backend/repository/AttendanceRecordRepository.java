@@ -114,5 +114,30 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
             @Param("statuses") List<AttendanceStatus> statuses,
             @Param("today") LocalDate today,
             org.springframework.data.domain.Pageable pageable);
+
+    // ── Export Báo Cáo Điểm Danh (Excel) ──
+
+    @Query("SELECT ar FROM AttendanceRecord ar " +
+           "JOIN FETCH ar.student st " +
+           "LEFT JOIN FETCH st.user u " +
+           "JOIN FETCH ar.session s " +
+           "JOIN FETCH s.classEntity c " +
+           "WHERE s.date BETWEEN :startDate AND :endDate " +
+           "ORDER BY c.name, s.date, st.id")
+    List<AttendanceRecord> findByDateBetweenWithDetails(
+            @Param("startDate") LocalDate startDate, 
+            @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT ar FROM AttendanceRecord ar " +
+           "JOIN FETCH ar.student st " +
+           "LEFT JOIN FETCH st.user u " +
+           "JOIN FETCH ar.session s " +
+           "JOIN FETCH s.classEntity c " +
+           "WHERE c.id = :classId AND s.date BETWEEN :startDate AND :endDate " +
+           "ORDER BY s.date, st.id")
+    List<AttendanceRecord> findByClassIdAndDateBetweenWithDetails(
+            @Param("classId") Long classId, 
+            @Param("startDate") LocalDate startDate, 
+            @Param("endDate") LocalDate endDate);
 }
 
