@@ -137,8 +137,10 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy học viên: " + studentId));
 
-        // Kiểm tra đã check-in chưa
-        if (attendanceRepository.existsBySessionIdAndStudentId(sessionId, studentId)) {
+        // Kiểm tra record đã tồn tại — cho phép ghi đè nếu status = absent (auto-save khi QR hết hạn)
+        java.util.Optional<AttendanceRecord> existing = attendanceRepository
+                .findBySessionIdAndStudentId(sessionId, studentId);
+        if (existing.isPresent() && existing.get().getStatus() != AttendanceStatus.absent) {
             throw new BusinessException("Học viên đã được điểm danh cho buổi học này.");
         }
 
@@ -153,13 +155,23 @@ public class AttendanceServiceImpl implements AttendanceService {
             }
         }
 
-        AttendanceRecord record = AttendanceRecord.builder()
-                .session(session)
-                .student(student)
-                .status(status)
-                .checkInTime(now)
-                .method(CheckInMethod.qr)
-                .build();
+        // Ghi đè record absent hoặc tạo mới
+        AttendanceRecord record;
+        if (existing.isPresent()) {
+            record = existing.get();
+            record.setStatus(status);
+            record.setCheckInTime(now);
+            record.setMethod(CheckInMethod.qr);
+            record.setNote(null);
+        } else {
+            record = AttendanceRecord.builder()
+                    .session(session)
+                    .student(student)
+                    .status(status)
+                    .checkInTime(now)
+                    .method(CheckInMethod.qr)
+                    .build();
+        }
         record = attendanceRepository.save(record);
         return sessionMapper.toAttendanceResponse(record);
     }
@@ -264,8 +276,10 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy học viên: " + studentId));
 
-        // 4. Check duplicate
-        if (attendanceRepository.existsBySessionIdAndStudentId(session.getId(), studentId)) {
+        // 4. Check duplicate — cho phép ghi đè nếu status = absent (auto-save khi QR hết hạn)
+        java.util.Optional<AttendanceRecord> existing = attendanceRepository
+                .findBySessionIdAndStudentId(session.getId(), studentId);
+        if (existing.isPresent() && existing.get().getStatus() != AttendanceStatus.absent) {
             throw new BusinessException("Bạn đã điểm danh buổi học này rồi.");
         }
 
@@ -280,14 +294,23 @@ public class AttendanceServiceImpl implements AttendanceService {
             }
         }
 
-        // 6. Create record
-        AttendanceRecord record = AttendanceRecord.builder()
-                .session(session)
-                .student(student)
-                .status(status)
-                .checkInTime(now)
-                .method(CheckInMethod.qr)
-                .build();
+        // 6. Ghi đè record absent hoặc tạo mới
+        AttendanceRecord record;
+        if (existing.isPresent()) {
+            record = existing.get();
+            record.setStatus(status);
+            record.setCheckInTime(now);
+            record.setMethod(CheckInMethod.qr);
+            record.setNote(null);
+        } else {
+            record = AttendanceRecord.builder()
+                    .session(session)
+                    .student(student)
+                    .status(status)
+                    .checkInTime(now)
+                    .method(CheckInMethod.qr)
+                    .build();
+        }
         record = attendanceRepository.save(record);
         return sessionMapper.toAttendanceResponse(record);
     }
