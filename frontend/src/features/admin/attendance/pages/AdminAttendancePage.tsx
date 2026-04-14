@@ -298,15 +298,7 @@ export function AdminAttendancePage() {
                         />
                       </div>
 
-                      <div className="flex gap-2 pt-1 border-t border-border/50">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs h-8"
-                          onClick={() => toast.info("Tính năng theo dõi real-time")}
-                        >
-                          <Eye className="w-3.5 h-3.5 mr-1.5" /> Theo dõi
-                        </Button>
+                      <div className="pt-1 border-t border-border/50">
                         {session.qrActive ? (
                           <Button
                             variant="outline"

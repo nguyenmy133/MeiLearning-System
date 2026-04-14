@@ -142,11 +142,22 @@ public class AttendanceServiceImpl implements AttendanceService {
             throw new BusinessException("Học viên đã được điểm danh cho buổi học này.");
         }
 
+        // Determine status: present or late (đọc ngưỡng từ QR Settings)
+        LocalTime now = LocalTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        AttendanceStatus status = AttendanceStatus.present;
+        if (session.getStartTime() != null) {
+            long minutesLate = java.time.Duration.between(session.getStartTime(), now).toMinutes();
+            QrSettings qrSettings = qrSettingsService.getCachedSettings();
+            if (minutesLate > qrSettings.getLateThresholdMinutes()) {
+                status = AttendanceStatus.late;
+            }
+        }
+
         AttendanceRecord record = AttendanceRecord.builder()
                 .session(session)
                 .student(student)
-                .status(AttendanceStatus.present)
-                .checkInTime(LocalTime.now())
+                .status(status)
+                .checkInTime(now)
                 .method(CheckInMethod.qr)
                 .build();
         record = attendanceRepository.save(record);
@@ -259,7 +270,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
 
         // 5. Determine status: present or late (đọc ngưỡng từ QR Settings)
-        LocalTime now = LocalTime.now();
+        LocalTime now = LocalTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         AttendanceStatus status = AttendanceStatus.present;
         if (session.getStartTime() != null) {
             long minutesLate = java.time.Duration.between(session.getStartTime(), now).toMinutes();
