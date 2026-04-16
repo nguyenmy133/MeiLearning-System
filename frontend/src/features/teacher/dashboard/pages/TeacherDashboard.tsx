@@ -83,6 +83,12 @@ function formatRelativeTime(dateStr: string): string {
   return `${days} ngày trước`;
 }
 
+function isLateRequestTask(label: string, sub: string, type: string): boolean {
+  if (type === "late") return true;
+  const text = `${label} ${sub}`.toLowerCase();
+  return text.includes("đi muộn") || text.includes("xin muộn") || text.includes("late");
+}
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function DashboardSkeleton() {
@@ -167,6 +173,7 @@ export function TeacherDashboard() {
   const attLate = attendanceStats?.late ?? 0;
 
   const urgentCount = pendingTasks.filter((t) => t.urgent).length;
+  const lateRequestTaskCount = pendingTasks.filter((t) => isLateRequestTask(t.label, t.sub, t.type)).length;
 
   // Show full skeleton while essential data loads
   if (isLoading && isTasksLoading && isStatsLoading) {
@@ -466,6 +473,11 @@ export function TeacherDashboard() {
                   {urgentCount} khẩn
                 </Badge>
               )}
+              {lateRequestTaskCount > 0 && (
+                <Badge className="bg-orange-100 text-orange-700 border border-orange-200 text-xs">
+                  Cảnh báo đi muộn
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -476,22 +488,32 @@ export function TeacherDashboard() {
                 ))}
               </div>
             ) : pendingTasks.length > 0 ? (
-              pendingTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-accent/40 hover:bg-accent transition-colors cursor-pointer group"
-                  onClick={() => navigate(task.href)}
-                >
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${task.badgeClass}`}>
-                    <task.icon className="w-4 h-4" />
+              pendingTasks.map((task) => {
+                const lateTask = isLateRequestTask(task.label, task.sub, task.type);
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-accent/40 hover:bg-accent transition-colors cursor-pointer group"
+                    onClick={() => navigate(task.href)}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${task.badgeClass}`}>
+                      <task.icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">{task.label}</p>
+                        {lateTask && (
+                          <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border border-orange-200">
+                            Cần duyệt sớm
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{task.sub}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{task.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{task.sub}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-6">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />

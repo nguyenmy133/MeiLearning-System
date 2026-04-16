@@ -6,23 +6,26 @@ import type { PendingTask } from "../types";
 function mapTask(t: any, index: number): PendingTask {
   const typeIconMap: Record<string, any> = {
     leave: AlertCircle,
+    late: AlertCircle,
     attendance: Calendar,
     exam: ClipboardList,
   };
   const typeClassMap: Record<string, string> = {
     leave: "bg-amber-100 text-amber-700",
+    late: "bg-orange-100 text-orange-700",
     attendance: "bg-blue-100 text-blue-700",
     exam: "bg-purple-100 text-purple-700",
   };
   const typeLinkMap: Record<string, string> = {
-    leave: "/teacher/leave",
+    leave: "/teacher/leave-approval",
+    late: "/teacher/leave-approval",
     attendance: "/teacher/attendance",
     exam: "/teacher/exams",
   };
 
   return {
     id: index,
-    type: (t.type === "leave" ? "leave" : t.type === "exam" ? "exam" : "absent") as PendingTask["type"],
+    type: (t.type === "leave" ? "leave" : t.type === "late" ? "late" : t.type === "exam" ? "exam" : "absent") as PendingTask["type"],
     label: t.title ?? "",
     sub: t.description ?? "",
     href: typeLinkMap[t.type] ?? "/teacher",

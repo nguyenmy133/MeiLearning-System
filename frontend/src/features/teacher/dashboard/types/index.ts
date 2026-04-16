@@ -2,7 +2,7 @@ import { LucideIcon } from "lucide-react";
 
 export interface PendingTask {
     id: number;
-    type: "leave" | "exam" | "absent";
+    type: "leave" | "late" | "exam" | "absent";
     label: string;
     sub: string;
     href: string;
