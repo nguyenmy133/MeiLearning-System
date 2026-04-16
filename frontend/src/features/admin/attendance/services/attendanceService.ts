@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { getLocalDateISO } from "@/lib/dateUtils";
 
 // ── Types (inline) ────────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ export async function getAttendanceSessions(params?: any) {
 
 export async function getLiveSessions() {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateISO();
     const { data } = await apiClient.get("/attendance/sessions/all", {
       params: { date: today },
     });

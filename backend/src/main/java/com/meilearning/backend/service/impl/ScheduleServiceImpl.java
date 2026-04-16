@@ -15,6 +15,7 @@ import com.meilearning.backend.entity.ClassEnrollment;
 import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.Room;
 import com.meilearning.backend.entity.Teacher;
+import com.meilearning.backend.entity.enums.AttendanceStatus;
 import com.meilearning.backend.entity.enums.ClassStatus;
 import com.meilearning.backend.entity.enums.SessionStatus;
 import com.meilearning.backend.entity.enums.SessionType;
@@ -222,12 +223,20 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .map(sessionMapper::toResponse)
                 .toList();
 
-        for (ClassSessionResponse resp : responses) {
+        for (int i = 0; i < responses.size(); i++) {
+            ClassSessionResponse resp = responses.get(i);
+            ClassSession originalSession = filtered.get(i);
+            
             attendanceRecordRepository
                     .findBySessionIdAndStudentId(resp.getId(), studentId)
-                    .ifPresent(record -> resp.setAttendanceStatus(
-                            record.getStatus().name().toUpperCase()
-                    ));
+                    .ifPresent(record -> {
+                        // Draft Shield: Ẩn đi trạng thái Vắng (draft) nếu giáo viên chưa chốt lớp
+                        if (record.getStatus() == AttendanceStatus.absent 
+                            && originalSession.getStatus() != SessionStatus.completed) {
+                            return; 
+                        }
+                        resp.setAttendanceStatus(record.getStatus().name().toUpperCase());
+                    });
         }
 
         return ScheduleResponse.builder()

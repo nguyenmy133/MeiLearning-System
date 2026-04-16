@@ -85,11 +85,13 @@ export function TeacherExamManagement() {
   const handleDelete = (id: number) => { setExamToDelete(id); setDeleteDialogOpen(true); };
 
   const confirmDelete = () => {
-    if (examToDelete !== null) {
-      deleteExam.mutate(examToDelete);
-    }
-    setDeleteDialogOpen(false);
-    setExamToDelete(null);
+    if (examToDelete === null) return;
+    deleteExam.mutate(examToDelete, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setExamToDelete(null);
+      },
+    });
   };
 
   return (
@@ -337,8 +339,8 @@ export function TeacherExamManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-              Xóa
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90" disabled={deleteExam.isPending}>
+              {deleteExam.isPending ? "Đang xóa..." : "Xóa"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

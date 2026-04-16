@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeacherAttendanceHistory } from "./TeacherAttendanceHistory";
 import { History } from "lucide-react";
@@ -40,7 +40,13 @@ const toMinutes = (t: string) => {
   return h * 60 + m;
 };
 
-const getTodayISO = () => new Date().toISOString().split("T")[0];
+const getTodayISO = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 /** Issue #7: Kiểm tra session đã đến giờ chưa (cho phép trước 5 phút) */
 const isSessionStarted = (startTime: string) => {
@@ -98,7 +104,7 @@ export function TeacherAttendancePage() {
     return Math.max(0, Math.floor((new Date(saved.expiresAt).getTime() - Date.now()) / 1000));
   });
   const [qrTokenValue, setQrTokenValue] = useState(saved?.token ?? "");
-  const [localAttendees, setLocalAttendees] = useState<AttendeeRecord[]>([]);
+  const [draftEdits, setDraftEdits] = useState<Record<string, Partial<AttendeeRecord>>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const generateQr = useGenerateQrToken();
@@ -111,32 +117,26 @@ export function TeacherAttendancePage() {
   const { data: sessionData, isLoading: sessionLoading } = useSessionAttendance(selectedSessionId, qrActive);
   const saveAttendance = useSaveAttendance();
 
-  // Sync local state when session data loads / polls
-  // Merge strategy: server QR check-ins win over local "pending" state,
-  // but teacher's manual overrides are preserved.
-  useEffect(() => {
-    if (!sessionData || !Array.isArray(sessionData)) return;
-    if (sessionData.length === 0) { setLocalAttendees([]); return; }
+  // Compute combination of server data and uncommitted local edits
+  const localAttendees = useMemo(() => {
+    if (!sessionData || !Array.isArray(sessionData)) return [];
+    return sessionData.map((serverData) => {
+      const draft = draftEdits[serverData.studentId];
+      if (!draft) return serverData;
+      
+      // If server updated to non-pending (e.g. valid QR scan) AND draft was just a fallback
+      if (serverData.status !== "pending" && serverData.method === "qr" && draft.status === "absent" && !draft.checkinTime) {
+        return serverData; // Server wins over stale draft
+      }
 
-    setLocalAttendees((prev) => {
-      // First load — no local state yet
-      if (prev.length === 0) return sessionData;
-
-      // Merge: for each student, if server says non-pending but local is still pending,
-      // accept the server update (student scanned QR). Otherwise keep local.
-      const serverMap = new Map(sessionData.map((s) => [s.studentId, s]));
-      return prev.map((local) => {
-        const server = serverMap.get(local.studentId);
-        if (!server) return local;
-        // Server has a real status and local is still pending → accept server (QR scan)
-        if (local.status === "pending" && server.status !== "pending") {
-          return server;
-        }
-        // Otherwise keep teacher's manual edit
-        return local;
-      });
+      return { ...serverData, ...draft };
     });
-  }, [sessionData]);
+  }, [sessionData, draftEdits]);
+
+  // Clear drafts when changing session
+  useEffect(() => {
+    setDraftEdits({});
+  }, [selectedSessionId]);
 
   // Auto-select first session if only one today (and no saved QR state)
   useEffect(() => {
@@ -190,10 +190,15 @@ export function TeacherAttendancePage() {
       clearQrState();
 
       // Issue #6: Auto-update pending → absent và lưu nháp
-      const updatedAttendees = localAttendees.map((a) =>
-        a.status === "pending" ? { ...a, status: "absent" as AttendanceStatus } : a
-      );
-      setLocalAttendees(updatedAttendees);
+      const newDrafts = { ...draftEdits };
+      const updatedAttendees = localAttendees.map((a) => {
+        if (a.status === "pending") {
+          newDrafts[a.studentId] = { status: "absent", method: "manual", checkinTime: null };
+          return { ...a, status: "absent" as AttendanceStatus };
+        }
+        return a;
+      });
+      setDraftEdits(newDrafts);
 
       // Auto-save draft nếu có session được chọn
       if (selectedSessionId > 0) {
@@ -210,6 +215,7 @@ export function TeacherAttendancePage() {
         };
         saveAttendance.mutate(draftPayload, {
           onSuccess: () => {
+            setDraftEdits({}); // Sync back to pure server state
             toast({
               title: "Mã QR đã hết hạn",
               description: "Đã tự động lưu nháp. Vui lòng kiểm tra và sửa trước khi chốt.",
@@ -254,19 +260,17 @@ export function TeacherAttendancePage() {
   // ── Actions ────────────────────────────────────────────────────────────────
   const updateStudentStatus = (studentId: string, newStatus: AttendanceStatus) => {
     if (isConfirmed) return;
-    setLocalAttendees((prev) =>
-      prev.map((a) => {
-        if (a.studentId !== studentId) return a;
-        const now = new Date();
-        const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-        return {
-          ...a,
-          status: newStatus,
-          method: "manual" as const,
-          checkinTime: newStatus === "absent" || newStatus === "absent_excused" ? null : t,
-        };
-      })
-    );
+    const now = new Date();
+    const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    
+    setDraftEdits(prev => ({
+      ...prev,
+      [studentId]: {
+        status: newStatus,
+        method: "manual",
+        checkinTime: newStatus === "absent" || newStatus === "absent_excused" ? null : t,
+      }
+    }));
   };
 
   // Issue #8: Fix buildDTO — convert studentId to Number, filter pending
@@ -293,7 +297,9 @@ export function TeacherAttendancePage() {
 
   const handleSaveDraft = () => {
     if (!selectedSessionId) { toast({ title: "Chưa chọn buổi học", variant: "destructive" }); return; }
-    saveAttendance.mutate(buildDTO(false));
+    saveAttendance.mutate(buildDTO(false), {
+      onSuccess: () => setDraftEdits({})
+    });
   };
 
   const handleConfirm = () => {
@@ -302,7 +308,9 @@ export function TeacherAttendancePage() {
   };
 
   const executeConfirm = () => {
-    saveAttendance.mutate(buildDTO(true));
+    saveAttendance.mutate(buildDTO(true), {
+      onSuccess: () => setDraftEdits({})
+    });
     if (qrActive) { setQrActive(false); setCountdown(0); setQrTokenValue(""); clearQrState(); }
     setConfirmOpen(false);
   };

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLocalDateISO } from "@/lib/dateUtils";
 import { useMySchedule } from "@/features/user/schedule/hooks";
 
 const getWeekDates = (offset: number) => {
@@ -20,7 +21,7 @@ const getWeekDates = (offset: number) => {
   });
 };
 
-const toISO = (date: Date) => date.toISOString().split("T")[0];
+const toISO = (date: Date) => getLocalDateISO(date);
 
 export function SchedulePage({ onCheckIn }: { onCheckIn?: (subject: string, sessionId: string) => void }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -155,7 +156,7 @@ export function SchedulePage({ onCheckIn }: { onCheckIn?: (subject: string, sess
                           )}
 
                           {/* Check-in button only for today's sessions */}
-                          {sess.canCheckIn && !sess.attendanceStatus && (
+                          {sess.canCheckIn && (!status || status === "absent") && (
                             <Button
                               size="sm"
                               variant="default"

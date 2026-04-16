@@ -91,13 +91,34 @@ export function useSseNotifications() {
                   className: "bg-background border border-primary/20",
                 });
                 
-                // 2. Refresh React-Query Cache
-                queryClient.invalidateQueries({
-                  predicate: (query) => query.queryKey[0] === "notifications",
-                });
-                queryClient.invalidateQueries({
-                  queryKey: ["user", "notifications"],
-                });
+                // 2. Refresh React-Query Cache (Global Event Bus)
+                // Invalidate notifications list itself
+                queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "notifications" });
+                queryClient.invalidateQueries({ queryKey: ["user", "notifications"] });
+
+                // Smart Invalidation based on notification type/title to ensure realtime UI sync
+                const typeMatcher = String(data.type).toLowerCase() + " " + String(data.title).toLowerCase();
+                
+                if (typeMatcher.includes("leave")) {
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("leave")) });
+                }
+                if (typeMatcher.includes("reschedule")) {
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("reschedule")) });
+                }
+                if (typeMatcher.includes("exam") || typeMatcher.includes("grade") || typeMatcher.includes("result")) {
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("exam")) });
+                }
+                if (typeMatcher.includes("payment") || typeMatcher.includes("tuition")) {
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("tuition")) });
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("payment")) });
+                }
+                if (typeMatcher.includes("attendance")) {
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("attendance")) });
+                }
+                if (typeMatcher.includes("class") || typeMatcher.includes("schedule")) {
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("class")) });
+                  queryClient.invalidateQueries({ predicate: (q) => q.queryKey.some(k => typeof k === 'string' && k.includes("schedule")) });
+                }
 
               } catch (e) {
                 console.error("[SSE] Failed to parse notification payload", e);

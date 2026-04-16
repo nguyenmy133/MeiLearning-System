@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
+import { getLocalDateISO } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,14 +70,14 @@ function getCurrentMonday(): string {
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(d.setDate(diff));
-  return monday.toISOString().split("T")[0];
+  return getLocalDateISO(monday);
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
+  const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return getLocalDateISO(d);
 }
 
 function formatDateLabel(dateStr: string): string {
