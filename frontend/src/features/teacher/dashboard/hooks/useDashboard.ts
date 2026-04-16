@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "../services/dashboardService";
 import { getTeacherExams } from "@/features/teacher/exam/services/examService";
-import { getAttendanceStats } from "@/features/teacher/attendance/services/attendanceService";
+import { getAttendanceStats, getSessionAttendance } from "@/features/teacher/attendance/services/attendanceService";
 import { notificationService } from "@/features/user/notifications/services/notificationService";
 
 export const usePendingTasks = () => {
@@ -18,11 +18,39 @@ export const useAttendanceRate = () => {
     });
 };
 
-/** Attendance stats cho hôm nay (total, present, absent, late, rate) */
-export const useTodayAttendanceStats = () => {
+/**
+ * Attendance stats cho hôm nay (total, present, absent, late, rate)
+ * Gợi ý từ Senior: Thay vì gọi /attendance/stats (trả về toàn hệ thống), 
+ * ta fetch roster của các class trong ngày để tổng hợp.
+ */
+export const useTodayAttendanceStats = (sessionIds: number[]) => {
     return useQuery({
-        queryKey: ["teacher", "dashboard", "attendance-stats-today"],
-        queryFn: () => getAttendanceStats(),
+        queryKey: ["teacher", "dashboard", "attendance-stats-today", sessionIds],
+        queryFn: async () => {
+            if (!sessionIds || sessionIds.length === 0) {
+                return { total: 0, present: 0, absent: 0, late: 0, rate: 0 };
+            }
+            
+            // Lấy roster (danh sách học viên + điểm danh) của các session hôm nay
+            const rosters = await Promise.all(
+                sessionIds.map(id => getSessionAttendance(id))
+            );
+            
+            const allRecords = rosters.flat();
+            const total = allRecords.length;
+            let present = 0, absent = 0, late = 0;
+            
+            allRecords.forEach(r => {
+                if (r.status === "present") present++;
+                else if (r.status === "absent" || r.status === "absent_excused") absent++;
+                else if (r.status === "late") late++;
+            });
+            
+            const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+            
+            return { total, present, absent, late, rate };
+        },
+        enabled: sessionIds !== undefined,
     });
 };
 

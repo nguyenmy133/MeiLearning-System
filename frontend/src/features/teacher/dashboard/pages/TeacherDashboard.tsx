@@ -119,9 +119,6 @@ export function TeacherDashboard() {
   const { data: sessions = [], isLoading } = useTeacherSchedule();
 
   const { data: pendingTasks = [], isLoading: isTasksLoading } = usePendingTasks();
-  const { data: attendanceStats, isLoading: isStatsLoading } = useTodayAttendanceStats();
-  const { data: exams = [], isLoading: isExamsLoading } = useTeacherExamsForDashboard();
-  const { data: notifications = [], isLoading: isNotiLoading } = useRecentNotifications();
 
   const now = new Date();
   const todayIndex = jsDay2Index(now.getDay());
@@ -131,6 +128,12 @@ export function TeacherDashboard() {
   const todaySessions = sessions
     .filter((s) => jsDay2Index(new Date(s.date).getDay()) === todayIndex)
     .sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
+
+  const todaySessionIds = todaySessions.map(s => Number(s.id));
+
+  const { data: attendanceStats, isLoading: isStatsLoading } = useTodayAttendanceStats(todaySessionIds);
+  const { data: exams = [], isLoading: isExamsLoading } = useTeacherExamsForDashboard();
+  const { data: notifications = [], isLoading: isNotiLoading } = useRecentNotifications();
 
   const todayStudents = todaySessions.reduce((sum, s) => sum + s.students, 0);
 
