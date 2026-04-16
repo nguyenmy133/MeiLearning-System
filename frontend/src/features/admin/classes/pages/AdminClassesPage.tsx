@@ -34,7 +34,7 @@ import {
   Users, Calendar, Clock, Filter, MapPin, CheckCircle2, XCircle,
   Loader2, Info, Phone,
 } from "lucide-react";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, getLocalDateISO } from "@/lib/dateUtils";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // ===== Module imports =====
@@ -393,7 +393,7 @@ function ClassForm({ mode, initial, onSubmit, isPending }: ClassFormProps) {
     }
     if (!startDate) { toast.error("Vui lòng chọn ngày bắt đầu"); return; }
     const startDateStr = format(startDate, "yyyy-MM-dd");
-    if (mode === "create" && startDateStr < new Date().toISOString().split("T")[0]) {
+    if (mode === "create" && startDateStr < getLocalDateISO()) {
       toast.error("Ngày bắt đầu không được nằm trong quá khứ");
       return;
     }

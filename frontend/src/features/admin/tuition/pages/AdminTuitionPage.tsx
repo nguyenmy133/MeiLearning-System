@@ -667,8 +667,9 @@ export function AdminTuitionPage() {
             <AlertDialogAction
               disabled={generateMutation.isPending}
               onClick={() => {
-                generateMutation.mutate(generateTargetMonth);
-                setGenerateConfirmOpen(false);
+                generateMutation.mutate(generateTargetMonth, {
+                  onSuccess: () => setGenerateConfirmOpen(false),
+                });
               }}
             >
               {generateMutation.isPending && (
@@ -711,8 +712,9 @@ export function AdminTuitionPage() {
             <AlertDialogAction
               disabled={remindAllMutation.isPending}
               onClick={() => {
-                remindAllMutation.mutate();
-                setRemindAllConfirmOpen(false);
+                remindAllMutation.mutate(undefined, {
+                  onSuccess: () => setRemindAllConfirmOpen(false),
+                });
               }}
             >
               {remindAllMutation.isPending && (

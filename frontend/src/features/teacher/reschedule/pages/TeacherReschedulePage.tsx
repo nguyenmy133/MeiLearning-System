@@ -197,9 +197,17 @@ export function TeacherReschedulePage() {
     return `${formatDate(s.date)} — ${s.startTime} ~ ${s.endTime}`;
   };
 
-  const pendingCount = requests.filter(r => r.status === "pending").length;
-  const approvedCount = requests.filter(r => r.status === "approved").length;
-  const rejectedCount = requests.filter(r => r.status === "rejected").length;
+  const sortedRequests = useMemo(() => {
+    return [...requests].sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [requests]);
+
+  const pendingCount = sortedRequests.filter(r => r.status === "pending").length;
+  const approvedCount = sortedRequests.filter(r => r.status === "approved").length;
+  const rejectedCount = sortedRequests.filter(r => r.status === "rejected").length;
 
   return (
     <div className="space-y-6">
@@ -363,7 +371,7 @@ export function TeacherReschedulePage() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-4 mt-4">
-          {requests.map((request) => (
+          {sortedRequests.map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -415,15 +423,15 @@ export function TeacherReschedulePage() {
                       <span className="font-medium text-foreground">Lý do:</span> {request.reason}
                     </p>
 
-                    {request.status === "approved" && (
-                      <p className="mt-2 text-sm text-success">
-                        ✓ Được duyệt bởi {request.approvedBy} lúc {formatDateTime(request.approvedAt)}
+                    {request.status === "approved" && request.reviewedBy && (
+                      <p className="mt-2 text-sm text-emerald-600">
+                        ✓ Được duyệt bởi {request.reviewedBy} {request.reviewedAt && `lúc ${formatDateTime(request.reviewedAt)}`}
                       </p>
                     )}
 
-                    {request.status === "rejected" && request.rejectedReason && (
+                    {request.status === "rejected" && request.rejectReason && (
                       <p className="mt-2 text-sm text-destructive">
-                        ✗ Lý do từ chối: {request.rejectedReason}
+                        ✗ Lý do từ chối: {request.rejectReason}
                       </p>
                     )}
                   </div>
@@ -437,7 +445,7 @@ export function TeacherReschedulePage() {
         </TabsContent>
 
         <TabsContent value="pending" className="space-y-4 mt-4">
-          {requests.filter(r => r.status === "pending").map((request) => (
+          {sortedRequests.filter(r => r.status === "pending").map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -499,7 +507,7 @@ export function TeacherReschedulePage() {
         </TabsContent>
 
         <TabsContent value="approved" className="space-y-4 mt-4">
-          {requests.filter(r => r.status === "approved").map((request) => (
+          {sortedRequests.filter(r => r.status === "approved").map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -551,9 +559,9 @@ export function TeacherReschedulePage() {
                       <span className="font-medium text-foreground">Lý do:</span> {request.reason}
                     </p>
 
-                    {request.approvedBy && (
+                    {request.reviewedBy && (
                       <p className="mt-2 text-sm text-emerald-600">
-                        ✓ Được duyệt bởi {request.approvedBy} {request.approvedAt && `lúc ${formatDateTime(request.approvedAt)}`}
+                        ✓ Được duyệt bởi {request.reviewedBy} {request.reviewedAt && `lúc ${formatDateTime(request.reviewedAt)}`}
                       </p>
                     )}
                   </div>
@@ -567,7 +575,7 @@ export function TeacherReschedulePage() {
         </TabsContent>
 
         <TabsContent value="rejected" className="space-y-4 mt-4">
-          {requests.filter(r => r.status === "rejected").map((request) => (
+          {sortedRequests.filter(r => r.status === "rejected").map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -619,9 +627,9 @@ export function TeacherReschedulePage() {
                       <span className="font-medium text-foreground">Lý do:</span> {request.reason}
                     </p>
 
-                    {request.rejectedReason && (
+                    {request.rejectReason && (
                       <p className="mt-2 text-sm text-destructive">
-                        ✗ Lý do từ chối: {request.rejectedReason}
+                        ✗ Lý do từ chối: {request.rejectReason}
                       </p>
                     )}
                   </div>

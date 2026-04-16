@@ -31,3 +31,15 @@ export function formatTime(value: string | Date | null | undefined): string {
   if (isNaN(d.getTime())) return String(value);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/**
+ * Trả về ngày local (VN) dạng YYYY-MM-DD.
+ * KHÔNG dùng toISOString() vì nó trả UTC — sai ngày từ 0:00–6:59 VN.
+ */
+export function getLocalDateISO(date?: Date): string {
+  const d = date ?? new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Chuyển Date object sang YYYY-MM-DD (local timezone) */
+export const toLocalDateISO = getLocalDateISO;

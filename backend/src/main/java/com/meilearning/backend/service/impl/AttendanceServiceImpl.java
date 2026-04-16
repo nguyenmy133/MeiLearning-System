@@ -485,7 +485,13 @@ public class AttendanceServiceImpl implements AttendanceService {
         } else {
             records = attendanceRepository.findByStudentId(studentId);
         }
-        return records.stream().map(sessionMapper::toAttendanceResponse).toList();
+        
+        // Draft/Sandbox Mode: Lọc bỏ các trạng thái "ABSENT" (vắng mặt auto) 
+        // nếu giáo viên chưa kết thúc (hoàn tất) buổi điểm danh.
+        return records.stream()
+                .filter(r -> !(r.getStatus() == AttendanceStatus.absent && r.getSession().getStatus() != SessionStatus.completed))
+                .map(sessionMapper::toAttendanceResponse)
+                .toList();
     }
 
     @Override

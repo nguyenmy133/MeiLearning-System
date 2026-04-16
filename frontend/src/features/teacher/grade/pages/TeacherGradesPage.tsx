@@ -228,14 +228,20 @@ export function TeacherGradesPage() {
 
   const handleSaveComment = () => {
     if (!editingStudent) return;
-    updateComment.mutate({
-      studentId: editingStudent.studentId,
-      classId: effectiveClassId,
-      comment: newComment.trim(),
-    });
-    setShowCommentDialog(false);
-    setEditingStudent(null);
-    setNewComment("");
+    updateComment.mutate(
+      {
+        studentId: editingStudent.studentId,
+        classId: effectiveClassId,
+        comment: newComment.trim(),
+      },
+      {
+        onSuccess: () => {
+          setShowCommentDialog(false);
+          setEditingStudent(null);
+          setNewComment("");
+        },
+      }
+    );
   };
 
   return (
@@ -611,12 +617,12 @@ export function TeacherGradesPage() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowCommentDialog(false)}>
+                <Button variant="outline" onClick={() => setShowCommentDialog(false)} disabled={updateComment.isPending}>
                   Hủy
                 </Button>
-                <Button onClick={handleSaveComment}>
+                <Button onClick={handleSaveComment} disabled={updateComment.isPending}>
                   <Save className="w-4 h-4 mr-2" />
-                  Lưu nhận xét
+                  {updateComment.isPending ? "Đang lưu..." : "Lưu nhận xét"}
                 </Button>
               </DialogFooter>
             </div>

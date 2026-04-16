@@ -5,7 +5,10 @@ import { getRescheduleRequests, createRescheduleRequest } from "../services";
 
 export const rescheduleKeys = {
     all: ["teacher-reschedule"] as const,
-    lists: (params?: RescheduleQueryParams) => [...rescheduleKeys.all, "list", params] as const,
+    lists: (params?: RescheduleQueryParams) =>
+        params !== undefined
+            ? [...rescheduleKeys.all, "list", params] as const
+            : [...rescheduleKeys.all, "list"] as const,
 };
 
 export function useRescheduleRequests(params?: RescheduleQueryParams) {

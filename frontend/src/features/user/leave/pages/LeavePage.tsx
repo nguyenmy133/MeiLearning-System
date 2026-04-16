@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { formatDateTime } from "@/lib/dateUtils";
+import { formatDateTime, getLocalDateISO } from "@/lib/dateUtils";
 import {
   Clock,
   Calendar,
@@ -49,13 +49,13 @@ import { toast } from "sonner";
 const WEEKDAY_LABELS = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 
 function getToday() {
-  return new Date().toISOString().split("T")[0];
+  return getLocalDateISO();
 }
 
 function getDateAfter(days: number) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return getLocalDateISO(d);
 }
 
 function formatSessionDate(dateStr: string) {

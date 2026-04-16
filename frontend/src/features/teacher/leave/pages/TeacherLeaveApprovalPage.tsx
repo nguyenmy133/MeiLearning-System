@@ -136,16 +136,25 @@ export function TeacherLeaveApprovalPage() {
 
   // ── Actions ──
   const handleApprove = (request: StudentLeaveRequest) => {
-    approveLeave.mutate(request.id);
-    setShowDetailDialog(false);
+    approveLeave.mutate(request.id, {
+      onSuccess: () => {
+        setShowDetailDialog(false);
+      },
+    });
   };
 
   const handleReject = () => {
     if (!selectedRequest || !rejectReason.trim()) return;
-    rejectLeave.mutate({ id: selectedRequest.id, dto: { rejectReason: rejectReason.trim() } });
-    setShowRejectDialog(false);
-    setShowDetailDialog(false);
-    setRejectReason("");
+    rejectLeave.mutate(
+      { id: selectedRequest.id, dto: { rejectReason: rejectReason.trim() } },
+      {
+        onSuccess: () => {
+          setShowRejectDialog(false);
+          setShowDetailDialog(false);
+          setRejectReason("");
+        },
+      }
+    );
   };
 
   const openDetail = (request: StudentLeaveRequest) => {
@@ -417,10 +426,11 @@ export function TeacherLeaveApprovalPage() {
                                           size="sm"
                                           className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                                           onClick={() => handleApprove(request)}
+                                          disabled={approveLeave.isPending}
                                         >
                                           <CheckCircle className="w-4 h-4 mr-1" />
                                           <span className="hidden sm:inline">
-                                            Duyệt
+                                            {approveLeave.isPending ? "Đang duyệt..." : "Duyệt"}
                                           </span>
                                         </Button>
                                         <Button
@@ -560,9 +570,10 @@ export function TeacherLeaveApprovalPage() {
                   <Button
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                     onClick={() => handleApprove(selectedRequest)}
+                    disabled={approveLeave.isPending}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Duyệt đơn
+                    {approveLeave.isPending ? "Đang duyệt..." : "Duyệt đơn"}
                   </Button>
                 </DialogFooter>
               )}
@@ -607,16 +618,16 @@ export function TeacherLeaveApprovalPage() {
                 />
               </div>
               <DialogFooter className="gap-2 sm:gap-0">
-                <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+                <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={rejectLeave.isPending}>
                   Hủy
                 </Button>
                 <Button
                   variant="destructive"
-                  disabled={!rejectReason.trim()}
+                  disabled={!rejectReason.trim() || rejectLeave.isPending}
                   onClick={handleReject}
                 >
                   <XCircle className="w-4 h-4 mr-2" />
-                  Xác nhận từ chối
+                  {rejectLeave.isPending ? "Đang xử lý..." : "Xác nhận từ chối"}
                 </Button>
               </DialogFooter>
             </div>

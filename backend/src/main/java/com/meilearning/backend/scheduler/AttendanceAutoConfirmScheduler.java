@@ -40,35 +40,42 @@ public class AttendanceAutoConfirmScheduler {
     private final ClassEnrollmentRepository enrollmentRepository;
     private final AttendanceQrTokenRepository qrTokenRepository;
 
+    private final com.meilearning.backend.service.NotificationDispatcher notificationDispatcher;
+
     private static final int GRACE_MINUTES = 5;
 
     @Scheduled(fixedRate = 5 * 60 * 1000) // mỗi 5 phút
     @Transactional
     public void autoConfirmExpiredSessions() {
         java.time.ZoneId vnZone = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
-        LocalDate today = LocalDate.now(vnZone);
-        LocalTime now = LocalTime.now(vnZone);
-
-        // Lấy tất cả session hôm nay còn upcoming
-        List<ClassSession> upcomingSessions = sessionRepository.findByDateAndStatus(today, SessionStatus.upcoming);
+        java.time.LocalDateTime currentDateTime = java.time.LocalDateTime.now(vnZone);
+        
+        // Lấy TẤT CẢ session có ngày <= hôm nay mà chưa được chốt (bao gồm cả hôm qua, hôm kia bị sót)
+        List<ClassSession> uncompletedSessions = sessionRepository.findByStatusAndDateLessThanEqual(
+                SessionStatus.upcoming, 
+                currentDateTime.toLocalDate()
+        );
 
         int confirmed = 0;
-        for (ClassSession session : upcomingSessions) {
-            // Chỉ chốt nếu đã quá endTime + GRACE_MINUTES
-            LocalTime deadline = session.getEndTime().plusMinutes(GRACE_MINUTES);
-            if (now.isBefore(deadline)) continue;
+        for (ClassSession session : uncompletedSessions) {
+            // Tính toán Deadline bằng LocalDateTime để tránh lỗi tràn giờ (wrap-around lúc nửa đêm)
+            java.time.LocalDateTime endDateTime = session.getDate().atTime(session.getEndTime());
+            java.time.LocalDateTime deadline = endDateTime.plusMinutes(GRACE_MINUTES);
+            
+            // Nếu thời điểm hiện tại VẪN CHƯA VƯỢT QUÁ deadline -> Bỏ qua
+            if (currentDateTime.isBefore(deadline)) {
+                continue;
+            }
 
-            // Lấy danh sách student enrolled
+            // Đã quá deadline -> Auto Chốt!
             Long classId = session.getClassEntity().getId();
             List<ClassEnrollment> enrollments = enrollmentRepository.findByClassEntityId(classId);
 
-            // Lấy student đã có record
             Set<Long> attendedStudentIds = attendanceRepository.findBySessionId(session.getId())
                     .stream()
                     .map(r -> r.getStudent().getId())
                     .collect(Collectors.toSet());
 
-            // Tạo absent record cho student chưa điểm danh
             for (ClassEnrollment enrollment : enrollments) {
                 Long studentId = enrollment.getStudent().getId();
                 if (!attendedStudentIds.contains(studentId)) {
@@ -80,14 +87,24 @@ public class AttendanceAutoConfirmScheduler {
                             .note("Tự động chốt - giáo viên không chốt")
                             .build();
                     attendanceRepository.save(absentRecord);
+
+                    // Gửi thông báo khẩn ngay khi auto-confirm (tương tự như hành động manual)
+                    if (enrollment.getStudent().getUser() != null) {
+                        String className = session.getClassEntity() != null ? session.getClassEntity().getName() : "";
+                        notificationDispatcher.notifyUrgent(
+                                enrollment.getStudent().getUser(),
+                                "absence",
+                                "Thông báo vắng học",
+                                "Học viên " + enrollment.getStudent().getUser().getName() 
+                                        + " vắng buổi học ngày " + session.getDate() 
+                                        + " - Lớp " + className
+                        );
+                    }
                 }
             }
 
-            // Chốt session
             session.setStatus(SessionStatus.completed);
             sessionRepository.save(session);
-
-            // Deactivate QR tokens
             qrTokenRepository.deactivateBySessionId(session.getId());
 
             log.info("Auto-confirmed session id={}, class='{}', date={}, endTime={}",

@@ -341,22 +341,31 @@ export function UserDashboard() {
                       </div>
                       {(() => {
                         const status = sess.attendanceStatus?.toLowerCase();
+                        
+                        if (sess.canCheckIn) {
+                          // Within check-in window → show QR button
+                          return (
+                            <div className="flex flex-col gap-2 items-start mt-1">
+                              {status === "absent" && (
+                                <Badge variant="outline" className="text-[10px] w-fit text-red-600 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-700 dark:bg-red-900/30">
+                                  Vắng không phép
+                                </Badge>
+                              )}
+                              <Button size="sm" className="h-8 text-xs font-medium gap-1.5" onClick={() => handleCheckIn(sess.className, sess.id)}>
+                                <QrCode className="w-3.5 h-3.5" />
+                                {status === "absent" ? "Quét mã bổ sung" : "Điểm danh QR"}
+                              </Button>
+                            </div>
+                          );
+                        }
+
                         if (status) {
                           // Has attendance record → show status badge
                           const config = status === "present" ? { cls: "text-green-600 border-green-300 bg-green-50 dark:text-green-400 dark:border-green-700 dark:bg-green-900/30", label: "✓ Đã có mặt" }
                             : status === "absent_excused" ? { cls: "text-blue-600 border-blue-300 bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:bg-blue-900/30", label: "Nghỉ có phép" }
                             : status === "late" ? { cls: "text-yellow-600 border-yellow-300 bg-yellow-50 dark:text-yellow-400 dark:border-yellow-700 dark:bg-yellow-900/30", label: "Đi muộn" }
                             : { cls: "text-red-600 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-700 dark:bg-red-900/30", label: "Vắng không phép" };
-                          return <Badge variant="outline" className={`text-xs w-fit ${config.cls}`}>{config.label}</Badge>;
-                        }
-                        if (sess.canCheckIn) {
-                          // Within check-in window → show QR button
-                          return (
-                            <Button size="sm" className="h-8 text-xs font-medium gap-1.5" onClick={() => handleCheckIn(sess.className, sess.id)}>
-                              <QrCode className="w-3.5 h-3.5" />
-                              Điểm danh QR
-                            </Button>
-                          );
+                          return <Badge variant="outline" className={`text-xs w-fit mt-1 ${config.cls}`}>{config.label}</Badge>;
                         }
                         // Check if session already ended
                         const now = new Date();

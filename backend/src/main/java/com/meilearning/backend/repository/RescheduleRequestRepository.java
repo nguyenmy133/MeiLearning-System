@@ -11,13 +11,13 @@ public interface RescheduleRequestRepository
 
         extends JpaRepository<RescheduleRequest, Long>, JpaSpecificationExecutor<RescheduleRequest> {
 
-    List<RescheduleRequest> findByTeacherId(Long teacherId);
+    List<RescheduleRequest> findByTeacherIdOrderByCreatedAtDesc(Long teacherId);
 
-    List<RescheduleRequest> findByClassEntityId(Long classId);
+    List<RescheduleRequest> findByClassEntityIdOrderByCreatedAtDesc(Long classId);
 
-    List<RescheduleRequest> findByStatus(RequestStatus status);
+    List<RescheduleRequest> findByStatusOrderByCreatedAtDesc(RequestStatus status);
 
-    List<RescheduleRequest> findByTeacherIdAndStatus(Long teacherId, RequestStatus status);
+    List<RescheduleRequest> findByTeacherIdAndStatusOrderByCreatedAtDesc(Long teacherId, RequestStatus status);
 
     long countByStatus(RequestStatus status);
 

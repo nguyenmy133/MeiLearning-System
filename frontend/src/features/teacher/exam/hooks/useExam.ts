@@ -20,7 +20,10 @@ import {
 
 export const examKeys = {
     all: ["teacher-exams"] as const,
-    lists: (params?: ExamQueryParams) => [...examKeys.all, "list", params] as const,
+    lists: (params?: ExamQueryParams) => 
+        params !== undefined 
+            ? [...examKeys.all, "list", params] as const
+            : [...examKeys.all, "list"] as const,
     detail: (id: number) => [...examKeys.all, "detail", id] as const,
     stats: () => [...examKeys.all, "stats"] as const,
 };

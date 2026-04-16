@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,11 +56,10 @@ export function TeacherStudentExamResult() {
   );
   const gradeMutation = useGradeEssay();
 
-  // Essay grading state: { [answerDetailId]: { score, comment } }
-  const [essayGrades, setEssayGrades] = useState<
+  // Essay grading state: { [answerDetailId]: { score, comment } } (Drafts only)
+  const [draftGrades, setDraftGrades] = useState<
     Record<number, { score: string; comment: string }>
   >({});
-  const [hasInitialized, setHasInitialized] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Count essay questions needing grading
@@ -69,22 +68,12 @@ export function TeacherStudentExamResult() {
   const hasEssayQuestions = essayAnswers.length > 0;
   const allEssaysGraded = hasEssayQuestions && ungradedCount === 0;
 
-  // Initialize essay grades from existing data
-  if (!hasInitialized && answerDetails.length > 0) {
-    const initial: Record<number, { score: string; comment: string }> = {};
-    for (const detail of answerDetails) {
-      if (detail.questionType === "essay") {
-        initial[detail.id] = {
-          score: detail.essayScore != null ? String(detail.essayScore) : "",
-          comment: detail.teacherComment ?? "",
-        };
-      }
+  // Auto-open edit mode if there are ungraded essays initially
+  useEffect(() => {
+    if (ungradedCount > 0 && answerDetails.length > 0) {
+      setIsEditMode(true);
     }
-    setEssayGrades(initial);
-    setHasInitialized(true);
-    // Auto-open edit mode if there are ungraded essays
-    if (ungradedCount > 0) setIsEditMode(true);
-  }
+  }, [ungradedCount, answerDetails.length]);
 
   const isLoading = isLoadingInfo || isLoadingResult || isLoadingAnswers;
 
@@ -92,38 +81,46 @@ export function TeacherStudentExamResult() {
   const isGradingActive = hasEssayQuestions && (isEditMode || !allEssaysGraded);
 
   const updateEssayGrade = (detailId: number, field: "score" | "comment", value: string) => {
-    setEssayGrades((prev) => ({
-      ...prev,
-      [detailId]: {
-        ...prev[detailId],
-        [field]: value,
-      },
-    }));
+    setDraftGrades((prev) => {
+      // Find server fallback if draft doesn't exist yet
+      const detail = answerDetails.find((d: any) => d.id === detailId);
+      const base = prev[detailId] || {
+        score: detail?.essayScore != null ? String(detail.essayScore) : "",
+        comment: detail?.teacherComment ?? "",
+      };
+
+      return {
+        ...prev,
+        [detailId]: {
+          ...base,
+          [field]: value,
+        },
+      };
+    });
   };
 
   const handleCancelEdit = () => {
-    // Reset to original values from server data
-    const original: Record<number, { score: string; comment: string }> = {};
-    for (const detail of answerDetails) {
-      if (detail.questionType === "essay") {
-        original[detail.id] = {
-          score: detail.essayScore != null ? String(detail.essayScore) : "",
-          comment: detail.teacherComment ?? "",
-        };
-      }
-    }
-    setEssayGrades(original);
+    setDraftGrades({});
     setIsEditMode(false);
   };
 
   const handleSaveGrades = () => {
-    const grades = Object.entries(essayGrades)
-      .filter(([, val]) => val.score !== "")
-      .map(([id, val]) => ({
-        answerDetailId: Number(id),
-        score: Number(val.score),
-        comment: val.comment,
-      }));
+    const grades = [];
+    for (const detail of answerDetails) {
+      if (detail.questionType === "essay") {
+        const draft = draftGrades[detail.id];
+        const finalScore = draft != null ? draft.score : (detail.essayScore != null ? String(detail.essayScore) : "");
+        const finalComment = draft != null ? draft.comment : (detail.teacherComment ?? "");
+        
+        if (finalScore !== "") {
+          grades.push({
+            answerDetailId: detail.id,
+            score: Number(finalScore),
+            comment: finalComment,
+          });
+        }
+      }
+    }
 
     if (grades.length === 0) return;
 
@@ -145,7 +142,10 @@ export function TeacherStudentExamResult() {
       },
       {
         onSuccess: () => {
-          navigate(`/teacher/exams/results/${examId}`);
+          setDraftGrades({});
+          setIsEditMode(false);
+          toast.success("Đã cập nhật điểm tự luận thành công");
+          // Not navigating away, so teacher can see the updated score instantly!
         },
       }
     );
@@ -549,9 +549,18 @@ export function TeacherStudentExamResult() {
                                 min={0}
                                 max={detail.maxPoints ?? 1}
                                 placeholder="Nhập điểm"
-                                value={essayGrades[detail.id]?.score ?? ""}
+                                value={draftGrades[detail.id]?.score ?? (detail.essayScore != null ? String(detail.essayScore) : "")}
                                 onChange={(e) => updateEssayGrade(detail.id, "score", e.target.value)}
-                                onBlur={(e) => { if (e.target.value) { const v = String(Number(e.target.value) || 0); updateEssayGrade(detail.id, "score", v); } }}
+                                onBlur={(e) => { 
+                                  if (e.target.value) { 
+                                    const min = 0;
+                                    const max = detail.maxPoints ?? 1;
+                                    let vNum = Number(e.target.value) || 0;
+                                    if (vNum < min) vNum = min;
+                                    if (vNum > max) vNum = max;
+                                    updateEssayGrade(detail.id, "score", String(vNum)); 
+                                  } 
+                                }}
                                 className="h-9"
                               />
                             </div>
@@ -561,7 +570,7 @@ export function TeacherStudentExamResult() {
                               </Label>
                               <Textarea
                                 placeholder="Nhập nhận xét cho câu trả lời..."
-                                value={essayGrades[detail.id]?.comment ?? ""}
+                                value={draftGrades[detail.id]?.comment ?? (detail.teacherComment ?? "")}
                                 onChange={(e) => updateEssayGrade(detail.id, "comment", e.target.value)}
                                 rows={3}
                                 className="resize-y"

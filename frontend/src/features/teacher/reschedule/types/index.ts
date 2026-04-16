@@ -15,9 +15,9 @@ export interface RescheduleRequest {
     reason: string;
     status: RescheduleStatus;
     createdAt: string;
-    approvedBy?: string;
-    approvedAt?: string;
-    rejectedReason?: string;
+    reviewedBy?: string;
+    reviewedAt?: string;
+    rejectReason?: string;
 }
 
 export interface CreateRescheduleDTO {

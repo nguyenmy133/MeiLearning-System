@@ -127,12 +127,9 @@ public class RescheduleServiceImpl implements RescheduleService {
     @Override
     @Transactional(readOnly = true)
     public List<RescheduleRequestResponse> getAll(String status) {
-
         List<RescheduleRequest> list = status != null
-
-                ? rescheduleRepository.findByStatus(RequestStatus.valueOf(status))
-
-                : rescheduleRepository.findAll();
+                ? rescheduleRepository.findByStatusOrderByCreatedAtDesc(RequestStatus.valueOf(status))
+                : rescheduleRepository.findAll(Sort.by("createdAt").descending());
 
         return list.stream().map(mapper::toRescheduleResponse).toList();
 
@@ -142,7 +139,7 @@ public class RescheduleServiceImpl implements RescheduleService {
     @Transactional(readOnly = true)
     public List<RescheduleRequestResponse> getByTeacher(Long teacherId) {
 
-        return rescheduleRepository.findByTeacherId(teacherId).stream()
+        return rescheduleRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId).stream()
                 .map(mapper::toRescheduleResponse).toList();
 
     }
@@ -281,7 +278,7 @@ public class RescheduleServiceImpl implements RescheduleService {
     public List<RescheduleRequestResponse> getByTeacherUsername(String username) {
         Teacher teacher = teacherRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found: " + username));
-        return rescheduleRepository.findByTeacherId(teacher.getId())
+        return rescheduleRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.getId())
                 .stream().map(mapper::toRescheduleResponse).toList();
     }
 

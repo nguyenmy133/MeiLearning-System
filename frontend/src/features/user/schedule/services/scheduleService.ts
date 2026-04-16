@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { getLocalDateISO } from "@/lib/dateUtils";
 import type { ClassInfo, ClassSession } from "../types";
 
 const WEEKDAY_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -64,7 +65,7 @@ export async function getMySchedule(startDate?: string, endDate?: string): Promi
 
 /** Get today's sessions — uses JWT-resolved /me endpoint */
 export async function getTodaySessions(): Promise<ClassSession[]> {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateISO();
   const { data } = await apiClient.get("/schedule/student/me", {
     params: { view: "day", date: today },
   });
@@ -85,15 +86,16 @@ export async function getStudentSchedule(_studentId: number, _params?: { date?: 
  * Computes canCheckIn on FE side since BE doesn't provide it.
  */
 function mapBackendSession(raw: any): ClassSession {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateISO();
   const isToday = raw.date === today;
   const isUpcoming = raw.status === "upcoming";
   const hasAttendance = !!raw.attendanceStatus;
+  const isAbsent = raw.attendanceStatus?.toLowerCase() === "absent";
 
-  // Compute canCheckIn: session is today, upcoming, not yet attended,
+  // Compute canCheckIn: session is today, upcoming, not yet attended (or marked absent by timeout),
   // and current time is within [startTime - 15min, endTime]
   let canCheckIn = false;
-  if (isToday && isUpcoming && !hasAttendance && raw.startTime && raw.endTime) {
+  if (isToday && isUpcoming && (!hasAttendance || isAbsent) && raw.startTime && raw.endTime) {
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 

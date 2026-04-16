@@ -6,7 +6,9 @@ import { getClassGrades, getGradeStats, updateComment } from "../services";
 export const gradeKeys = {
     all: ["teacher-grades"] as const,
     list: (classId: number, params?: GradeQueryParams) =>
-        [...gradeKeys.all, "list", classId, params] as const,
+        params !== undefined
+            ? [...gradeKeys.all, "list", classId, params] as const
+            : [...gradeKeys.all, "list", classId] as const,
     stats: (classId: number) => [...gradeKeys.all, "stats", classId] as const,
 };
 

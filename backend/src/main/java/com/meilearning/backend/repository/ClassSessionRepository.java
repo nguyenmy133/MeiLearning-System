@@ -27,6 +27,9 @@ public interface ClassSessionRepository
     /** Lấy sessions theo ngày + trạng thái (dùng cho auto-confirm scheduler) */
     List<ClassSession> findByDateAndStatus(LocalDate date, SessionStatus status);
 
+    /** Lấy sessions TỪ TRƯỚC TỚI NAY (vượt qua rào cản ngày mới) theo trạng thái */
+    List<ClassSession> findByStatusAndDateLessThanEqual(SessionStatus status, LocalDate date);
+
     long countByClassEntityId(Long classId);
 
     long countByClassEntityIdAndStatus(Long classId, SessionStatus status);
