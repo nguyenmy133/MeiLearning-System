@@ -54,7 +54,11 @@ const formatCountdown = (diffMin: number): string => {
 
 type SessionTimeStatus = "ongoing" | "done" | "upcoming";
 
-function getTimeStatus(startTime: string, endTime: string, nowMin: number): SessionTimeStatus {
+function getTimeStatus(
+  startTime: string,
+  endTime: string,
+  nowMin: number,
+): SessionTimeStatus {
   const startMin = toMinutes(startTime);
   const endMin = toMinutes(endTime);
   if (nowMin >= startMin && nowMin <= endMin) return "ongoing";
@@ -62,7 +66,11 @@ function getTimeStatus(startTime: string, endTime: string, nowMin: number): Sess
   return "upcoming";
 }
 
-function getProgressPercent(startTime: string, endTime: string, nowMin: number): number {
+function getProgressPercent(
+  startTime: string,
+  endTime: string,
+  nowMin: number,
+): number {
   const startMin = toMinutes(startTime);
   const endMin = toMinutes(endTime);
   if (nowMin <= startMin) return 0;
@@ -86,7 +94,11 @@ function formatRelativeTime(dateStr: string): string {
 function isLateRequestTask(label: string, sub: string, type: string): boolean {
   if (type === "late") return true;
   const text = `${label} ${sub}`.toLowerCase();
-  return text.includes("đi muộn") || text.includes("xin muộn") || text.includes("late");
+  return (
+    text.includes("đi muộn") ||
+    text.includes("xin muộn") ||
+    text.includes("late")
+  );
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -124,7 +136,8 @@ export function TeacherDashboard() {
   const { user } = useAuth();
   const { data: sessions = [], isLoading } = useTeacherSchedule();
 
-  const { data: pendingTasks = [], isLoading: isTasksLoading } = usePendingTasks();
+  const { data: pendingTasks = [], isLoading: isTasksLoading } =
+    usePendingTasks();
 
   const now = new Date();
   const todayIndex = jsDay2Index(now.getDay());
@@ -135,17 +148,22 @@ export function TeacherDashboard() {
     .filter((s) => jsDay2Index(new Date(s.date).getDay()) === todayIndex)
     .sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
 
-  const todaySessionIds = todaySessions.map(s => Number(s.id));
+  const todaySessionIds = todaySessions.map((s) => Number(s.id));
 
-  const { data: attendanceStats, isLoading: isStatsLoading } = useTodayAttendanceStats(todaySessionIds);
-  const { data: exams = [], isLoading: isExamsLoading } = useTeacherExamsForDashboard();
-  const { data: notifications = [], isLoading: isNotiLoading } = useRecentNotifications();
+  const { data: attendanceStats, isLoading: isStatsLoading } =
+    useTodayAttendanceStats(todaySessionIds);
+  const { data: exams = [], isLoading: isExamsLoading } =
+    useTeacherExamsForDashboard();
+  const { data: notifications = [], isLoading: isNotiLoading } =
+    useRecentNotifications();
 
   const todayStudents = todaySessions.reduce((sum, s) => sum + s.students, 0);
 
   // Next session
   const nextSession = todaySessions.find((s) => toMinutes(s.endTime) > nowMin);
-  const nextSessionDiff = nextSession ? toMinutes(nextSession.startTime) - nowMin : null;
+  const nextSessionDiff = nextSession
+    ? toMinutes(nextSession.startTime) - nowMin
+    : null;
   const nextSessionLabel = nextSession
     ? nextSessionDiff !== null && nextSessionDiff <= 0
       ? `${nextSession.className} — Đang diễn ra`
@@ -154,12 +172,20 @@ export function TeacherDashboard() {
 
   // Exam stats
   const ongoingExams = exams.filter((e) => e.status === "ongoing");
-  const upcomingExams = exams.filter((e) => e.status === "upcoming" || e.status === "published");
+  const upcomingExams = exams.filter(
+    (e) => e.status === "upcoming" || e.status === "published",
+  );
   const activeExamCount = ongoingExams.length + upcomingExams.length;
 
   // Exams sắp hết hạn (endTime trong 48h tới)
   const expiringExams = exams.filter((e) => {
-    if (!e.endTime || e.status === "ended" || e.status === "archived" || e.status === "draft") return false;
+    if (
+      !e.endTime ||
+      e.status === "ended" ||
+      e.status === "archived" ||
+      e.status === "draft"
+    )
+      return false;
     const endDate = new Date(e.endTime);
     const hoursLeft = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60);
     return hoursLeft > 0 && hoursLeft <= 48;
@@ -173,7 +199,9 @@ export function TeacherDashboard() {
   const attLate = attendanceStats?.late ?? 0;
 
   const urgentCount = pendingTasks.filter((t) => t.urgent).length;
-  const lateRequestTaskCount = pendingTasks.filter((t) => isLateRequestTask(t.label, t.sub, t.type)).length;
+  const lateRequestTaskCount = pendingTasks.filter((t) =>
+    isLateRequestTask(t.label, t.sub, t.type),
+  ).length;
 
   // Show full skeleton while essential data loads
   if (isLoading && isTasksLoading && isStatsLoading) {
@@ -184,13 +212,15 @@ export function TeacherDashboard() {
     <div className="space-y-4 sm:space-y-6">
       {/* ── 1. Greeting Banner ── */}
       <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-4 sm:p-6 text-primary-foreground">
-        <h2 className="text-xl sm:text-2xl font-display font-bold mb-1">Chào mừng, {user?.name ?? "Giáo viên"}!</h2>
+        <h2 className="text-xl sm:text-2xl font-display font-bold mb-1">
+          Chào mừng, {user?.name ?? "Giáo viên"}!
+        </h2>
         <p className="opacity-90">
           {isLoading
             ? "Đang tải lịch dạy..."
             : todaySessions.length > 0
-            ? `Hôm nay bạn có ${todaySessions.length} lớp cần dạy. Chúc buổi giảng dạy thành công!`
-            : "Hôm nay bạn không có lớp. Hãy nghỉ ngơi và chuẩn bị cho buổi sau!"}
+              ? `Hôm nay bạn có ${todaySessions.length} lớp cần dạy. Chúc buổi giảng dạy thành công!`
+              : "Hôm nay bạn không có lớp. Hãy nghỉ ngơi và chuẩn bị cho buổi sau!"}
         </p>
         {urgentCount > 0 && (
           <p className="opacity-80 text-sm mt-1">
@@ -209,7 +239,9 @@ export function TeacherDashboard() {
                 <Calendar className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{isLoading ? "—" : todaySessions.length}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? "—" : todaySessions.length}
+                </p>
                 <p className="text-xs text-muted-foreground">Lớp hôm nay</p>
               </div>
             </div>
@@ -227,7 +259,9 @@ export function TeacherDashboard() {
                 <p className="text-sm font-bold truncate leading-tight">
                   {isLoading ? "—" : nextSessionLabel}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Buổi tiếp theo</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Buổi tiếp theo
+                </p>
               </div>
             </div>
           </CardContent>
@@ -251,7 +285,10 @@ export function TeacherDashboard() {
         </Card>
 
         {/* Card 4: Bài thi đang mở */}
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate("/teacher/exams")}>
+        <Card
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => navigate("/teacher/exams")}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
@@ -271,20 +308,48 @@ export function TeacherDashboard() {
       {/* ── 3. Quick Actions ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { icon: QrCode, label: "Điểm danh", href: "/teacher/attendance", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
-          { icon: FileCheck, label: "Tạo bài thi", href: "/teacher/exams", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" },
-          { icon: Upload, label: "Upload tài liệu", href: "/teacher/documents", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" },
-          { icon: BarChart3, label: "Điểm & nhận xét", href: "/teacher/grades", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" },
+          {
+            icon: QrCode,
+            label: "Điểm danh",
+            href: "/teacher/attendance",
+            color:
+              "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
+          },
+          {
+            icon: FileCheck,
+            label: "Tạo bài thi",
+            href: "/teacher/exams",
+            color:
+              "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+          },
+          {
+            icon: Upload,
+            label: "Upload tài liệu",
+            href: "/teacher/documents",
+            color:
+              "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
+          },
+          {
+            icon: BarChart3,
+            label: "Điểm & nhận xét",
+            href: "/teacher/grades",
+            color:
+              "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
+          },
         ].map((action) => (
           <button
             key={action.href}
             onClick={() => navigate(action.href)}
             className="flex items-center gap-2 sm:gap-3 p-3 sm:p-3.5 rounded-xl bg-card border border-border hover:bg-accent hover:shadow-md transition-all group min-h-[44px]"
           >
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.color}`}>
+            <div
+              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.color}`}
+            >
               <action.icon className="w-4 h-4" />
             </div>
-            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{action.label}</span>
+            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+              {action.label}
+            </span>
           </button>
         ))}
       </div>
@@ -318,10 +383,16 @@ export function TeacherDashboard() {
                 <div className="absolute left-[18px] top-4 bottom-4 w-0.5 bg-border" />
 
                 {todaySessions.map((cls, idx) => {
-                  const status = getTimeStatus(cls.startTime, cls.endTime, nowMin);
+                  const status = getTimeStatus(
+                    cls.startTime,
+                    cls.endTime,
+                    nowMin,
+                  );
                   const isOngoing = status === "ongoing";
                   const isDone = status === "done";
-                  const progress = isOngoing ? getProgressPercent(cls.startTime, cls.endTime, nowMin) : 0;
+                  const progress = isOngoing
+                    ? getProgressPercent(cls.startTime, cls.endTime, nowMin)
+                    : 0;
 
                   return (
                     <div
@@ -330,8 +401,8 @@ export function TeacherDashboard() {
                         isOngoing
                           ? "bg-primary/5 border border-primary/20"
                           : isDone
-                          ? "opacity-60"
-                          : ""
+                            ? "opacity-60"
+                            : ""
                       }`}
                       onClick={() => navigate("/teacher/attendance")}
                     >
@@ -342,8 +413,8 @@ export function TeacherDashboard() {
                             isOngoing
                               ? "bg-primary border-primary animate-pulse"
                               : isDone
-                              ? "bg-muted-foreground/40 border-muted-foreground/40"
-                              : "bg-background border-primary/50"
+                                ? "bg-muted-foreground/40 border-muted-foreground/40"
+                                : "bg-background border-primary/50"
                           }`}
                         />
                       </div>
@@ -351,12 +422,19 @@ export function TeacherDashboard() {
                       {/* Content */}
                       <div className="flex-1 min-w-0 space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-semibold text-foreground text-sm">{cls.className}</h4>
-                          <Badge variant="secondary" className="text-[11px] px-1.5 py-0">
+                          <h4 className="font-semibold text-foreground text-sm">
+                            {cls.className}
+                          </h4>
+                          <Badge
+                            variant="secondary"
+                            className="text-[11px] px-1.5 py-0"
+                          >
                             {cls.room}
                           </Badge>
                           {isOngoing && (
-                            <Badge className="text-[11px] bg-primary animate-pulse px-1.5 py-0">Đang diễn ra</Badge>
+                            <Badge className="text-[11px] bg-primary animate-pulse px-1.5 py-0">
+                              Đang diễn ra
+                            </Badge>
                           )}
                           {isDone && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0 rounded-full border bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400">
@@ -374,21 +452,28 @@ export function TeacherDashboard() {
 
                         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {cls.startTime}–{cls.endTime}
+                            <Clock className="w-3 h-3" /> {cls.startTime}–
+                            {cls.endTime}
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" /> {cls.room}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" /> {cls.students} học viên
+                            <Users className="w-3 h-3" /> {cls.students} học
+                            viên
                           </span>
                         </div>
 
                         {/* Progress bar for ongoing session */}
                         {isOngoing && (
                           <div className="flex items-center gap-2">
-                            <Progress value={progress} className="h-1.5 flex-1" />
-                            <span className="text-[11px] text-muted-foreground shrink-0">{progress}%</span>
+                            <Progress
+                              value={progress}
+                              className="h-1.5 flex-1"
+                            />
+                            <span className="text-[11px] text-muted-foreground shrink-0">
+                              {progress}%
+                            </span>
                           </div>
                         )}
                       </div>
@@ -429,19 +514,38 @@ export function TeacherDashboard() {
                       /{attTotal}
                     </span>
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">Học viên có mặt</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Học viên có mặt
+                  </p>
                   <Progress value={attRate} className="mt-3 h-2" />
                   <p className="text-xs text-muted-foreground mt-1">
                     Tỉ lệ:{" "}
-                    <span className="font-semibold text-primary">{attRate}%</span>
+                    <span className="font-semibold text-primary">
+                      {attRate}%
+                    </span>
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   {[
-                    { icon: UserCheck, label: "Có mặt", value: attPresent, color: "text-primary" },
-                    { icon: Clock, label: "Đi muộn", value: attLate, color: "text-amber-500" },
-                    { icon: UserX, label: "Vắng mặt", value: attAbsent, color: "text-destructive" },
+                    {
+                      icon: UserCheck,
+                      label: "Có mặt",
+                      value: attPresent,
+                      color: "text-primary",
+                    },
+                    {
+                      icon: Clock,
+                      label: "Đi muộn",
+                      value: attLate,
+                      color: "text-amber-500",
+                    },
+                    {
+                      icon: UserX,
+                      label: "Vắng mặt",
+                      value: attAbsent,
+                      color: "text-destructive",
+                    },
                   ].map((item) => (
                     <div
                       key={item.label}
@@ -449,9 +553,13 @@ export function TeacherDashboard() {
                     >
                       <div className="flex items-center gap-2">
                         <item.icon className={`w-4 h-4 ${item.color}`} />
-                        <span className="text-sm text-foreground">{item.label}</span>
+                        <span className="text-sm text-foreground">
+                          {item.label}
+                        </span>
                       </div>
-                      <span className={`text-sm font-semibold ${item.color}`}>{item.value}</span>
+                      <span className={`text-sm font-semibold ${item.color}`}>
+                        {item.value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -489,26 +597,36 @@ export function TeacherDashboard() {
               </div>
             ) : pendingTasks.length > 0 ? (
               pendingTasks.map((task) => {
-                const lateTask = isLateRequestTask(task.label, task.sub, task.type);
+                const lateTask = isLateRequestTask(
+                  task.label,
+                  task.sub,
+                  task.type,
+                );
                 return (
                   <div
                     key={task.id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-accent/40 hover:bg-accent transition-colors cursor-pointer group"
                     onClick={() => navigate(task.href)}
                   >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${task.badgeClass}`}>
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${task.badgeClass}`}
+                    >
                       <task.icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{task.label}</p>
+                        <p className="text-sm font-semibold text-foreground">
+                          {task.label}
+                        </p>
                         {lateTask && (
                           <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border border-orange-200">
                             Cần duyệt sớm
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{task.sub}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {task.sub}
+                      </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                   </div>
@@ -517,7 +635,9 @@ export function TeacherDashboard() {
             ) : (
               <div className="text-center py-6">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Tất cả việc đã xong!</p>
+                <p className="text-sm text-muted-foreground">
+                  Tất cả việc đã xong!
+                </p>
               </div>
             )}
           </CardContent>
@@ -555,17 +675,23 @@ export function TeacherDashboard() {
                     <div
                       key={exam.id}
                       className={`flex items-start gap-3 p-3 rounded-lg transition-colors cursor-pointer hover:bg-accent ${
-                        isOngoing ? "bg-primary/5 border border-primary/20" : "bg-accent/40"
+                        isOngoing
+                          ? "bg-primary/5 border border-primary/20"
+                          : "bg-accent/40"
                       }`}
                       onClick={() => navigate(`/teacher/exams`)}
                     >
                       <div
                         className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                          isOngoing ? "bg-primary animate-pulse" : "bg-amber-400"
+                          isOngoing
+                            ? "bg-primary animate-pulse"
+                            : "bg-amber-400"
                         }`}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{exam.title}</p>
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {exam.title}
+                        </p>
                         <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                           <Badge
                             className={`text-[10px] px-1.5 py-0 border-0 ${
@@ -578,13 +704,12 @@ export function TeacherDashboard() {
                           </Badge>
                           {isOngoing && (
                             <span>
-                              {exam.completedStudents}/{exam.totalStudents} đã nộp
+                              {exam.completedStudents}/{exam.totalStudents} đã
+                              nộp
                             </span>
                           )}
                           {!isOngoing && exam.startTime && (
-                            <span>
-                              {formatDateTime(exam.startTime)}
-                            </span>
+                            <span>{formatDateTime(exam.startTime)}</span>
                           )}
                         </div>
                       </div>
@@ -594,7 +719,9 @@ export function TeacherDashboard() {
             ) : (
               <div className="text-center py-6">
                 <BookOpen className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Không có bài thi đang mở</p>
+                <p className="text-sm text-muted-foreground">
+                  Không có bài thi đang mở
+                </p>
               </div>
             )}
           </CardContent>
@@ -631,7 +758,9 @@ export function TeacherDashboard() {
                 <div
                   key={noti.id}
                   className={`flex items-start gap-3 p-3 rounded-lg transition-colors cursor-pointer hover:bg-accent ${
-                    !noti.read ? "bg-primary/5 border-l-2 border-l-primary" : "bg-accent/30"
+                    !noti.read
+                      ? "bg-primary/5 border-l-2 border-l-primary"
+                      : "bg-accent/30"
                   }`}
                   onClick={() => navigate("/teacher/notifications")}
                 >
@@ -640,10 +769,10 @@ export function TeacherDashboard() {
                       noti.type === "schedule"
                         ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : noti.type === "payment"
-                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                        : noti.type === "document"
-                        ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                        : "bg-primary/10 text-primary"
+                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                          : noti.type === "document"
+                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                            : "bg-primary/10 text-primary"
                     }`}
                   >
                     {noti.type === "schedule" ? (
@@ -655,10 +784,14 @@ export function TeacherDashboard() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm truncate ${!noti.read ? "font-semibold text-foreground" : "text-foreground/80"}`}>
+                    <p
+                      className={`text-sm truncate ${!noti.read ? "font-semibold text-foreground" : "text-foreground/80"}`}
+                    >
                       {noti.title}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{noti.content}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {noti.content}
+                    </p>
                     <p className="text-[11px] text-muted-foreground/60 mt-0.5">
                       {noti.date ? formatRelativeTime(noti.date) : noti.time}
                     </p>
@@ -671,7 +804,9 @@ export function TeacherDashboard() {
             ) : (
               <div className="text-center py-6">
                 <Bell className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Không có thông báo mới</p>
+                <p className="text-sm text-muted-foreground">
+                  Không có thông báo mới
+                </p>
               </div>
             )}
           </CardContent>
@@ -703,14 +838,21 @@ export function TeacherDashboard() {
             ) : expiringExams.length > 0 ? (
               expiringExams.slice(0, 4).map((exam) => {
                 const endDate = new Date(exam.endTime);
-                const hoursLeft = Math.max(0, Math.round((endDate.getTime() - now.getTime()) / (1000 * 60 * 60)));
+                const hoursLeft = Math.max(
+                  0,
+                  Math.round(
+                    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60),
+                  ),
+                );
                 const isUrgent = hoursLeft <= 6;
 
                 return (
                   <div
                     key={exam.id}
                     className={`flex items-start gap-3 p-3 rounded-lg transition-colors cursor-pointer hover:bg-accent ${
-                      isUrgent ? "bg-destructive/5 border border-destructive/20" : "bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30"
+                      isUrgent
+                        ? "bg-destructive/5 border border-destructive/20"
+                        : "bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30"
                     }`}
                     onClick={() => navigate("/teacher/exams")}
                   >
@@ -724,7 +866,9 @@ export function TeacherDashboard() {
                       <Timer className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{exam.title}</p>
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {exam.title}
+                      </p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <Badge
                           className={`text-[10px] px-1.5 py-0 border-0 ${
@@ -733,7 +877,9 @@ export function TeacherDashboard() {
                               : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
                           }`}
                         >
-                          {isUrgent ? `⚠️ Còn ${hoursLeft}h` : `Còn ${hoursLeft}h`}
+                          {isUrgent
+                            ? `⚠️ Còn ${hoursLeft}h`
+                            : `Còn ${hoursLeft}h`}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {exam.completedStudents}/{exam.totalStudents} đã nộp
@@ -746,7 +892,9 @@ export function TeacherDashboard() {
             ) : (
               <div className="text-center py-6">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Không có bài thi nào sắp hết hạn</p>
+                <p className="text-sm text-muted-foreground">
+                  Không có bài thi nào sắp hết hạn
+                </p>
               </div>
             )}
           </CardContent>
