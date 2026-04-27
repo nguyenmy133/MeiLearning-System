@@ -79,8 +79,7 @@ public class TuitionServiceImpl implements TuitionService {
         SessionBreakdown breakdown = calculateSessionBreakdown(student.getId(), classEntity.getId(), request.getMonth());
 
         long pricePerSession = classEntity.getPricePerSession();
-        long totalAmount = breakdown.billable() * pricePerSession;
-        long discount = request.getDiscountAmount() != null ? request.getDiscountAmount() : 0L;
+        long totalAmount = (long) breakdown.billable() * pricePerSession;
 
         TuitionInvoice invoice = TuitionInvoice.builder()
                 .student(student)
@@ -94,8 +93,6 @@ public class TuitionServiceImpl implements TuitionService {
                 .absentExcusedSessions(breakdown.absentExcused())
                 .pricePerSession(pricePerSession)
                 .totalAmount(totalAmount)
-                .discountAmount(discount)
-                .discountReason(request.getDiscountReason())
                 .dueDate(calculateDueDate(request.getMonth()))
                 .build();
 

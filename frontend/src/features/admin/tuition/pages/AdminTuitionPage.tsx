@@ -787,12 +787,6 @@ export function AdminTuitionPage() {
                   <span className="text-muted-foreground">Đơn giá / buổi:</span>
                   <span>{formatCurrency(detailInvoice.pricePerSession ?? 0)}</span>
                 </div>
-                {detailInvoice.discountAmount > 0 && (
-                  <div className="flex justify-between text-blue-600">
-                    <span>Giảm giá{detailInvoice.discountReason ? ` (${detailInvoice.discountReason})` : ""}:</span>
-                    <span>-{formatCurrency(detailInvoice.discountAmount)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-lg font-bold pt-2 border-t">
                   <span>Tổng tiền:</span>
                   <span className="text-primary">{formatCurrency(detailInvoice.totalAmount)}</span>

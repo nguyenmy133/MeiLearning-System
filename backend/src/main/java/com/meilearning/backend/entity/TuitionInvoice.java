@@ -85,13 +85,6 @@ public class TuitionInvoice extends BaseEntity {
     @Column(name = "total_amount", nullable = false)
     private Long totalAmount;
 
-    @Column(name = "discount_amount")
-    @Builder.Default
-    private Long discountAmount = 0L;
-
-    @Column(name = "discount_reason", length = 255)
-    private String discountReason;
-
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 

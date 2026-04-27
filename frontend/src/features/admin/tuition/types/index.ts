@@ -22,8 +22,6 @@ export interface TuitionInvoice {
   pricePerSession: number;
 
   totalAmount: number;
-  discountAmount: number;
-  discountReason: string | null;
   dueDate: string;
   status: InvoiceStatus;
   paidDate: string | null;

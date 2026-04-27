@@ -1,42 +1,7 @@
 package com.meilearning.backend.dto.request;
-
-
-
-
-
-
-
 import jakarta.validation.constraints.NotNull;
-
-
-
 import lombok.*;
-
-
-
-
-
-
-
 import java.util.List;
-
-
-
-
-
-
-
-/**
-
-
-
- * Bulk attendance: Teacher gửi điểm danh cho cả lớp 1 buổi.
-
-
-
- */
-
-
 
 @Getter
 @Setter
