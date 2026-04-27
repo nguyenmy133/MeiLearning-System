@@ -292,7 +292,7 @@ public class DashboardServiceImpl implements DashboardService {
                     String className = inv.getClassEntity() != null
                             ? inv.getClassEntity().getName() : "";
                     long overdueDays = ChronoUnit.DAYS.between(inv.getDueDate(), today);
-                    long amount = inv.getTotalAmount() - inv.getDiscountAmount();
+                    long amount = inv.getTotalAmount();
 
                     return OverdueItem.builder()
                             .studentId(inv.getStudent() != null ? inv.getStudent().getId() : null)
