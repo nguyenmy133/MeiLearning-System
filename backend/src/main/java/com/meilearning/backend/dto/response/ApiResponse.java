@@ -26,8 +26,6 @@ public class ApiResponse<T> {
     private T data;
     private String message;
 
-    // â”€â”€ Factory methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     public static <T> ApiResponse<T> ok(T data) {
 
         return ApiResponse.<T>builder()
@@ -63,7 +61,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
 
                 .data(null)
-                .message("X³a thành công")
+                .message("Xóa thành công")
                 .build();
 
     }

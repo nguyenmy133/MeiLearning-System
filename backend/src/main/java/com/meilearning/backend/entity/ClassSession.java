@@ -72,8 +72,6 @@ public class ClassSession extends BaseEntity {
     @JoinColumn(name = "room_override_id")
     private Room roomOverride;
 
-    // â”€â”€ Relationships â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
     @OneToMany(mappedBy = "session")
     @Builder.Default
     private List<AttendanceRecord> attendanceRecords = new ArrayList<>();

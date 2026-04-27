@@ -23,8 +23,6 @@ public class TuitionMapper {
                 .lateSessions(invoice.getLateSessions())
                 .pricePerSession(invoice.getPricePerSession())
                 .totalAmount(invoice.getTotalAmount())
-                .discountAmount(invoice.getDiscountAmount())
-                .discountReason(invoice.getDiscountReason())
                 .dueDate(invoice.getDueDate() != null ? invoice.getDueDate().toString() : null)
                 .status(invoice.getStatus().name())
                 .paidDate(invoice.getPaidDate() != null ? invoice.getPaidDate().toString() : null)

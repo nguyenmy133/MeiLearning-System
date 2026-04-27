@@ -10,6 +10,4 @@ public class CreateTuitionRequest {
     private Long classId;
     @NotNull
     private String month;       // "MM/YYYY"
-    private Long discountAmount;
-    private String discountReason;
 }

@@ -25,8 +25,6 @@ public class TuitionInvoiceResponse {
     private Integer lateSessions;
     private Long pricePerSession;
     private Long totalAmount;
-    private Long discountAmount;
-    private String discountReason;
     private String dueDate;
     private String status;          // pending, reviewing, paid, overdue
     private String paidDate;

@@ -47,8 +47,7 @@ public class User extends BaseEntity {
     private boolean active = true;
 
     /**
-
-     * Roles hệ thống â€” khớp với UserRole type ở Frontend.
+     * Roles hệ thống  khớp với UserRole type ở Frontend.
 
      */
 
