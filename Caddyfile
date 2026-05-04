@@ -7,49 +7,48 @@
 # ============================================================================
 
 {$DOMAIN} {
-    # ── Reverse Proxy: API ──────────────────────────────────────────
-    handle /api/* {
-        reverse_proxy backend:8080
-    }
+	# ── Reverse Proxy: API ──────────────────────────────────────────
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
 
-    # ── Reverse Proxy: Uploaded files ───────────────────────────────
-    # Cho phép browser render inline (PDF viewer, images) bằng SAMEORIGIN
-    handle /uploads/* {
-        reverse_proxy backend:8080
-        header {
-            X-Frame-Options         "SAMEORIGIN"
-            Content-Security-Policy "frame-ancestors 'self'"
-            # Cho phép browser hiển thị file inline thay vì download
-            Content-Disposition     "inline"
-            X-Content-Type-Options  nosniff
-            -Server
-        }
-    }
+	# ── Reverse Proxy: Uploaded files ───────────────────────────────
+	# Cho phép browser render inline (PDF viewer, images) bằng SAMEORIGIN
+	handle /uploads/* {
+		reverse_proxy backend:8080
+		header {
+			X-Frame-Options         "SAMEORIGIN"
+			Content-Security-Policy "frame-ancestors 'self'"
+			# Cho phép browser hiển thị file inline thay vì download
+			Content-Disposition     "inline"
+			X-Content-Type-Options  nosniff
+			-Server
+		}
+	}
 
-    # ── Reverse Proxy: Frontend SPA ─────────────────────────────────
-    handle {
-        reverse_proxy frontend:80
-        header {
-            X-Frame-Options         DENY
-            X-Content-Type-Options  nosniff
-            Referrer-Policy         strict-origin-when-cross-origin
-            -Server
-        }
-    }
+	# ── Reverse Proxy: Frontend SPA ─────────────────────────────────
+	handle {
+		reverse_proxy frontend:80
+		header {
+			X-Frame-Options        DENY
+			X-Content-Type-Options nosniff
+			Referrer-Policy        strict-origin-when-cross-origin
+			-Server
+		}
+	}
 
-    # ── Compression ─────────────────────────────────────────────────
-    encode gzip zstd
+	# ── Compression ─────────────────────────────────────────────────
+	encode gzip zstd
 
-    # ── Common Security Headers ─────────────────────────────────────
-    header {
-        Referrer-Policy  strict-origin-when-cross-origin
-        -Server
-    }
+	# ── Common Security Headers ─────────────────────────────────────
+	header {
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
 
-    # ── Logging ─────────────────────────────────────────────────────
-    log {
-        output stdout
-        format console
-    }
+	# ── Logging ─────────────────────────────────────────────────────
+	log {
+		output stdout
+		format console
+	}
 }
-

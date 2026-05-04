@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { validatePhoneVN, PHONE_ERROR_MSG } from "@/lib/phoneUtils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -299,7 +300,6 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const validatePhoneFmt = (value: string) => /^0\d{9}$/.test(value);
   const validateEmailFmt = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   // ── Blur handlers with async duplicate check ──
@@ -314,8 +314,8 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
       setError("phone", "Vui lòng nhập số điện thoại");
       return;
     }
-    if (phone.trim() && !validatePhoneFmt(phone)) {
-      setError("phone", "Số điện thoại không hợp lệ (VD: 0901234567)");
+    if (phone.trim() && !validatePhoneVN(phone)) {
+      setError("phone", PHONE_ERROR_MSG);
       return;
     }
     clearError("phone");
@@ -366,8 +366,8 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
   };
 
   const handleParentPhoneBlur = () => {
-    if (parentPhone.trim() && !validatePhoneFmt(parentPhone)) {
-      setError("parentPhone", "SĐT phụ huynh không hợp lệ (VD: 0911234567)");
+    if (parentPhone.trim() && !validatePhoneVN(parentPhone)) {
+      setError("parentPhone", PHONE_ERROR_MSG);
     } else {
       clearError("parentPhone");
     }
@@ -379,8 +379,8 @@ function StudentForm({ mode, initial, onSubmit, isPending }: StudentFormProps) {
     const errors: Record<string, string> = {};
     if (!name.trim()) errors.name = "Vui lòng nhập họ tên";
     if (email.trim() && !validateEmailFmt(email)) errors.email = "Email không đúng định dạng";
-    if (phone.trim() && !validatePhoneFmt(phone)) errors.phone = "Số điện thoại không hợp lệ (VD: 0901234567)";
-    if (parentPhone.trim() && !validatePhoneFmt(parentPhone)) errors.parentPhone = "SĐT phụ huynh không hợp lệ (VD: 0911234567)";
+    if (phone.trim() && !validatePhoneVN(phone)) errors.phone = PHONE_ERROR_MSG;
+    if (parentPhone.trim() && !validatePhoneVN(parentPhone)) errors.parentPhone = PHONE_ERROR_MSG;
 
     if (mode === "create") {
       if (!phone.trim()) errors.phone = "Vui lòng nhập số điện thoại";
