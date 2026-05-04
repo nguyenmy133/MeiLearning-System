@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { validatePhoneVN, PHONE_ERROR_MSG } from "@/lib/phoneUtils";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -189,7 +190,7 @@ function TeacherForm({ mode, initial, onSubmit, isPending }: TeacherFormProps) {
 
   const validatePhone = (val: string): string => {
     if (!val) return "Số điện thoại không được để trống";
-    if (!/^\d{10,11}$/.test(val)) return "Số điện thoại phải có 10-11 chữ số";
+    if (!validatePhoneVN(val)) return PHONE_ERROR_MSG;
     return "";
   };
 

@@ -2,6 +2,7 @@ package com.meilearning.backend.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import com.meilearning.backend.entity.enums.Gender;
 import java.util.List;
@@ -13,7 +14,16 @@ public class CreateStudentRequest {
 
     @Email(message = "Email không hợp lệ")
     private String email;
+    @Pattern(
+        regexp = "^(0|\\+?84)\\d{9}$",
+        message = "Số điện thoại không hợp lệ (VD: 0901234567 hoặc +84901234567)"
+    )
     private String phone;
+
+    @Pattern(
+        regexp = "^(0|\\+?84)\\d{9}$",
+        message = "Số điện thoại phụ huynh không hợp lệ (VD: 0901234567 hoặc +84901234567)"
+    )
     private String parentPhone;
 
     /** Class enrollments: [{ classId, className }] */

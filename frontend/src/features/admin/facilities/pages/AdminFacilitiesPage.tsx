@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { validatePhoneVN, PHONE_ERROR_MSG } from "@/lib/phoneUtils";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -156,9 +157,7 @@ function FacilityForm({ initialData, onSubmit, isPending, mode }: FacilityFormPr
   // Validation rules
   const validatePhone = (val: string): string => {
     if (!val.trim()) return ""; // optional — bỏ trống OK
-    const digits = val.replace(/[\s\-\.]/g, "");
-    if (!/^\d+$/.test(digits)) return "Số điện thoại chỉ được chứa chữ số";
-    if (digits.length < 10 || digits.length > 11) return "Số điện thoại phải có 10-11 chữ số";
+    if (!validatePhoneVN(val)) return PHONE_ERROR_MSG;
     return "";
   };
 
