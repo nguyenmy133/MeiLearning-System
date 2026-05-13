@@ -376,10 +376,14 @@ public class TuitionServiceImpl implements TuitionService {
         }
 
         long totalInvoices = month != null ? invoiceRepository.countByMonth(month) : invoiceRepository.count();
-        long pendingCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.pending, month) : invoiceRepository.countByStatus(InvoiceStatus.pending);
+        long overdueCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.overdue, month) : invoiceRepository.countByStatus(InvoiceStatus.overdue);
+        long strictlyPendingCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.pending, month) : invoiceRepository.countByStatus(InvoiceStatus.pending);
+        
+        // "Chờ thanh toán" = Pending + Overdue
+        long pendingCount = strictlyPendingCount + overdueCount;
+        
         long reviewingCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.reviewing, month) : invoiceRepository.countByStatus(InvoiceStatus.reviewing);
         long paidCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.paid, month) : invoiceRepository.countByStatus(InvoiceStatus.paid);
-        long overdueCount = month != null ? invoiceRepository.countByStatusAndMonth(InvoiceStatus.overdue, month) : invoiceRepository.countByStatus(InvoiceStatus.overdue);
         long totalRevenue = month != null ? invoiceRepository.sumExpectedRevenueByMonth(month) : invoiceRepository.sumExpectedRevenue();
         long monthRevenue = month != null ? invoiceRepository.sumCollectedRevenueByMonth(month) : invoiceRepository.sumCollectedRevenue();
 
