@@ -32,4 +32,14 @@ public interface ClassEnrollmentRepository extends JpaRepository<ClassEnrollment
     )
     java.util.List<Object[]> countStudentsBySubject();
 
+    /** Lấy enrollments của học viên active — dùng khi generate hóa đơn hàng loạt */
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT e FROM ClassEnrollment e " +
+        "JOIN FETCH e.student s " +
+        "JOIN FETCH s.user " +
+        "JOIN FETCH e.classEntity c " +
+        "WHERE s.status = com.meilearning.backend.entity.enums.StudentStatus.active"
+    )
+    java.util.List<ClassEnrollment> findActiveEnrollments();
+
 }

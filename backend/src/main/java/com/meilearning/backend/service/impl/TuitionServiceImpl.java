@@ -2,6 +2,8 @@ package com.meilearning.backend.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +21,6 @@ import com.meilearning.backend.entity.ClassSession;
 import com.meilearning.backend.entity.Student;
 import com.meilearning.backend.entity.AttendanceRecord;
 import com.meilearning.backend.entity.TuitionInvoice;
-
 import com.meilearning.backend.entity.enums.InvoiceStatus;
 import com.meilearning.backend.exception.BusinessException;
 import com.meilearning.backend.exception.ResourceNotFoundException;
@@ -30,13 +31,16 @@ import com.meilearning.backend.repository.ClassRepository;
 import com.meilearning.backend.repository.ClassSessionRepository;
 import com.meilearning.backend.repository.StudentRepository;
 import com.meilearning.backend.repository.TuitionInvoiceRepository;
+import com.meilearning.backend.scheduler.TuitionScheduler;
 import com.meilearning.backend.service.TuitionService;
 import com.meilearning.backend.service.NotificationDispatcher;
 import com.meilearning.backend.dto.response.PageResponse;
+import com.meilearning.backend.util.BusinessConstants;
 import com.meilearning.backend.util.SpecHelper;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +58,10 @@ public class TuitionServiceImpl implements TuitionService {
     private final AttendanceRecordRepository attendanceRepository;
     private final TuitionMapper tuitionMapper;
     private final NotificationDispatcher notificationDispatcher;
+
+    // @Lazy để tránh circular dependency: TuitionService ↔ TuitionScheduler
+    @Autowired @Lazy
+    private TuitionScheduler tuitionScheduler;
 
     // ── Breakdown record ─────────────────────────────────────────────
 
@@ -118,11 +126,8 @@ public class TuitionServiceImpl implements TuitionService {
     @Override
     public List<TuitionInvoiceResponse> generateMonthlyInvoices(String month) {
 
-        // Validate month: only allow generating for past months
-        String[] parts = month.split("/");
-        int monthValue = Integer.parseInt(parts[0]);
-        int year = Integer.parseInt(parts[1]);
-        YearMonth requestedMonth = YearMonth.of(year, monthValue);
+        // Validate month: chỉ cho phép tạo cho tháng đã kết thúc
+        YearMonth requestedMonth = YearMonth.parse(month, DateTimeFormatter.ofPattern("MM/yyyy"));
         YearMonth currentMonth = YearMonth.now();
 
         if (!requestedMonth.isBefore(currentMonth)) {
@@ -131,8 +136,8 @@ public class TuitionServiceImpl implements TuitionService {
 
         List<TuitionInvoiceResponse> results = new ArrayList<>();
 
-        // Lấy tất cả enrollments active
-        List<ClassEnrollment> enrollments = enrollmentRepository.findAll();
+        // Lấy enrollments của học viên active (tránh load toàn bộ bảng & bỏ qua học viên đã nghỉ)
+        List<ClassEnrollment> enrollments = enrollmentRepository.findActiveEnrollments();
 
         for (ClassEnrollment enrollment : enrollments) {
             Long studentId = enrollment.getStudent().getId();
@@ -304,6 +309,11 @@ public class TuitionServiceImpl implements TuitionService {
         invoice.setPaidDate(LocalDate.now());
         invoice = invoiceRepository.save(invoice);
 
+        // Đồng bộ Student.tuitionStatus sau khi invoice được paid (Fix #2)
+        if (invoice.getStudent() != null) {
+            tuitionScheduler.syncStudentTuitionStatus(invoice.getStudent());
+        }
+
         // Notify student: payment confirmed
         if (invoice.getStudent() != null && invoice.getStudent().getUser() != null) {
             notificationDispatcher.notifyInApp(
@@ -326,10 +336,21 @@ public class TuitionServiceImpl implements TuitionService {
             throw new BusinessException("Chỉ từ chối hóa đơn đang reviewing.");
         }
 
-        invoice.setStatus(InvoiceStatus.pending);
+        // Fix #5: Restore đúng status — nếu đã qua dueDate thì về overdue, không phải pending
+        InvoiceStatus restoredStatus = (invoice.getDueDate() != null
+                && invoice.getDueDate().isBefore(LocalDate.now()))
+                ? InvoiceStatus.overdue
+                : InvoiceStatus.pending;
+
+        invoice.setStatus(restoredStatus);
         invoice.setPaymentMethod(null);
         invoice.setPaymentProofUrl(null);
         invoice = invoiceRepository.save(invoice);
+
+        // Đồng bộ Student.tuitionStatus sau khi reject (có thể về pending hoặc overdue)
+        if (invoice.getStudent() != null) {
+            tuitionScheduler.syncStudentTuitionStatus(invoice.getStudent());
+        }
 
         // Notify student: payment rejected
         if (invoice.getStudent() != null && invoice.getStudent().getUser() != null) {
@@ -380,11 +401,8 @@ public class TuitionServiceImpl implements TuitionService {
      * Billable = PRESENT + ABSENT + LATE (không tính ABSENT_EXCUSED)
      */
     private SessionBreakdown calculateSessionBreakdown(Long studentId, Long classId, String monthStr) {
-        // Parse month "MM/YYYY" -> date range
-        String[] parts = monthStr.split("/");
-        int monthValue = Integer.parseInt(parts[0]);
-        int year = Integer.parseInt(parts[1]);
-        YearMonth ym = YearMonth.of(year, monthValue);
+        // Parse month "MM/yyyy" → date range (dùng formatter nhất quán với calculateDueDate)
+        YearMonth ym = YearMonth.parse(monthStr, DateTimeFormatter.ofPattern("MM/yyyy"));
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
 
@@ -425,14 +443,18 @@ public class TuitionServiceImpl implements TuitionService {
     }
 
     /**
-     * Due date = ngày 10 tháng sau
+     * Due date = ngày TUITION_DUE_DAY của tháng sau.
+     * Fix #4: Dùng DateTimeFormatter với try-catch thay vì split thủ công.
      */
     private LocalDate calculateDueDate(String monthStr) {
-        String[] parts = monthStr.split("/");
-        int monthValue = Integer.parseInt(parts[0]);
-        int year = Integer.parseInt(parts[1]);
-        YearMonth ym = YearMonth.of(year, monthValue);
-        return ym.plusMonths(1).atDay(com.meilearning.backend.util.BusinessConstants.TUITION_DUE_DAY);
+        try {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/yyyy");
+            YearMonth ym = YearMonth.parse(monthStr, fmt);
+            return ym.plusMonths(1).atDay(BusinessConstants.TUITION_DUE_DAY);
+        } catch (DateTimeParseException e) {
+            log.error("Định dạng tháng không hợp lệ: '{}'. Yêu cầu MM/yyyy", monthStr);
+            throw new BusinessException("Định dạng tháng không hợp lệ: " + monthStr);
+        }
     }
 
     // ── Reminder Methods ─────────────────────────────────────────────

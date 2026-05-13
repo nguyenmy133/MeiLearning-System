@@ -1,7 +1,3 @@
-/**
- * Base entity với các trường chung cho tất cả entities.
- * Tự động set createdAt, updatedAt, createdBy, updatedBy.
- */
 package com.meilearning.backend.entity;
 
 import java.time.Instant;
@@ -16,6 +12,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+/**
+ * Base entity với các trường chung cho tất cả entities.
+ * Tự động set createdAt, updatedAt, createdBy, updatedBy.
+ */
 @Getter
 @Setter
 @MappedSuperclass
