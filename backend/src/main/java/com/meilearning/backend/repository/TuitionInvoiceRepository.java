@@ -30,8 +30,13 @@ public interface TuitionInvoiceRepository
 
     List<TuitionInvoice> findByStatusIn(java.util.Collection<InvoiceStatus> statuses);
 
-    @Query("SELECT COALESCE(SUM(t.totalAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid'")
-    long sumTotalRevenue();
+    /** Tìm invoice theo status và dueDate < date — dùng cho scheduler markOverdue */
+    List<TuitionInvoice> findByStatusAndDueDateBefore(InvoiceStatus status, java.time.LocalDate date);
+
+    /** Kiểm tra còn invoice chưa thanh toán của student — dùng để sync Student.tuitionStatus */
+    boolean existsByStudentIdAndStatusIn(Long studentId, java.util.Collection<InvoiceStatus> statuses);
+
+
 
     @Query("SELECT COALESCE(SUM(t.totalAmount), 0) FROM TuitionInvoice t WHERE t.status = 'paid' AND t.month = :month")
     long sumRevenueByMonth(String month);

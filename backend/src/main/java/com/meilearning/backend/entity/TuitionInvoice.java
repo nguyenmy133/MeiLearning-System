@@ -1,13 +1,3 @@
-/**
-
- * Entity: Hóa đơn học phí.
-
- * price_per_session lưu snapshot giá tại thá»i điểm tạo hóa đơn
-
- * để không bị ảnh hưởng khi giá lớp thay đổi.
-
- */
-
 package com.meilearning.backend.entity;
 
 import jakarta.persistence.Column;
@@ -26,6 +16,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.meilearning.backend.entity.enums.InvoiceStatus;
 import java.time.LocalDate;
+
+/**
+ * Entity: Hóa đơn học phí.
+ * price_per_session lưu snapshot giá tại thời điểm tạo hóa đơn
+ * để không bị ảnh hưởng khi giá lớp thay đổi.
+ */
 @Entity
 @Table(name = "tuition_invoices", indexes = {
         @Index(name = "idx_tuition_student", columnList = "student_id"),
