@@ -109,7 +109,7 @@ export function AdminReportsPage() {
     },
     {
       label: "Công Nợ Hệ Thống",
-      value: `${overdueCount + pendingCount} hóa đơn`,
+      value: `${pendingCount} hóa đơn`,
       change: "",
       trend: overdueCount > 0 ? "down" as const : "up" as const,
       icon: AlertCircle,
