@@ -74,12 +74,12 @@ export function DataTablePagination({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 px-2 py-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-4 px-2 py-4 sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >
       {/* Record info — always visible */}
-      <p className="text-sm text-muted-foreground whitespace-nowrap">
+      <p className="text-sm text-muted-foreground break-words">
         Hiển thị{" "}
         <span className="font-semibold text-foreground">{startRecord}</span>
         {" – "}
@@ -91,7 +91,7 @@ export function DataTablePagination({
 
       {/* Controls — only render if more than 1 page */}
       {totalPages > 1 && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-4 w-full sm:w-auto">
           {/* Rows per page */}
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">

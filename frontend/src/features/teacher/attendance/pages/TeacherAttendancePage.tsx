@@ -55,6 +55,12 @@ const isSessionStarted = (startTime: string) => {
   return nowMin >= toMinutes(startTime) - 5;
 };
 
+const formatCheckinTime = (timeStr: string | null | undefined) => {
+  if (!timeStr) return "";
+  const base = timeStr.split('.')[0];
+  return base.length === 5 ? `${base}:00` : base;
+};
+
 // ── localStorage persistence for QR state ───────────────────────────────────
 const QR_STORAGE_KEY = "teacher_qr_state";
 
@@ -261,7 +267,7 @@ export function TeacherAttendancePage() {
   const updateStudentStatus = (studentId: string, newStatus: AttendanceStatus) => {
     if (isConfirmed) return;
     const now = new Date();
-    const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
     
     setDraftEdits(prev => ({
       ...prev,
@@ -627,7 +633,7 @@ export function TeacherAttendancePage() {
                           )}
                           <div className="flex items-center text-xs text-muted-foreground mt-0.5">
                             {student.checkinTime
-                              ? `Lúc ${student.checkinTime} (${student.method === "qr" ? "QR" : "Ghi tay"})`
+                              ? `Lúc ${formatCheckinTime(student.checkinTime)} (${student.method === "qr" ? "QR" : "Ghi tay"})`
                               : ATTENDANCE_STATUS_LABELS[student.status]}
                           </div>
                         </div>

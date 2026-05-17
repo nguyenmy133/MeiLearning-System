@@ -82,7 +82,7 @@ export function NotificationsPage() {
   const readCount = total - unreadCount;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 w-full min-w-0">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -100,7 +100,7 @@ export function NotificationsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {actions.selectionMode ? (
             /* ── Selection mode toolbar ── */
             <>
@@ -159,10 +159,10 @@ export function NotificationsPage() {
                   variant="ghost"
                   size="sm"
                   onClick={actions.enterSelectionMode}
-                  className="gap-2 text-muted-foreground"
+                  className="gap-2 text-muted-foreground w-full sm:w-auto justify-start sm:justify-center"
                 >
                   <ListChecks className="h-4 w-4" />
-                  Chọn
+                  Chọn nhiều
                 </Button>
               )}
             </>
