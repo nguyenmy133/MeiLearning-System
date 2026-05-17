@@ -100,7 +100,7 @@ export function AdminDashboard() {
   ];
 
   const attendanceRate = todayAttendance.total > 0
-    ? Math.round((todayAttendance.present / todayAttendance.total) * 100)
+    ? Math.round(((todayAttendance.present + todayAttendance.late) / todayAttendance.total) * 100)
     : 0;
 
   return (
