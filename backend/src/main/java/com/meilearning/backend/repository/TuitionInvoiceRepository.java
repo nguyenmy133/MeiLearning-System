@@ -74,10 +74,14 @@ public interface TuitionInvoiceRepository
            "FROM TuitionInvoice t WHERE t.status = 'paid' GROUP BY t.classEntity.subject.name")
     List<Object[]> sumRevenueGroupBySubject();
 
-    /** Doanh thu theo ngày paid (cho dashboard 7 ngày) - trả về Object[] {paidDate, sum} */
     @Query("SELECT t.paidDate, COALESCE(SUM(t.totalAmount), 0) " +
            "FROM TuitionInvoice t WHERE t.status = 'paid' AND t.paidDate BETWEEN :startDate AND :endDate " +
            "GROUP BY t.paidDate ORDER BY t.paidDate")
     List<Object[]> sumRevenueByPaidDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
+
+    /** Tổng doanh thu trong một khoảng thời gian (dựa theo ngày thanh toán thực tế) */
+    @Query("SELECT COALESCE(SUM(t.totalAmount), 0) " +
+           "FROM TuitionInvoice t WHERE t.status = 'paid' AND t.paidDate BETWEEN :startDate AND :endDate")
+    long sumTotalRevenueByPaidDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
 
 }
