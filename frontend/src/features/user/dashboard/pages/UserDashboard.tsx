@@ -226,7 +226,10 @@ export function UserDashboard() {
 
   const activeClasses = classes.filter((c) => c.status === "active");
   const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
+  const paidInvoices = invoices.filter((i) => i.status === "paid");
+  
   const totalDebt = pendingInvoices.reduce((s, i) => s + i.totalAmount, 0);
+  const totalPaid = paidInvoices.reduce((s, i) => s + i.totalAmount, 0);
 
   // Compute pending exams
   const pendingExams = exams.filter((e) => e.status === "ongoing" && !e.mySubmittedAt);
@@ -306,6 +309,8 @@ export function UserDashboard() {
                 <p className={`text-2xl font-bold ${totalDebt > 0 ? "text-destructive" : "text-success"}`}>
                   {totalDebt > 0
                     ? `${(totalDebt / 1_000_000).toFixed(1)}M`
+                    : totalPaid > 0
+                    ? `${(totalPaid / 1_000_000).toFixed(1)}M`
                     : "0"}
                 </p>
                 <p className="text-xs text-muted-foreground">{totalDebt > 0 ? "Công nợ học phí" : "Đã thanh toán"}</p>

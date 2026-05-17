@@ -62,9 +62,10 @@ public class DashboardServiceImpl implements DashboardService {
         long totalTeachers = teacherRepository.count();
         long activeClasses = classRepository.countByStatus(ClassStatus.active);
 
-        // Doanh thu tháng hiện tại
-        String currentMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("MM/yyyy"));
-        long monthRevenue = invoiceRepository.sumRevenueByMonth(currentMonth);
+        // Doanh thu tháng hiện tại (tính theo ngày thanh toán thực tế paidDate)
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        long monthRevenue = invoiceRepository.sumTotalRevenueByPaidDateBetween(startOfMonth, endOfMonth);
         String revenueDisplay = formatCurrency(monthRevenue);
 
         return List.of(
